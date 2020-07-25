@@ -1,0 +1,887 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/custom_mode.inc"
+
+#define CHOICE_SEP_OFFSET_Y				-2
+#define CHOICE_SIDEITEM_SPACING			-310
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui/choices_setup_popmenu.menu"
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/overlaybg.inc"
+#include "ui_mp/fileshare.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui/frame.inc"
+
+#include "ui_mp/popup_player_info.inc"
+
+#undef	CHOICE_TEXTSTYLE
+#define CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+
+#undef	CHOICE_GROUP
+#define CHOICE_GROUP					"menu_game_mode_upload"
+
+#define HINT_TEXT_WIDTH					( FRAME_DEFAULT_WIDTH - ( FRAME_TITLE_X_OFFSET * 2 ) )
+
+menuDef                                                        
+{                                                              
+	name					menu_game_mode_upload                           
+	rect					0 0 640 480                        
+	focuscolor				COLOR_FOCUSED                      
+	style					WINDOW_STYLE_FILLED                
+	priority				MENU_PRI_ONTOP         
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC                         
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED				
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED				
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT                                                    
+	onOpen	                                                   
+	{                                                          
+		READ_FILE_SHARE;
+		setdvar ui_custom_save_to_file_share 1;
+		setDvar fsUnoccupiedHighlightGreen 1;
+		setLocalVarString ui_choicegroup CHOICE_GROUP;
+	}                                                          
+	onFocus                                                    
+	{                                                          
+		play CHOICE_FOCUS_SOUND;                               
+		activateBlur;                                          
+	}                                                          
+	onClose	                                                   
+	{
+		setdvar ui_custom_save_to_file_share 0;
+		deactivateblur;                                                
+	}                                                          
+	onESC	                                                   
+	{            
+		close self;                                            
+	}                                   
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	                                             
+
+	FRAME_DEFAULT
+	FRAME_TITLE_DEFAULT( "@MENU_FILESHARE_MYSHARE_CAPS", 1 )	
+
+	PLAYER_INFO_VIS( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, 1 )	
+
+	itemDef                                                                                      
+	{                                                                                       
+		name				fileShareSlots                                                  
+		type				ITEM_TYPE_LISTBOX                                               
+		feeder				FEEDER_FILESHARE_MYSLOTS                                        
+		FILESHARE_COMMON_OPTIONS 
+		elementwidth		70                                                              
+		elementheight		70                                                              
+		elementtype			LISTBOX_TEXT	                                                
+		textalign			HORIZONTAL_ALIGN_LEFT                                           
+		textfont			UI_FONT_NORMAL                                                  
+		forecolor			CHOICE_TEXTCOLOR                                                     
+		modal											                                    
+		doubleclick	                                                                        
+		{                                                                                   
+			if ( getFeederData( "slot" ) <= 6 )                                             
+			{                                                                               
+				if ( !( FILESHARE_TASKSINPROGRESS ) )                                       
+				{                                                                           
+					play CHOICE_FOCUS_SOUND;                                                
+					if ( getFeederData( "slotOccupied" ) != 1 )                             
+					{                                                                       
+						open menu_game_mode_upload_save;                                             
+					}                                                                       
+					else                                                                    
+					{                                                                       
+    					open menu_game_mode_upload_confirm;                                          
+	  				}                                                                       
+				}                                                                            
+			}                                                                               
+		}                                                                                   
+		onListboxSelectionChange    { play CHOICE_FOCUS_SOUND;  }                           
+		visible				1                                                               
+		FILESHARE_SLOTS_USERAREAS	                                                        
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )			                                                                            
+	FILESHARE_DETAILS(	35, (FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_game_mode_upload", "fileShareSlots",													
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )	
+#ifdef CONSOLE	
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+							( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF18") ), 
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( IsPremiumSubscriber() ) )
+
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT,
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) <= 6 ), 
+								rotation 90; )
+#endif //#ifdef CONSOLE 
+
+	HINT_TEXT_ALL( 15, CHOICE_X_START, -8, CHOICE_SIZE_X, "@MENU_FILESHARE_CHOOSESLOT", 1 1 1 1, 1, ; )
+
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, close self; )
+#else //#ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )		
+	
+	PREPROC_TEXT_DRAW_VIS(	-160 (FRAME_DEFAULT_HEIGHT/2) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+							"@PLATFORM_SELECT", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, 
+							when( getFeederData( menu_game_mode_upload, fileShareSlots, "slot" ) <= 6 ); )
+#endif // #else // #ifdef PC
+}
+#undef ON_ESC
+#define ON_ESC		\
+	close self;
+
+menuDef
+{
+	name					custom_select_from_fileshare
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT
+	
+	onOpen	
+	{
+#ifdef PC
+		exec readfileshare
+#endif
+		setDvar fsUnoccupiedHighlightGreen 2;
+		setLocalVarString ui_choicegroup CHOICE_GROUP;
+	}
+	onFocus 
+	{ 
+		activateBlur;
+	}
+	onClose	
+	{
+		deactivateBlur;
+	}
+	onESC	
+	{
+		ON_ESC
+	}
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	 
+	
+	FRAME_DEFAULT
+
+	FRAME_TITLE_DEFAULT( "@CUSTOM_FILESHARE_SELECT_MODE_TITLE", 1 )
+	FRAME_SUBTITLE_DEFAULT( "@CUSTOM_FILESHARE_SELECT_MODE_DESC", 1 )
+
+	PLAYER_INFO_VIS( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, 1 )
+
+	itemDef 
+	{
+		name				fileShareSlots
+		type				ITEM_TYPE_LISTBOX
+		feeder				FEEDER_FILESHARE_MYSLOTS
+		FILESHARE_COMMON_OPTIONS	
+		origin				0 0
+		elementwidth		70
+		elementheight		67
+		elementtype			LISTBOX_TEXT	
+		textalign			ITEM_ALIGN_MIDDLE_CENTER
+		textfont			UI_FONT_NORMAL
+		textscale			TEXTSIZE_SUBTITLE
+		forecolor			CHOICE_TEXTCOLOR
+		modal
+		doubleclick			
+		{
+			play CHOICE_FOCUS_SOUND;
+			if ( getFeederData( "slotOccupied" ) && !( FILESHARE_TASKSINPROGRESS ) )
+			{
+				if( getFeederData( "fileType" ) == "customgamemode" )
+				{
+					execNow downloadCustomGametype (getFeederData( "fileID" )) (getFeederData( "fileSize" ));
+					closeimmediate custom_select_from_fileshare;
+					closeimmediate select_game_mode;
+				}
+			}
+		}
+		onListboxSelectionChange  {     play CHOICE_FOCUS_SOUND;    }
+		visible				1
+
+		FILESHARE_SLOTS_USERAREAS
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )
+
+	/* SLOT OCCUPIED */
+#define SLOT_OCCUPIED_CONDITION \
+	( getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )
+
+	#define SLOT_HAS_GAME_MODE \
+			( getFeederData( "fileShareSlots", "fileType" ) == "customgamemode" )
+	
+#undef FILESHARE_SELECTOR_TOOLTIP_Y	
+#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y FILESHARE_TOOLTIP_PC_Y
+#else //#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y 95
+#endif //#ifdef PC
+
+	// Tooltip - Occupied Slot with custom game mode
+	PREPROC_SHADER_DRAW_VIS_EX(	(FRAME_CHOICE_X_START-2) FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( SLOT_OCCUPIED_CONDITION && SLOT_HAS_GAME_MODE ), ; )
+	PREPROC_TEXT_DRAW_VIS_EX(	(FRAME_CHOICE_X_START+8) FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+								locString( "CUSTOM_FILESHARE_CGM_HIGHLIGHTED" ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, 
+								when( SLOT_OCCUPIED_CONDITION && SLOT_HAS_GAME_MODE ), autowrapped; )
+	
+	// Tooltip - Occupied Slot that is not a custom game mode
+	PREPROC_SHADER_DRAW_VIS_EX(	(FRAME_CHOICE_X_START-2) FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( SLOT_OCCUPIED_CONDITION && !SLOT_HAS_GAME_MODE ), ; )
+	PREPROC_TEXT_DRAW_VIS_EX(	(FRAME_CHOICE_X_START+8) FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+								locString( "CUSTOM_FILESHARE_CANT_SELECT" ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, 
+								when( SLOT_OCCUPIED_CONDITION && !SLOT_HAS_GAME_MODE ), autowrapped; )
+	
+	FILESHARE_SPINNER( 145, -45, when( FILESHARE_TASKSINPROGRESS ), 350 )
+
+	execKeyInt APAD_UP
+	{
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_UP
+	{
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt APAD_DOWN
+	{
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_DOWN
+	{
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+#ifdef CONSOLE
+	PREPROC_TEXT_DRAW_VIS(	-146 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,
+							( int( getFeederData( "fileShareSlots", "slot" ) ) ),
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1,
+							1 )
+	PREPROC_TEXT_DRAW_VIS(	-142 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,
+							"@MENU_FILESHARE_OF6",
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, 1 1 1 1,
+							when ( !IsPremiumSubscriber() ) )
+
+	// Top Arrow
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 ), rotation 90; )																							
+
+	// Bottom Arrow 1
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), rotation 90; )
+
+	// Bottom Arrow 2
+	PREPROC_SHADER_DRAW_VIS_EX( -114 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) <= 6 ), rotation 90; )
+#endif //#ifdef CONSOLE
+	// File details
+	FILESHARE_DETAILS(	35, (FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"custom_select_from_fileshare", "fileShareSlots", 
+						SLOT_OCCUPIED_CONDITION )
+
+	FILESHARE_SPINNER( 145, -45, when( FILESHARE_TASKSINPROGRESS ), 350 )
+
+	// Button prompts
+	
+#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT_ACTION( ON_ESC )
+#else //#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT
+	
+	PREPROC_TEXT_DRAW_VIS(	-160 (FILESHARE_FRAME_HEIGHT/2) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+							"@PLATFORM_SELECT", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, 
+							when( SLOT_OCCUPIED_CONDITION && SLOT_HAS_GAME_MODE ); )
+#endif //#ifdef PC
+	
+	#include "ui/safearea.menu"
+}
+
+#define GAMEMODE_NAME_X						40
+#define GAMEMODE_NAME_Y						( FRAME_CHOICE_Y_START - 7 )
+#define GAMEMODE_NAME_HEIGHT				30
+#define GAMEMODE_NAME_SIZE					GAMEMODE_IMAGE_WIDTH GAMEMODE_NAME_HEIGHT
+
+#define GAMEMODE_IMAGE_X					GAMEMODE_NAME_X
+#define GAMEMODE_IMAGE_Y					(GAMEMODE_NAME_Y + GAMEMODE_NAME_HEIGHT + 15)
+#define GAMEMODE_IMAGE_ASPECT_RATIO			1.0
+#define GAMEMODE_IMAGE_WIDTH				180
+#define GAMEMODE_IMAGE_HEIGHT				(GAMEMODE_IMAGE_WIDTH * GAMEMODE_IMAGE_ASPECT_RATIO)
+#define GAMEMODE_IMAGE_SIZE					GAMEMODE_IMAGE_WIDTH GAMEMODE_IMAGE_HEIGHT
+
+#define GAMEMODE_DESC_X						GAMEMODE_NAME_X
+#define GAMEMODE_DESC_Y						(GAMEMODE_IMAGE_Y + GAMEMODE_IMAGE_HEIGHT + 15)
+#define GAMEMODE_DESC_SIZE					GAMEMODE_IMAGE_WIDTH 60
+
+#undef	DEFAULT_SLIDE_IN_SPEED
+#define DEFAULT_SLIDE_IN_SPEED				180
+
+#undef	DEFAULT_SLIDE_OUT_SPEED
+#define DEFAULT_SLIDE_OUT_SPEED				180
+
+#undef ON_ESC
+#define ON_ESC							\
+	deactivateBlur;						\
+	play uin_navigation_menu_lg_close;	\
+	close self;
+
+menuDef
+{
+	name					select_game_mode
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+	openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+	closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+	onOpen	
+	{
+		activateBlur;
+		play uin_navigation_menu_lg_open;
+		setdvar invite_visible "0"; 
+		setDvar ui_preview dvarString( ui_gametype );
+		setFocus gamemode_selection;
+		execNow refreshFeederSelection gamemode_selection;
+		execNow movefeeder ( GetGamemodeIndexByName( gamemode_selection, tableLookup( "mp/gametypesTable.csv", 0, dvarString( ui_gametype ), 1 ) ) ) gamemode_selection;
+	}
+	onFocus { }
+	onClose
+	{
+		setdvar invite_visible "1";
+	}
+	onESC
+	{
+		ON_ESC
+	}
+
+	FRAME_DEFAULT
+
+	FRAME_TITLE_DEFAULT( "@MPUI_CHANGE_GAME_MODE_CAPS", 1 )
+	
+	#define GAME_HC_TDM_HACK				( dvarInt( "xblive_basictraining" ) && dvarString( ui_preview ) == "hc_tdm" )
+	#define GAME_DESC_VIS_ARG				( dvarInt( "xblive_basictraining" ) || dvarBool( splitscreen ) || dvarBool( systemlink ) || getFeederData( "gamemode_selection", "selection" ) != 0 )
+	#define GAMETYPE_IMAGE					tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_preview ), 3 )
+	#define GAMEMODE						tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_preview ), 1 )
+	#define GAMEMODE_DESC					tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_preview ), 2 )
+
+	#define GAMEMODE_DESC_DISPLAY( titleText, imageMat, descText, visArg )																		\
+			PREPROC_TEXT_DRAW_ALL(	GAMEMODE_NAME_X GAMEMODE_NAME_Y GAMEMODE_NAME_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,		\
+									titleText,																									\
+									TEXTSIZE_TITLE, 0, 0, ITEM_ALIGN_TOP_CENTER, 1 1 1 1, UI_FONT_EXTRABIG, ITEM_TEXTSTYLE_NORMAL,				\
+									when( visArg );, ; )																						\
+			PREPROC_SHADER_DRAW_VIS_EX( GAMEMODE_IMAGE_X GAMEMODE_IMAGE_Y GAMEMODE_IMAGE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,	\
+										imageMat, 1 1 1 1,																						\
+										when( visArg );,																						\
+										; )																										\
+			PREPROC_TEXT_DRAW_VIS_EX(	GAMEMODE_DESC_X GAMEMODE_DESC_Y GAMEMODE_DESC_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	\
+										descText,																								\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, 1 1 1 1,													\
+										when( visArg );, autowrapped )
+
+	GAMEMODE_DESC_DISPLAY( "@" + GAMEMODE, GAMETYPE_IMAGE, "@" + GAMEMODE_DESC, GAME_DESC_VIS_ARG && !GAME_HC_TDM_HACK )
+	GAMEMODE_DESC_DISPLAY( "@MPUI_BASIC_TRAINING_HC_TDM", GAMETYPE_IMAGE, "@" + GAMEMODE_DESC, GAME_HC_TDM_HACK )
+	GAMEMODE_DESC_DISPLAY( "@CUSTOM_CUSTOM_GAME_MODE_CAPS", "playlist_custom", "@CUSTOM_SELECT_FROM_FILESHARE_DESC", !GAME_DESC_VIS_ARG && !GAME_HC_TDM_HACK )
+
+	#define RESET_CUSTOM_GAMEMODE_IF_CHANGED								\
+			if( dvarString( "ui_preview" ) != dvarString( "ui_gametype" ) )	\
+			{																\
+				execNow "resetCustomGametype";								\
+			}
+
+	// gametype selection ===========================================
+	itemDef 
+	{
+		name						gamemode_selection
+		type						ITEM_TYPE_LISTBOX
+		feeder						FEEDER_GAMETYPES_BASE
+		rect						(FRAME_CHOICE_X_START-1) ( FRAME_CHOICE_Y_START - 3 ) FRAME_BUTTON_WIDTH 308 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		elementwidth				30
+		elementheight				19
+		noscrollbars
+		noBlinkingHighlight
+		textfont					CHOICE_TEXTFONT
+		textscale					CHOICE_TEXTSIZE
+		forecolor					CHOICE_TEXTCOLOR
+		focusColor					COLOR_TITLE
+		disablecolor				FRAME_GREY_RGB 1
+		textstyle					ITEM_TEXTSTYLE_NORMAL
+		modal
+		visible						1
+		//				x							y	w						h		len		horzAlign			vertAlign
+		userarea	4	0							0	(FRAME_BUTTON_WIDTH+1)	19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* BACKGROUND		*/
+						17							0	FRAME_BUTTON_WIDTH		19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* NAME				*/
+						0							1	17  					18		16		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* A_BUTTON			*/
+						(FRAME_BUTTON_WIDTH-18)		2	14						14		0		ITEM_ALIGN_CENTER	ITEM_ALIGN_MIDDLE	/* CUSTOMIZED ICON	*/
+		onfocus
+		{
+			play CHOICE_FOCUS_SOUND;
+		}
+		doubleclick
+		{
+			if( !GAME_DESC_VIS_ARG )
+			{
+				open "custom_select_from_fileshare";
+			}
+			else
+			{
+				RESET_CUSTOM_GAMEMODE_IF_CHANGED
+				setDvar ui_gametype dvarString( ui_preview ); 
+				play CHOICE_ACTION_SOUND;
+				execNow "xupdatepartystate";
+				deactivateBlur;
+				close self;
+			}
+		}
+		onListboxSelectionChange	{ play CHOICE_FOCUS_SOUND; }
+	}
+
+	CUSTOM_MODE_CUSTOMIZED_STAR( FRAME_CHOICE_X_START, ( FRAME_DEFAULT_HEIGHT/2 ) - 70, dvarInt( customGameMode ) )
+
+#ifdef PC
+	#define BUTTON_SPACING 20
+	#define RESET_BUTTON_OFFSET ( getTextWidth( locString( "@PLATFORM_BACK" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+	
+	FRAME_BACK_BUTTON_DEFAULT_ACTION( ON_ESC )
+	FRAME_BUTTON_PC_LEFT_OFFSET( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, RESET_BUTTON_OFFSET, "@PLATFORM_RESET_TO_DEFAULT", 
+		open popup_custom_confirm_revert;, when( dvarBool( customGameMode ) ) )
+#else //PC
+	FRAME_BACK_BUTTON_DEFAULT
+	CUSTOM_MODE_RESET_TO_DEFAULT_BUTTON( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, -76, open popup_custom_confirm_revert;, dvarBool( customGameMode ) )
+#endif //PC
+
+	#include "ui/safearea.menu"
+}
+
+#define MAPSELECT_NAME_X				20
+#define MAPSELECT_NAME_Y				(FRAME_CHOICE_Y_START-7)
+#define MAPSELECT_NAME_HEIGHT			30
+#define MAPSELECT_NAME_SIZE				MAPSELECT_IMAGE_WIDTH MAPSELECT_NAME_HEIGHT
+
+#define MAPSELECT_IMAGE_X				MAPSELECT_NAME_X
+#define MAPSELECT_IMAGE_Y				(MAPSELECT_NAME_Y + MAPSELECT_NAME_HEIGHT + 5)
+#define MAPSELECT_IMAGE_ASPECT_RATIO	0.675
+#define MAPSELECT_IMAGE_WIDTH			224
+#define MAPSELECT_IMAGE_HEIGHT			(MAPSELECT_IMAGE_WIDTH * MAPSELECT_IMAGE_ASPECT_RATIO)
+#define MAPSELECT_IMAGE_SIZE			MAPSELECT_IMAGE_WIDTH MAPSELECT_IMAGE_HEIGHT
+
+#define MAPSELECT_DESC_TITLE_HEIGHT		15
+#define MAPSELECT_DESC_TITLE_SIZE		MAPSELECT_IMAGE_WIDTH MAPSELECT_DESC_TITLE_HEIGHT
+#define MAPSELECT_DESC_X				MAPSELECT_NAME_X
+#define MAPSELECT_DESC_Y				(MAPSELECT_IMAGE_Y + MAPSELECT_IMAGE_HEIGHT + 10 )
+#define MAPSELECT_DESC_HEIGHT			50
+#define MAPSELECT_DESC_SIZE				MAPSELECT_IMAGE_WIDTH MAPSELECT_DESC_HEIGHT
+
+#define MAPSELECT_SIZE_X				MAPSELECT_NAME_X
+#define MAPSELECT_SIZE_Y				(MAPSELECT_DESC_Y+MAPSELECT_DESC_TITLE_HEIGHT+MAPSELECT_DESC_HEIGHT)
+#define MAPSELECT_SIZE_SIZE				MAPSELECT_IMAGE_WIDTH MAPSELECT_DESC_HEIGHT
+
+#define SWITCH_MAP_LIST_ACTION													\	
+		if( dvarBool( "dlc2" ) || dvarBool( "dlc3" ) || dvarBool( "dlc4" ) )	\
+		{																		\
+			if( dvarBool( ui_showDLCMaps ) )									\
+			{																	\
+				setDvar ui_showDLCMaps 0;										\
+				execNow movefeeder 0 map_selection;								\
+			}																	\
+			else																\
+			{																	\
+				setDvar ui_showDLCMaps 1;										\
+				execNow movefeeder 0 map_selection;								\
+			}																	\
+		}
+
+#define SWITCH_TO_MAPS_ACTION													\
+				setDvar ui_showDLCMaps 0;										\
+				execNow movefeeder 0 map_selection;								
+
+#define SWITCH_TO_DLC_ACTION													\
+				setDvar ui_showDLCMaps 1;										\
+				execNow movefeeder 0 map_selection;								
+
+#undef ON_ESC
+#define ON_ESC							\
+	deactivateBlur;						\
+	play uin_navigation_menu_lg_close;	\
+	close self;							\
+	setDvar settings_map_selected 0;
+
+#define CHOICE_TAB_TEXTSIZE				TEXTSIZE_SMALL
+#define TAB_1_TEXT						(locString( "@MPUI_MAPS_CAPS" ))
+#define TAB_2_TEXT						(locString( "@MPUI_DLC_MAPS_CAPS" ))
+
+#define TAB_BG_PAD						5
+#define TAB_1_WIDTH						( getTextWidth( TAB_1_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_2_WIDTH						( getTextWidth( TAB_2_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_HEIGHT						15
+
+#define MAP_TAB_1_X						NEW_FRAME_CHOICE_X_START
+#define MAP_TAB_2_X						( MAP_TAB_1_X + TAB_1_WIDTH )
+
+#define MAP_TAB_Y						( ( -NEW_FRAME_DEFAULT_HEIGHT / 2 ) + NEW_FRAME_HEADER_HEIGHT - TAB_HEIGHT )
+
+#define MAP_TAB_HEADER( visArg )																	\
+		/* highlighted header */																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_TAB_1_X,												\
+										MAP_TAB_Y,													\
+										TAB_1_WIDTH,												\
+										TAB_HEIGHT,													\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,				\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_ORANGE_RGB 1, when( visArg && dvarBool( ui_showDLCMaps ) == 0 ), ; )							\
+		/* non highlighted header */																\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_TAB_1_X,												\
+										MAP_TAB_Y,													\
+										TAB_1_WIDTH,												\
+										TAB_HEIGHT,													\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,				\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( visArg && dvarBool( ui_showDLCMaps ) == 1 ), TAB_MOUSEOVER_HIGHLIGHT; )	
+
+#define DLC_TAB_HEADER( visArg )																\
+		/* highlighted header */																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_TAB_2_X,												\
+										MAP_TAB_Y,													\
+										TAB_2_WIDTH,												\
+										TAB_HEIGHT,													\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,				\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_ORANGE_RGB 1, when( visArg && dvarBool( ui_showDLCMaps ) == 1 ), ; )							\
+		/* non highlighted header */																\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_TAB_2_X,												\
+										MAP_TAB_Y,													\
+										TAB_2_WIDTH,												\
+										TAB_HEIGHT,													\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,				\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( visArg && dvarBool( ui_showDLCMaps ) == 0 ), TAB_MOUSEOVER_HIGHLIGHT; )
+
+#define MAP_TAB_BG( px, pw, visArg )																\
+		itemDef																						\
+		{																							\
+			style           WINDOW_STYLE_SHADER_FRAMED												\
+			frame           16 0.2 FRAME_OPEN_BOTTOM												\
+			rect            0 MAP_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( px )															\
+			exp				rect W(	pw )															\
+			background      "menu_mp_tab_frame_inner"												\
+			forecolor       1 1 1 1																	\
+			visible         when( visArg )															\
+			decoration																				\
+		}	
+
+#define MAP_TAB_BUTTON( px, pw, actionArg, visArg )													\
+		itemDef																						\
+		{																							\
+			type			ITEM_TYPE_BUTTON_NO_TEXT												\
+			rect            0 MAP_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( px )															\
+			exp				rect W(	pw )															\
+			visible         when( visArg )															\
+			mouseenter		{ play CHOICE_FOCUS_SOUND; }											\
+			onFocus																					\
+			{																						\
+				play CHOICE_FOCUS_SOUND;															\ 
+			}																						\
+			action																					\
+			{																						\
+				play CHOICE_ACTION_SOUND;															\
+				actionArg;																			\
+			}																						\
+		}
+
+menuDef
+{
+	name					select_map
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+	openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+	closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+	onOpen	
+	{
+		activateBlur;
+		play uin_navigation_menu_lg_open;
+		setdvar invite_visible "0"; 
+		setDvar ui_preview dvarString( ui_mapname );
+		setDvar settings_map_selected 1;
+		setFocus map_selection;
+		setDvar ui_showDLCMaps 0;
+		execNow movefeeder ( GetMapIndexByName( map_selection, tableLookup( "mp/mapsTable.csv", 0, dvarString( ui_mapname )	, 3 ) ) ) map_selection;
+	}
+	onFocus { }
+	onClose
+	{
+		deactivateBlur;
+		setdvar invite_visible "1";
+	}
+	onESC
+	{
+		ON_ESC
+	}
+	execKeyInt K_LEFTARROW 
+	{
+		SWITCH_MAP_LIST_ACTION
+	}
+	execKeyInt K_RIGHTARROW 
+	{
+		SWITCH_MAP_LIST_ACTION
+	}
+		
+	FRAME_DEFAULT
+
+	FRAME_TITLE_DEFAULT( "@MPUI_CHANGE_MAP_CAPS", 1 )
+
+	#define MAPS_TAB_VISIBLE		( 1 )
+	#define DLC_TAB_VISIBLE			( dvarBool( "dlc2" ) || dvarBool( "dlc3" ) || dvarBool( "dlc4" ) )
+
+	MAP_TAB_BG( MAP_TAB_1_X, TAB_1_WIDTH, MAPS_TAB_VISIBLE )
+	MAP_TAB_HEADER( MAPS_TAB_VISIBLE )
+	MAP_TAB_BUTTON( MAP_TAB_1_X, TAB_1_WIDTH, SWITCH_TO_MAPS_ACTION, MAPS_TAB_VISIBLE )
+
+	MAP_TAB_BG( MAP_TAB_2_X, TAB_2_WIDTH, DLC_TAB_VISIBLE )
+	DLC_TAB_HEADER( DLC_TAB_VISIBLE )
+	MAP_TAB_BUTTON( MAP_TAB_2_X, TAB_2_WIDTH, SWITCH_TO_DLC_ACTION, DLC_TAB_VISIBLE )
+	
+	#define MAP_IMAGE					tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_preview )	, 0 )
+	#define MAP_NAME					tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_preview )	, 3 )
+	#define MAP_SIZE					tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_preview )	, 8 )
+	#define MAP_DESC					tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_preview )	, 6 )
+	
+	#define MAP_SELECT_DISPLAY( mapName, mapImage, mapSize, mapDesc, visArg )																			\
+			PREPROC_TEXT_DRAW_ALL(	MAPSELECT_NAME_X MAPSELECT_NAME_Y MAPSELECT_NAME_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,			\
+									mapName,																											\
+									TEXTSIZE_TITLE, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, UI_FONT_EXTRABIG, ITEM_TEXTSTYLE_NORMAL,						\
+									when( visArg );, ; )																								\
+			itemDef																																		\
+			{																																			\
+				style			WINDOW_STYLE_SHADER_STREAMED																							\
+				type			ITEM_TYPE_IMAGE																											\
+				rect			MAPSELECT_IMAGE_X MAPSELECT_IMAGE_Y MAPSELECT_IMAGE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER					\
+				forecolor		1 1 1 1																													\
+				exp				material( mapImage )																									\
+				visible			when( visArg )																											\
+				decoration																																\
+			}																																			\
+			PREPROC_TEXT_DRAW_VIS(	MAPSELECT_DESC_X MAPSELECT_DESC_Y MAPSELECT_DESC_TITLE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,			\
+									"@MPUI_DESCRIPTION_CAPS",																							\
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 0 0 0 0.8,																\
+									when( visArg ); )																									\
+			PREPROC_TEXT_DRAW_VIS_EX(	MAPSELECT_DESC_X (MAPSELECT_DESC_Y+15) MAPSELECT_DESC_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	\
+										mapDesc,																										\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,																\
+										when( visArg );, autowrapped )																					\
+			PREPROC_TEXT_DRAW_VIS(	MAPSELECT_SIZE_X MAPSELECT_SIZE_Y MAPSELECT_DESC_TITLE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,			\
+									"@MPUI_MAP_SIZE_CAPS",																								\
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 0 0 0 0.8,																\
+									when( visArg ); )																									\
+			PREPROC_TEXT_DRAW_VIS(	MAPSELECT_SIZE_X (MAPSELECT_SIZE_Y+15) MAPSELECT_SIZE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,		\
+									mapSize,																											\
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,																	\
+									when( visArg ); )
+
+	MAP_SELECT_DISPLAY( "@" + MAP_NAME + "_CAPS", "menu_" + dvarString( ui_preview ) + "_map_select_final", "@MPUI_MAPSIZE_" + MAP_SIZE, "@" + MAP_DESC, 1 )
+
+	// map selection ===========================================
+	itemDef 
+	{
+		name						map_selection
+		type						ITEM_TYPE_LISTBOX
+		feeder						FEEDER_MAPS
+		rect						(FRAME_CHOICE_X_START-1) (FRAME_CHOICE_Y_START-3) FRAME_BUTTON_WIDTH 308 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		elementwidth				30
+		elementheight				19
+		noscrollbars
+		noBlinkingHighlight
+		textfont					CHOICE_TEXTFONT
+		textscale					CHOICE_TEXTSIZE
+		forecolor					CHOICE_TEXTCOLOR
+		focusColor					COLOR_TITLE
+		disablecolor				FRAME_GREY_RGB 1
+		textstyle					ITEM_TEXTSTYLE_NORMAL
+		modal
+		visible						when( dvarBool( settings_map_selected ) )
+		/*							x		y		w						h		len		horzAlign			vertAlign			*/
+		userarea	3				0		0		(FRAME_BUTTON_WIDTH+1)	19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* FEEDER_MAPSELECTION_COLUMN_BACKGROUND	*/
+									17		0		FRAME_BUTTON_WIDTH		19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE 	/* FEEDER_MAPSELECTION_COLUMN_NAME			*/
+									0		1		17  					18		16		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE 	/* FEEDER_MAPSELECTION_COLUMN_A_BUTTON		*/
+		onfocus 					{ play CHOICE_FOCUS_SOUND; }
+		onListboxSelectionChange	{ play CHOICE_FOCUS_SOUND; }
+		doubleclick					
+		{ 
+			setDvar ui_mapname dvarString( ui_preview ); 
+			play CHOICE_ACTION_SOUND; 
+			execNow "xupdatepartystate"; 
+			deactivateBlur; 
+			close self; 
+		}
+		execKeyInt DPAD_LEFT							
+		{
+			SWITCH_MAP_LIST_ACTION
+		}												
+		execKeyInt DPAD_RIGHT							
+		{
+			SWITCH_MAP_LIST_ACTION					
+		}												
+		execKeyInt APAD_LEFT							
+		{
+			SWITCH_MAP_LIST_ACTION					
+		}												
+		execKeyInt APAD_RIGHT							
+		{
+			SWITCH_MAP_LIST_ACTION					
+		}
+	}
+
+#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT_ACTION( ON_ESC )
+#else //#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT
+#endif //#ifdef PC
+
+	#include "ui/safearea.menu"
+}
+
+#include "ui_mp/popupstyle.inc"
+
+menuDef																			    
+{                                                                           
+	SYSTEM_POPUP_SETUP_VIS( menu_game_mode_upload_confirm, activateblur; execNow raiseFeederEvent Populate;, deactivateblur; close self;, 1 )					                                                              
+	onClose	                                                                
+	{                                                                       
+		deactivateblur;                                                     
+		play CHOICE_FOCUS_SOUND;                                            
+		execNow raiseFeederEvent Clear;                                           
+	}  	
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )													
+
+	itemDef                                                                 
+	{		                                                                
+		DYNAMIC_MENU_COMMON_FIELDS                                          
+		backgroundItemListbox		"white"                                 
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400	            
+		menuItemsDef                                                        
+		{                                                                   
+			maxRows 4                                                       
+			DYNAMIC_MENU_COMMON_COLUMNS                                     
+			menuColDef                                                      
+			{                                                               
+				type MENU_ITEM_TYPE_LOC_TEXT                                
+					rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE 
+					maxChars 50                                                 
+			}                                                               
+		}                                                                   
+		onEvent Yes			                                                
+		{	                                                                    
+			open menu_game_mode_upload_save;                                         
+			close self;                                                     
+		}                                                                   
+		onEvent No			{	close self;				}                   
+		onEvent Clear		{	execNow clearFeeder;	}                   
+		onEvent Populate	{	                                            
+								execNow addToFeeder Yes	MENU_YES;	                            
+								execNow	addToFeeder	No	MENU_CANCEL;	                        	
+							}                                                                   
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}       
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		    
+		execNow raiseFeederEvent; 	}       
+	}                                                                       
+} 
+
+// Redefinitions for MEDIUM_POPUP_SETUP popups
+#undef	POPUP_WIDTH
+#define	POPUP_WIDTH								MEDIUM_POPUP_WIDTH		
+#undef	POPUP_HEIGHT
+#define	POPUP_HEIGHT							MEDIUM_POPUP_HEIGHT
+#undef	CHOICE_SIZE_X			
+#define CHOICE_SIZE_X							(POPUP_WIDTH-(POPUP_SIDE_PAD*2))
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START							POPUP_Y_START_TOP
+#undef	PLAYER_INFO_ALIGN
+#define PLAYER_INFO_ALIGN						// Purposely set to nothing. The popup setup macro sets the alignment. If items within it set their own aligment, they end up offset incorrectly.
+#undef	PLAYER_INFO_X_START
+#define	PLAYER_INFO_X_START( frameWidth )		( frameWidth - PLAYER_INFO_WIDTH - PLAYER_INFO_PAD )
+#undef	PLAYER_INFO_Y_START
+#define	PLAYER_INFO_Y_START( frameHeight )		( PLAYER_INFO_PAD * 2 )
+#undef	BG_BACKCOLOR
+#define BG_BACKCOLOR							POPUP_BACKCOLOR
+// Redefinitions for MEDIUM_POPUP_SETUP popups
+
+#define GAME_MODE_FILESHARE_UPLOAD_ACTION																		\
+		execNow uploadCustomGametype ( getFeederData( "menu_game_mode_upload", "fileShareSlots", "slot" ) );	\
+		setdvar customGameMode 1;																				\
+		execNow "xupdatepartystate";
+
+menuDef                                                                                     											
+{                                                                                           											
+	MEDIUM_POPUP_SETUP_VIS( menu_game_mode_upload_save, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )	
+	onClose	                                                                                											
+	{                                                                                       											
+		deactivateblur;                                                                     	 										
+		play CHOICE_FOCUS_SOUND;                                                            											
+	}                                                                                       											
+	MEDIUM_POPUP_TITLE_VIS( "@MENU_SAVE_INFORMATION_CAPS", 1 )																			
+																																		
+	PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+							locString( "@MPUI_TITLE" )+" :",																			
+							TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+							1 )																											
+	FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+	PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+							locString( "@MPUI_DESCRIPTION" )+" :",																		
+							TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+							1 )																											
+	FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+	FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						GAME_MODE_FILESHARE_UPLOAD_ACTION; close self; close menu_game_mode_upload; )					
+	MEDIUM_POPUP_BACK_BUTTON																											
+} 

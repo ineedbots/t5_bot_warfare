@@ -1,0 +1,7 @@
+// MP patch menu defs
+//
+{
+// 	loadMenu { "ui/patch.menu" }
+// 	loadMenu { "ui/patch_popups.menu" }
+	loadMenu { "ui_mp/mods.menu" }
+}

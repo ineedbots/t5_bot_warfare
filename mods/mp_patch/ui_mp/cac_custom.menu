@@ -1,0 +1,32 @@
+#include "ui/menudef.h"
+
+// ----------------- allocate stat for custom class settings -------------------
+
+// custom class stats stat numbers
+#include "ui_mp/cac_stats.inc"
+
+#define CAC_DEFAULT_PRIMARY_GRENADE				GetDefaultClassSlot( dvarstring( ui_class ), "primarygrenade" )
+#define CAC_DEFAULT_PRIMARY						GetDefaultClassSlot( dvarstring( ui_class ), "primary" )
+// no default primary attachments for now
+#define CAC_DEFAULT_PRIMARY_ATTACHMENT			0
+#define CAC_DEFAULT_SECONDARY					GetDefaultClassSlot( dvarstring( ui_class ), "secondary" )
+// no default secondary attachments for now
+#define CAC_DEFAULT_SECONDARY_ATTACHMENT		0
+#define CAC_DEFAULT_SPECIALTY1					GetDefaultClassSlot( dvarstring( ui_class ), "specialty1" )
+#define CAC_DEFAULT_SPECIALTY2					GetDefaultClassSlot( dvarstring( ui_class ), "specialty2" )
+#define CAC_DEFAULT_SPECIAL_GRENADE				GetDefaultClassSlot( dvarstring( ui_class ), "specialgrenade" )
+// no default camo for now
+#define CAC_DEFAULT_CAMO						0
+#define CAC_DEFAULT_DEATHSTREAK					GetDefaultClassSlot( dvarstring( ui_class ), "deathstreak" )
+#define CAC_DEFAULT_KILLSTREAK_TIER1			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak1" )
+#define CAC_DEFAULT_KILLSTREAK_TIER2			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak2" )
+#define CAC_DEFAULT_KILLSTREAK_TIER3			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak3" )
+
+// custom class name
+#define CAC_MENU_NAME				"menu_cac_custom"
+
+#include "ui_mp/common_macro.inc"
+
+{			
+	#include "ui_mp/cac.inc"
+}

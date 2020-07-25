@@ -1,0 +1,4006 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/popup_player_info.inc"
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/overlaybg.inc"
+#include "ui/choices_setup_popmenu.menu"
+#include "ui_mp/item_listbox.inc"
+
+#include "ui_mp/fileshare.inc"
+
+
+#undef CHOICE_SIZE_X
+#ifdef PC
+#define CHOICE_SIZE_X			240
+#else
+#define CHOICE_SIZE_X			260
+#endif
+
+#undef	CHOICE_X_START
+#define CHOICE_X_START			0
+
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START			85
+#undef	CHOICE_TEXTSTYLE
+#define CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+
+
+#define CLIP_SELECTED( menuName, feederName ) \
+	( getFeederData( menuName, feederName, "fileType" ) == "clip" )
+
+
+#include "ui_mp/switch_lobbies.inc"
+
+#define IS_LOBBY_HOST		( gameHost() && inLobby() )
+#define IS_NOT_LOBBY_HOST	( !gameHost() || !inLobby() )
+
+#define ACTION_GOTO_THEATER( isUserFile, menuName, feedername )				\
+			if( menuisopen( "menu_cr_matches_heat_map" ) ) \
+			{ \
+				execNow set ui_theater_mapname (GetFileshareGameMap(dvarInt("selectedRecentGameIndex")));	\
+				execNow set ui_theater_gametype (GetFileshareGameType(dvarInt("selectedRecentGameIndex")));	\
+				execNow set ui_theater_demoname (GetFileshareFileName(dvarInt("selectedRecentGameIndex")));	\
+				execNow set ui_theater_fileid (GetFileshareFileId(dvarInt("selectedRecentGameIndex")); \
+				execNow set ui_theater_filesize (GetFileshareFileSize(dvarInt("selectedRecentGameIndex"))); \
+				setdvar ui_combatResetViewDvars "0"; \
+				closeImmediate menu_cr_matches_heat_map; \
+			} \
+			else \
+			{ \
+				execNow set ui_theater_mapname (getFeederData( menuName, feedername, "map" )); \
+				execNow set ui_theater_gametype (getFeederData( menuName, feedername, "gametype" )); \
+				execNow set ui_theater_demoname (getFeederData( menuName, feedername, "fileName" )); \
+				execNow set ui_theater_fileid (getFeederData( menuName, feedername, "fileID" )); \
+				execNow set ui_theater_filesize (getFeederData( menuName, feedername, "fileSize" )); \
+				closeImmediate menuName; \
+			} \
+			if ( dvarInt( "xblive_theater" ) == 0 ) \
+			{ \
+				if ( IS_LOBBY_HOST ) \
+				{ \
+					execNow "xstopparty"; \
+					execNow "xstopprivateparty"; \
+				} \
+				elseif ( PrivatePartyHost() ) \
+				{ \
+					execNow "xstopprivateparty"; \
+				} \
+				START_ACTION_THEATER \
+				execNow "setactivemenu theater"; \
+			}	\
+			execNow set ui_mapname (dvarString( ui_theater_mapname )); \
+			execNow set ui_gametype (dvarString( ui_theater_gametype )); \
+			execNow set ui_demoname (dvarString( ui_theater_demoname )); \
+			execNow xpartyupdatedemo ( isUserFile ) ( dvarString( ui_theater_fileid ) ) ( dvarString( ui_theater_filesize ) ) "Film.demo"; \
+			execNow "xupdatepartystate"; \
+			execnow set fsOtherUserSlotSelected 0; \
+			close fileshare_recentfilms;		\
+			close fileshare_landingpage;		\
+			close menu_playercard;				\
+			close menu_playercard_self;			\
+			close menu_playercard_self_basictraining;	\
+			close menu_friends;					\
+			close self;
+
+#define ACTION_GOTO_CUSTOMGAME( isUserFile, menuName, feedername )				\
+			execNow set ui_theater_custom_fileid (getFeederData( menuName, feedername, "fileID" )); \
+			execNow set ui_theater_custom_filesize (getFeederData( menuName, feedername, "fileSize" )); \
+			close menuName;						\
+			if ( dvarInt( "xblive_privatematch" ) == 0 ) \
+			{ \
+				if ( IS_LOBBY_HOST ) \
+				{ \
+					execNow "xstopparty"; \
+					execNow "xstopprivateparty"; \
+				} \
+				START_ACTION_PRIVATEMATCH \
+				execNow "setactivemenu private"; \
+			}	\
+			execNow "xupdatepartystate"; \
+			execNow downloadCustomGametype ( dvarString( ui_theater_custom_fileid ) ) ( dvarString( ui_theater_custom_filesize ) ); \
+			execnow set fsOtherUserSlotSelected 0; \
+			close fileshare_recentfilms;		\
+			close fileshare_landingpage;		\
+			close menu_playercard;				\
+			close menu_playercard_self;			\
+			close menu_playercard_self_basictraining;	\
+			close menu_friends;					\
+			close self;				
+
+#define ACTION_VIEW_SCREENSHOT( menuName, feedername ) \
+		if ( !( FILESHARE_TASKSINPROGRESS ) ) \
+		{ \
+			execNow screenshotDownload ( getFeederData( menuName, feedername, "fileID" ) ) ( getFeederData( menuName, feedername, "fileSize" ) ); \
+			open menu_screenshot; \
+		}
+
+// =========================================================================================
+// MY FILE SHARE
+//	menu_fileshare_myshare
+//			Shows the user's file share slots with details on the right
+//
+//	menu_fileshare_myshare_options
+//			Brings up options when a slot is selected
+//
+//  menu_fileshare_myshare_remove
+//			Shows a file remove confirmation
+// =========================================================================================
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION															\
+	deactivateBlur;																\
+	if ( dvarInt( ui_theater_shortcut ) != 1 && dvarInt( ui_theater_shortcut_pc ) != 1 ) { \
+			if ( dvarInt( xblive_basictraining ) )																		\
+					{																											\
+						open menu_playercard_self_basictraining;																\
+					}																											\
+					else																										\
+					{																											\
+						open menu_playercard_self;																				\
+					}															\
+	};	\
+	close self;
+
+menuDef
+{
+	name					menu_fileshare_myshare
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT  
+	
+	onOpen	
+	{
+		activateBlur;
+		execnow readFileShare;
+		execnow ui_animate menu_fileshare_myshare FileUpdater SetFile 0;
+	}
+	onFocus 
+	{ 
+	}
+	onClose	
+	{
+		if ( dvarInt( ui_theater_shortcut ) == 1 ) 
+		{ 
+			setdvar ui_theater_shortcut 0; 
+			CHANGE_MENU_SLIDE_DIRECTION( menu_fileshare_myshare, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT ) 
+		}
+		elseif ( dvarInt( ui_theater_shortcut_pc ) == 1 )
+		{
+			setdvar ui_theater_shortcut_pc 0;
+			CHANGE_MENU_SLIDE_DIRECTION( menu_fileshare_myshare, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT ) 
+			open main;
+		}
+	}
+	onESC	
+	{
+		ON_ESC_ACTION
+	}
+	
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYSHARE_CAPS", when( 1 ) )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	itemDef 
+	{
+		name				fileShareSlots
+		type				ITEM_TYPE_LISTBOX
+		feeder				FEEDER_FILESHARE_MYSLOTS
+		FILESHARE_COMMON_OPTIONS
+		origin				0 0
+		elementwidth		70
+		elementheight		67
+		elementtype			LISTBOX_TEXT	
+		textalign			ITEM_ALIGN_MIDDLE_CENTER
+		textfont			UI_FONT_NORMAL
+		textscale			TEXTSIZE_SUBTITLE
+		forecolor			CHOICE_TEXTCOLOR
+		modal
+		doubleclick			
+		{ 
+			if ( getFeederData( "slotOccupied" ) && !( FILESHARE_TASKSINPROGRESS ) )
+			{
+				 play CHOICE_FOCUS_SOUND;          
+				open menu_fileshare_myshare_options;
+			}
+		}
+		onListboxSelectionChange
+		{
+			play CHOICE_FOCUS_SOUND;
+			execnow set fsSelectedFileID ( getFeederData( "fileID" ) );
+		}
+
+		visible				1
+
+		FILESHARE_SLOTS_USERAREAS
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )
+
+	/* SLOT OCCUPIED */
+#define SLOT_OCCUPIED_CONDITION \
+	getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0
+	
+#undef FILESHARE_SELECTOR_TOOLTIP_Y	
+#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y FILESHARE_TOOLTIP_PC_Y
+#else //#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y 95
+#endif //#ifdef PC
+
+	// Tooltip - Occupied Slot
+	PREPROC_TEXT_DRAW_VIS_EX( -255 FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MENU_FILESHARE_SLOTDESC" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( SLOT_OCCUPIED_CONDITION ), autowrapped; )
+	PREPROC_SHADER_DRAW_VIS_EX( -265 FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( SLOT_OCCUPIED_CONDITION ), ; )																							
+
+	// Tooltip - Empty Slot
+	PREPROC_TEXT_DRAW_VIS_EX( -255 FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MENU_FILESHARE_EMPTYSLOTDESC" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( SLOT_EMPTY_CONDITION( "menu_fileshare_myshare", "fileShareSlots" ) ), autowrapped; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( -265 FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( SLOT_EMPTY_CONDITION( "menu_fileshare_myshare", "fileShareSlots" ) ), ; )																							
+
+	FILESHARE_SPINNER( 145, -45, when( isTaskInProgress( "LiveFileShareRemoveFile" ) == 1 ), 350 )
+
+	execKeyInt APAD_UP
+	{
+		execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_UP
+	{
+		execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt APAD_DOWN
+	{
+		execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_DOWN
+	{
+		execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt APAD_LEFT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt DPAD_LEFT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt APAD_RIGHT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt DPAD_RIGHT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	itemDef
+	{
+		name	"FileUpdater"
+		type	ITEM_TYPE_TEXT
+		rect	0 0 1 1
+		visible 1
+		decoration
+		text	""
+
+		state
+		{
+			name	"SetFile"
+			onEnter
+			{
+				execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+				changeState "Wait" 0;
+			}
+		}
+
+		state
+		{
+			name "Wait"
+			onEnter
+			{
+				changeState "SetFile" 100;
+			}
+		}
+	}
+
+#ifdef CONSOLE
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-146 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				text( int( getFeederData( "fileShareSlots", "slot" ) ) )
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_SMALL
+		visible			1
+		decoration  
+	}
+#endif
+
+#ifndef PC
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-160 (FILESHARE_FRAME_HEIGHT/2) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		text			"@PLATFORM_SELECT" 
+		textfont		CHOICE_TEXTFONT  
+
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_LEFT  
+		visible			when( getFeederData( "fileShareSlots", "slotOccupied" ) == 1 )
+		decoration  
+	} 
+#endif //#ifndef PC
+
+	NEW_FRAME_BUTTON_NOICON( 1, 28 0 0 18 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "", execnow "updatemarketplace";, ;, ;, 1, ;, ; )  
+	//FILESHARE_LIVEBLURB( -271, 50, 290, 100, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, !IsPremiumSubscriber(), ( localVarInt( ui_highlight ) == 1 ) )
+	
+#ifdef CONSOLE
+	#define SLOTNUMRECT	rect	-146 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+	#define OFNUMRECT	rect	-142 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		SLOTNUMRECT
+		exp				text( int( getFeederData( "fileShareSlots", "slot" ) ) )
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT
+		textalign		ITEM_ALIGN_MIDDLE_RIGHT
+		forecolor		1 1 1 1
+		visible			1
+		decoration  
+	} 
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		OFNUMRECT
+		text			"@MENU_FILESHARE_OF18" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT
+		textalign		ITEM_ALIGN_MIDDLE_LEFT  
+		forecolor		1 1 1 1
+		visible			when( IsPremiumSubscriber() )
+	}
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		OFNUMRECT
+		text			"@MENU_FILESHARE_OF6" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT
+		textalign		ITEM_ALIGN_MIDDLE_LEFT  
+		forecolor		1 1 1 1
+		visible			when( !IsPremiumSubscriber() )
+	}
+	
+	#define SLOTNUMARROWPOSITIONY 75
+
+	// Top Arrow
+	PREPROC_SHADER_DRAW_VIS_EX( -114 SLOTNUMARROWPOSITIONY 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_left", COLOR_BODY_TEXT, when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 ), rotation 90; )																							
+
+	// Bottom Arrow 1
+	PREPROC_SHADER_DRAW_VIS_EX( -107 SLOTNUMARROWPOSITIONY 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), rotation 90; )
+
+	// Bottom Arrow 2
+	PREPROC_SHADER_DRAW_VIS_EX( -114 SLOTNUMARROWPOSITIONY 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( IsPremiumSubscriber() && getFeederData( "fileShareSlots", "slot" ) <= 6 ), rotation 90; )
+#endif //#ifdef CONSOLE
+	// Details
+	FILESHARE_DETAILS( 35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, "menu_fileshare_myshare", "fileShareSlots", SLOT_OCCUPIED_CONDITION )
+
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC_ACTION )
+			
+	#include "ui/safearea.menu"
+}
+
+
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION		\
+	deactivateBlur;			\
+	close self;    
+
+menuDef
+{
+	name					fileshare_mymovie
+	rect					0 0 640 480
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC
+
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+
+	// Title and Subtitle if we are through the playercard
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYMOVIE_CAPS", when( 1 ) )
+	
+	onOpen                                                                                  
+	{                                                                                       
+		activateblur;                                                                       		
+	}                                                                                       
+	onClose	                                                                                
+	{                                                                                       
+		deactivateblur;                                                                     
+		play CHOICE_FOCUS_SOUND;                                                            		
+	}                                                                                       
+	onFocus { }                                                                             
+	onESC                                                                                   
+	{                                                                                       
+		ON_ESC_ACTION                                                                                  
+	}    
+
+	execKeyInt BUTTON_X
+	{
+		close self;
+	}
+
+	execKeyInt BUTTON_B
+	{
+		if ( dvarInt( ui_theater_shortcut ) != 1 && dvarInt( ui_theater_shortcut_pc ) != 1 ) { 
+					if ( dvarInt( xblive_basictraining ) )																		
+					{																											
+						open menu_playercard_self_basictraining;																
+					}																											
+					else																										
+					{																											
+						open menu_playercard_self;																				
+					}
+		};
+		close self;
+		close menu_fileshare_myshare;
+	}
+
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	FILESHARE_MOVIE( -271, -125, 290, 165, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, getMySlotInfo( 20, "slotOccupied" ) == 1, ( localVarInt( ui_highlight ) == 3 ) )
+	FILESHARE_NOMOVIE( -150, -100, 300, 200, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, getMySlotInfo( 20, "slotOccupied" ) != 1, ( localVarInt( ui_highlight ) == 3 ) )
+
+#define FILESHARE_MOVIE_ACTION \
+	if ( getMySlotInfo( 20, "slotOccupied" ) == 1 )	\
+	{	\
+		execnow set fsSelectedFileName (  getMySlotInfo( 20, "name" ) );	\
+		execnow set fsIsSelectedFileNameModified (  getMySlotInfo( 20, "isModifiedName" ) );	\
+		execnow set fsSelectedFileDescription (  getMySlotInfo( 20, "description" ) );	\
+		execnow set fsIsSelectedFileDescriptionModified (  getMySlotInfo( 20, "isModifiedDescription" ) );	\
+		open menu_fileshare_mymovie_options;	\
+	}	
+
+	FILESHARE_MOVIE_DETAILS( 35, -20, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, getMySlotInfo( 20, "slotOccupied" ) == 1 )
+
+	itemDef                                                                         
+	{                                                                               
+		style WINDOW_STYLE_SPINNER                                                  
+		rect  -271 -125 290 165 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+    	visible when( isTaskInProgress( "LiveFileShareRemoveFile" ) == 1 )                                                   
+		decoration                                                                  
+	}
+
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC_ACTION )
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-210 206 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		text			"@PLATFORM_FILESHARE_MYFILESHARE" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_LEFT  
+		visible			1
+		decoration  
+	} 
+}
+
+
+
+
+
+// =========================================================================================
+// FILE SHARE (OTHER PLAYER)
+//	menu_fileshare_share
+//			Shows the user's file share slots with details on the right
+//
+//	menu_fileshare_share_options
+//			Brings up options when a slot is selected
+// =========================================================================================
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION		\
+	deactivateBlur;			\
+	close self;				\
+	open menu_playercard;
+
+menuDef
+{
+	name					menu_fileshare_share
+	rect					0 0 640 480
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT 
+	
+	onOpen	
+	{
+		activateBlur;
+		execnow readFileShare ( dvarString( selectedPlayerXuid ) );
+		execnow ui_animate menu_fileshare_share FileUpdater SetFile 0;
+	}
+	onFocus 
+	{ 
+	}
+	onClose	
+	{		
+		deactivateBlur;
+	}
+	onESC	
+	{
+		ON_ESC_ACTION
+	}
+	
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, dvarString("selectedFriendName") + locString("MENU_APOSTROPHE_S")+" "+locString("MENU_PLAYERCARD_CAPS"), 1 )
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_CAPS", 1 )
+
+	FRIEND_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	itemDef 
+	{
+		name				fileShareSlots
+		type				ITEM_TYPE_LISTBOX
+		feeder				FEEDER_FILESHARE_SLOTS
+		FILESHARE_COMMON_OPTIONS			
+		elementwidth		70
+		elementheight		70
+		elementtype			LISTBOX_TEXT	
+		textstyle			ITEM_TEXTSTYLE_SHADOWED
+		textalign			HORIZONTAL_ALIGN_LEFT
+		textfont			UI_FONT_NORMAL
+		forecolor			CHOICE_TEXTCOLOR
+		modal
+		doubleclick			
+		{ 
+			if ( getFeederData( "slotOccupied" ) )
+			{
+				play CHOICE_FOCUS_SOUND;          
+				execnow set fsSelectedFileName ( getFeederData( name ) );
+				execnow set fsIsSelectedFileNameModified ( getFeederData( isModifiedName ) );
+				execnow set fsSelectedFileDescription ( getFeederData( description ) );
+				execnow set fsIsSelectedFileDescriptionModified ( getFeederData( isModifiedDescription ) );
+				execnow set fsOtherUserSlotSelected ( getFeederData ( "menu_fileshare_share", "fileShareSlots", "slot" ) );
+				open menu_fileshare_share_options;
+			}
+		}
+		onListboxSelectionChange
+		{
+			play CHOICE_FOCUS_SOUND;
+		}
+
+		visible	when( isTaskInProgress( "LiveFileShareGetListing" ) != 1 )
+
+		FILESHARE_SLOTS_USERAREAS
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 0 )		
+
+	// File details
+	FILESHARE_DETAILS(	35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_fileshare_share", "fileShareSlots", 
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )
+
+	FILESHARE_PROGRESS_INDICATOR_SIZE( 250, -120, 24, 24, 0, ( isTaskInProgress( "LiveFileShareSearch" ) == 1 || isTaskInProgress( "LiveFileShareTransfer" ) == 1 ) )
+
+#ifdef CONSOLE
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-136 170 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				text( int( getFeederData( "fileShareSlots", "slot" ) ) )
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_RIGHT
+		visible			when( isTaskInProgress( "LiveFileShareGetListing" ) != 1 )
+		decoration  
+	} 
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-132 170 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				text( locString( "MENU_FILESHARE_OF" ) + " " + dvarInt( fsMaxPrivateSlotRowsOther ) * 3 )
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_LEFT  
+		visible			when( isTaskInProgress( "LiveFileShareGetListing" ) != 1 )
+		decoration  
+	} 
+#endif //#ifdef CONSOLE
+
+	itemDef
+	{
+		name	"FileUpdater"
+		type	ITEM_TYPE_TEXT
+		rect	0 0 1 1
+		visible 1
+		decoration
+		text	""
+
+		state
+		{
+			name	"SetFile"
+			onEnter
+			{
+				execnow set fsOtherUserSlotSelected ( getFeederData( "fileShareSlots", "slot" ) );
+				execnow set fsSelectedFileID ( getFeederData( "fileShareSlots", "fileID" ) );
+				changeState "Wait" 0;
+			}
+		}
+
+		state
+		{
+			name "Wait"
+			onEnter
+			{
+				changeState "SetFile" 100;
+			}
+		}
+	}
+
+	execKeyInt APAD_LEFT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt DPAD_LEFT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt APAD_RIGHT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	execKeyInt DPAD_RIGHT
+	{
+		play CHOICE_FOCUS_SOUND;
+	}
+
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC_ACTION )
+		
+	#include "ui/safearea.menu"
+}
+#include "ui_mp/popupstyle.inc"
+
+menuDef                                                        
+{                                                              
+	name					menu_fileshare_share_transfer                           
+	rect					0 0 640 480                        
+	focuscolor				COLOR_FOCUSED                      
+	style					WINDOW_STYLE_FILLED                
+	priority				MENU_PRI_ONTOP                     
+	soundloop 				MENU_MUSIC                         
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED				
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED				
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT                                                    
+	onOpen	                                                   
+	{                                                          
+		activateBlur;
+		READ_FILE_SHARE;    
+	}                                                          
+	onFocus                                                    
+	{                                                          
+		play CHOICE_FOCUS_SOUND;                                   
+	}                                                          
+	onClose	                                                   
+	{                                                          
+		deactivateblur;                                                
+	}                                                          
+	onESC	                                                   
+	{                                                                        
+		close self;                                            
+	}                                   
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	                                             
+
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT ) 
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYSHARE_CAPS", 1 )	
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_CHOOSESLOT", 1 )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )	
+
+	itemDef                                                                                      
+	{                                                                                       
+		name				fileShareSlots                                                  
+		type				ITEM_TYPE_LISTBOX                                               
+		feeder				FEEDER_FILESHARE_MYSLOTS                                        
+		FILESHARE_COMMON_OPTIONS 
+		elementwidth		70                                                              
+		elementheight		70                                                              
+		elementtype			LISTBOX_TEXT	                                                
+		textalign			HORIZONTAL_ALIGN_LEFT                                           
+		textfont			UI_FONT_NORMAL                                                  
+		forecolor			CHOICE_TEXTCOLOR                                                     
+		modal											                                    
+		doubleclick	                                                                        
+		{                                                                                   
+			if ( !( FILESHARE_TASKSINPROGRESS ) )                                       
+			{                                                                           
+				play CHOICE_FOCUS_SOUND;                                                
+				if ( getFeederData( "slotOccupied" ) != 1 )                             
+				{                                                                       
+					open menu_fileshare_share_transfer_save;                                             
+				}                                                                       
+				else                                                                    
+				{                                                                       
+					open menu_fileshare_share_transfer_confirm;                                          
+  				}                                                                       
+			}                                                                               
+		}                                                                                   
+		onListboxSelectionChange    { play CHOICE_FOCUS_SOUND;  }                           
+		visible				1                                                               
+		FILESHARE_SLOTS_USERAREAS	                                                        
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )			                                                                            
+	FILESHARE_DETAILS(	35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_fileshare_share_transfer", "fileShareSlots",													
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )	
+
+#ifdef CONSOLE	
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF6") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( !IsPremiumSubscriber() ) )
+
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF18") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( IsPremiumSubscriber() ) )
+
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT,
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) <= 6 ), 
+								rotation 90; ) 
+#endif //#ifdef CONSOLE								
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, close self; )
+#else // #ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )		
+#endif // #else // #ifdef PC
+}    
+
+menuDef																			    
+{                                                                           
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_share_transfer_confirm, activateblur; execNow raiseFeederEvent Populate;, deactivateblur; close self;, 1 )					                                                              
+	onClose	                                                                
+	{                                                                       
+		deactivateblur;                                                     
+		play CHOICE_FOCUS_SOUND;                                            
+		execNow raiseFeederEvent Clear;                                           
+	}  	
+	
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )													
+     	
+	itemDef                                                                 
+	{		                                                                
+		DYNAMIC_MENU_COMMON_FIELDS                                          
+		backgroundItemListbox		"white"                                 
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400	            
+		menuItemsDef                                                        
+		{                                                                   
+			maxRows 4                                                       
+			DYNAMIC_MENU_COMMON_COLUMNS                                     
+			menuColDef                                                      
+			{                                                               
+				type MENU_ITEM_TYPE_LOC_TEXT                                
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE 
+				maxChars 50                                                 
+			}                                                               
+		}                                                                   
+		onEvent Yes			                                                
+		{	                                                                    
+			open menu_fileshare_share_transfer_save;                                         
+			close self;                                                     
+		}                                                                   
+		onEvent No			{	close self;				}                   
+		onEvent Clear		{	execNow clearFeeder;	}                   
+		onEvent Populate	{	                                            
+								execNow addToFeeder Yes	MENU_YES;	                            
+								execNow	addToFeeder	No	MENU_CANCEL;	                        	
+							}                                                                   
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}       
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		    
+										execNow raiseFeederEvent; 	}       
+	}                                                                       
+} 
+
+
+
+
+
+
+
+
+// =========================================================================================
+// RECENT GAMES (MY)
+//	menu_fileshare_myrecentgames
+//			Shows the list of recent games
+//
+//	menu_fileshare_myrecentgames_choose
+//			Options when one of those games are chosen
+//
+//	menu_fileshare_myrecentgames_transfer
+//			If the recent game is chosen to be transferred to file share, this brings up 
+//			the slot selection for tranfer
+// =========================================================================================
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION															\
+	deactivateBlur;																\
+	if ( dvarInt( ui_theater_shortcut ) != 1 && dvarInt( ui_theater_shortcut_pc ) != 1 ) { \
+			if ( dvarInt( xblive_basictraining ) )																		\
+					{																											\
+						open menu_playercard_self_basictraining;																\
+					}																											\
+					else																										\
+					{																											\
+						open menu_playercard_self;																				\
+					}															\ 
+	};	\
+	close self;
+
+#ifdef PC
+	#define MYRECENTGAMES_LISTBOX_PLATFORM_OPTIONS	\
+		usePaging
+#else //#ifdef PC
+	#define MYRECENTGAMES_LISTBOX_PLATFORM_OPTIONS	\
+		noscrollbars
+#endif //#ifdef PC
+
+menuDef
+{
+	name					menu_fileshare_myrecentgames
+	rect					0 0 640 480
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT 
+	
+	onOpen	
+	{
+		activateBlur;
+		execnow fileShareGetRecentGames;
+		execnow fileShareSetPooledFileContext "self";
+		//execnow fileShareExpireFileDetails;
+		execnow set fsSelectedFileID 0;
+	}
+	onFocus 
+	{ 	
+	}
+	onClose	
+	{
+		deactivateBlur;
+		if ( dvarInt( ui_theater_shortcut ) == 1 ) 
+		{ 
+			setdvar ui_theater_shortcut 0; 
+			CHANGE_MENU_SLIDE_DIRECTION( menu_fileshare_myrecentgames, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT ) 
+		}
+		elseif ( dvarInt( ui_theater_shortcut_pc ) == 1 )
+		{
+			setdvar ui_theater_shortcut_pc 0;
+			CHANGE_MENU_SLIDE_DIRECTION( menu_fileshare_myrecentgames, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT ) 
+			open main;
+		}
+	}
+	onESC	
+	{
+		ON_ESC_ACTION
+	}
+	
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+
+	// Title and Subtitle if we are through the playercard
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYRECENTGAMES_CAPS", when( 1 ) )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	itemDef
+	{ 
+		name						fileShareRecentGames
+		type						ITEM_TYPE_LISTBOX 
+		feeder						FEEDER_FILESHARE_SEARCHRESULTS
+		rect						-265 -127 250 230 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		origin						0 0 
+		elementwidth				30 
+		elementheight				16
+		elementtype					LISTBOX_TEXT 
+		textstyle					ITEM_TEXTSTYLE_NORMAL 
+		textfont					UI_FONT_NORMAL 
+		textscale					CHOICE_TEXTSIZE 
+		textalign					HORIZONTAL_ALIGN_LEFT
+		textalignx					12 
+		forecolor					CHOICE_TEXTCOLOR 
+		focusColor					CHOICE_TEXTCOLOR
+		disableColor				CHOICE_TEXTCOLOR 
+		#ifdef XENON 
+			selectIcon				"ui_button_xenon_3d_a_32x32"
+		#endif
+		#ifdef PS3
+			selectIcon				"ui_button_ps3_x_32x32"
+		#endif
+		outlinecolor				1 1 1 1
+		elementHighlightColor		0 0 0 1
+		elementBackgroundColor		NEW_FRAME_TRANSPARENCY
+		noBlinkingHighlight 
+		modal
+		MYRECENTGAMES_LISTBOX_PLATFORM_OPTIONS
+		/*					x	y	w	h	len	horzAlign		vertAlign*/			
+		userarea	1		10	-1	200	18	50	ITEM_ALIGN_LEFT	ITEM_ALIGN_TOP		
+		visible		1 
+		onListboxSelectionChange 
+		{ 
+			if( getFeederData( "count" ) > 1 )
+			{
+				play CHOICE_FOCUS_SOUND;
+			}
+		} 
+		doubleclick		
+		{	
+			if( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) && getFeederData( fileID ) != 0 )
+			{
+				execnow set fsSelectedFileName ( getFeederData( name ) );
+				execNow set fsSelectedRecentGameID ( getFeederData( fileID ) ); 
+				execnow set fsIsSelectedFileNameModified ( getFeederData( isModifiedName ) );
+				execnow set fsSelectedFileDescription ( getFeederData( description ) );
+				execnow set fsIsSelectedFileDescriptionModified ( getFeederData( isModifiedDescription ) );
+				open menu_fileshare_myrecentgames_choose;
+			}
+		}	
+	}
+
+#define FILESHARE_DETAILS_CONDITION \
+	( int( getFeederData( "fileShareRecentGames", "isSummaryLoaded" ) ) == 1 )
+
+	itemDef
+	{  
+		type			ITEM_TYPE_OWNERDRAW     
+		rect			75 -130 150 150 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		forecolor		1 1 1 1
+		ownerdraw		UI_DRAWHEATMAP      
+		visible 		when( FILESHARE_DETAILS_CONDITION )
+		decoration      
+	}
+
+	FILESHARE_PROGRESS_INDICATOR_SIZE( 150, 0, 64, 64, 0, ( !FILESHARE_DETAILS_CONDITION && FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) )
+
+	// File details
+	
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			0 0 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		text			"@MENU_FILESHARE_NORECENTGAME_MY" 
+		textfont		CHOICE_TEXTFONT  
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL  
+		forecolor		LIGHT_GRAY
+		visible			when ( !( FILESHARE_TASKSINPROGRESS ) &&  getFeederData( fileShareRecentGames, count ) < 1 )  
+		decoration  
+	} 
+
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX FILESHARE_MATCHDETAILS_BGY FILESHARE_MATCHDETAILS_BGW 300 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.1 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX (FILESHARE_MATCHDETAILS_BGY + 220 ) FILESHARE_MATCHDETAILS_BGW 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.2 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX (FILESHARE_MATCHDETAILS_BGY + 260) FILESHARE_MATCHDETAILS_BGW 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.2 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	/* BACKGROUND TEAM ICON */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX+ ( FILESHARE_MATCHDETAILS_W / 2 ) - 40 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 80 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,				
+									( "menu_mp_lobby_" + getPooledFileDetails( "mapTeam" ) ), 0.9 0.9 0.9 0.2,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" ),							
+									; )
+
+	/* BACKGROUND WAGER */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX + ( FILESHARE_MATCHDETAILS_W / 2 ) - 80 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 160 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "menu_mp_lobby_chipstack", 0.3 0.3 0.3 0.2, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "1" ), ; )																							
+
+	/* BACKGROUND FREEFORALL */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX + ( FILESHARE_MATCHDETAILS_W / 2 ) - 40 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 80 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "playlist_ffa", 0.3 0.3 0.3 0.2, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" ), ; )																							
+
+
+
+	/* TEXT KEY VALUES */
+	FILESHARE_TEXTITEM_KEY( 1, text ( locString( "@MENU_FILESHARE_DATETIME" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+	FILESHARE_TEXTITEM_VALUE( 1, text ( getFeederData( "fileShareRecentGames", "datetime" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 2, text ( locString( "@MENU_FILESHARE_LENGTH" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+	FILESHARE_TEXTITEM_VALUE( 2, text ( getFeederData( "fileShareRecentGames", "length" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 3, text ( locString( "MENU_FILESHARE_KILLS" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) ) 
+	FILESHARE_TEXTITEM_VALUE( 3, text ( getPooledFileDetails( "mapKills" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 4,	text ( locString( "MENU_FILESHARE_DEATHS" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) )
+	FILESHARE_TEXTITEM_VALUE( 4, text ( getPooledFileDetails( "mapDeaths" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) )
+
+	////////////////////////
+	// TEAM BASED MATCHES 
+	////////////////////////
+
+	/* TEAM ALLIES */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y + 35 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAlliesScore" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y - 23 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAlliesName" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}
+
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 4 ) - 20 )  ( FILESHARE_MATCHDETAILS_Y - 5 ) 40 40 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,				
+									( getPooledFileDetails( "mapAlliesIcon" ) ), 1 1 1 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" ),							
+									; )
+
+
+	/* TEAM AXIS */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y + 35 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAxisScore" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y - 23 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAxisName" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}
+
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + FILESHARE_MATCHDETAILS_W / 2 + ( FILESHARE_MATCHDETAILS_W / 4 ) - 20 )  ( FILESHARE_MATCHDETAILS_Y - 5 ) 40 40 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER ,				
+									( getPooledFileDetails( "mapAxisIcon" ) ), 1 1 1 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" ),							
+									; )
+
+
+	/* VICTORY, DEFEAT OR DRAW */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_VICTORY" ) )
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "victory" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DRAW" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT 
+		forecolor		NEW_FRAME_BLUE_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "draw" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DEFEAT" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "defeat" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	////////////////////////
+	// WAGER MATCHES
+	////////////////////////
+
+	// Placement medals
+	#define PLACEMENT_MEDAL_SIZE 40
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_first", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "1" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_second", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "2" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_third", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "3" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_fourth", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && int( getPooledFileDetails( "position" ) ) >= 4 && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	
+	PREPROC_TEXT_DRAW_VIS(	(FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) - 1 ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getPooledFileDetails( "position" ), 
+								TEXTSIZE_BIG, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.3, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && int( getPooledFileDetails( "position" ) ) >= 4 && getPooledFileDetails( "isValid" ) == "1" ); ) 
+		
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) + 2 ) ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_EARNINGS_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isWager" ) == "1" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y +15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MENU_POINTS", int( getPooledFileDetails( "wagerPayout" ) ) ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isWager" ) == "1" )
+		decoration		
+	}	
+
+	////////////////////////
+	// FREE FOR ALL
+	////////////////////////
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_VICTORY" ) )
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "0" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "position" ) == "1" )
+		decoration		
+	}	
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DEFEAT" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "0" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "position" ) != "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_POSITION_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y +15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "position" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_DEFAULT	
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" )
+		decoration		
+	}	
+
+
+	////////////////////////
+	// FREE FOR ALL AND WAGER
+	////////////////////////
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_SCORE_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" )
+		decoration		
+	}
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y + 15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "score" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" )
+		decoration		
+	}
+
+	// Tooltip - Recent Game
+	PREPROC_TEXT_DRAW_VIS_EX( -255 115 230 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MENU_FILESHARE_RECENTGAMESDESC" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ), autowrapped; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( -265 116 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", 1 1 1 1, when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ), ; )																							
+
+	
+	// Legend
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + 178 )  ( FILESHARE_MATCHDETAILS_Y - 157 ) 40 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_DEATHS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_LEFT
+		textscale		TEXTSIZE_SMALL
+		forecolor		0 0 0 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" )
+		decoration		
+	}	
+
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_X + 180 )  ( FILESHARE_MATCHDETAILS_Y - 140 ) 5 5 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER ,				
+									"white", 1 0 0 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  ),							
+									; )
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + 190 )  ( FILESHARE_MATCHDETAILS_Y - 142 ) 40 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "CUSTOM_ALL" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_LEFT
+		textscale		TEXTSIZE_SMALL
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" )
+		decoration		
+	}	
+
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_X + 180 )  ( FILESHARE_MATCHDETAILS_Y - 126 ) 4.5 4.5 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER ,				
+									"white", 1 1 0 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  ),							
+									; )
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + 190 )  ( FILESHARE_MATCHDETAILS_Y - 128 ) 40 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_YOURS_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_LEFT
+		textscale		TEXTSIZE_SMALL
+		forecolor		1 1 0.3 0.6
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" )
+		decoration		
+		autowrapped
+	}	
+
+
+
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC_ACTION )
+
+
+	#include "ui/safearea.menu"
+}
+
+menuDef                                                        
+{                                                              
+	name					menu_fileshare_myrecentgames_transfer                           
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN                  
+	focuscolor				COLOR_FOCUSED                      
+	style					WINDOW_STYLE_FILLED                
+	priority				MENU_PRI_ONTOP                     
+	soundloop 				MENU_MUSIC                         
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED				
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED				
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT                                                    
+	onOpen	                                                   
+	{                                                          
+		activateBlur;  
+		READ_FILE_SHARE;                                       
+	}                                                          
+	onFocus                                                    
+	{                                                          
+		play CHOICE_FOCUS_SOUND;                                                                       
+	}                                                          
+	onClose	                                                   
+	{                                                          
+		deactivateblur;                                                
+	}                                                          
+	onESC	                                                   
+	{                                                                        
+		close self;                                            
+	}                                   
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	                                             
+
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT ) 
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYSHARE_CAPS", 1 )	
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_CHOOSESLOT", 1 )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )	
+
+	itemDef                                                                                      
+	{                                                                                       
+		name				fileShareSlots                                                  
+		type				ITEM_TYPE_LISTBOX                                               
+		feeder				FEEDER_FILESHARE_MYSLOTS                                        
+		FILESHARE_COMMON_OPTIONS 
+		elementwidth		70                                                              
+		elementheight		70                                                              
+		elementtype			LISTBOX_TEXT	                                                
+		textalign			HORIZONTAL_ALIGN_LEFT                                           
+		textfont			UI_FONT_NORMAL                                                  
+		forecolor			CHOICE_TEXTCOLOR                                                     
+		modal											                                    
+		doubleclick	                                                                        
+		{                                                                                   
+			if ( !( FILESHARE_TASKSINPROGRESS ) )                                       
+			{                                                                           
+				play CHOICE_FOCUS_SOUND;                                                
+				if ( getFeederData( "slotOccupied" ) != 1 )                             
+				{                                                                       
+					open menu_fileshare_myrecentgames_transfer_save;                                             
+				}                                                                       
+				else                                                                    
+				{                                                                       
+					open menu_fileshare_myrecentgames_transfer_confirm;                                          
+				}                                                                       
+			}                                                                           
+		}                                                                                   
+		onListboxSelectionChange    { play CHOICE_FOCUS_SOUND;  }                           
+		visible				1                                                               
+			FILESHARE_SLOTS_USERAREAS	                                                        
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )			                                                                            
+	FILESHARE_DETAILS(	35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_fileshare_myrecentgames_transfer", "fileShareSlots",													
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )	
+
+#ifdef CONSOLE
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF6") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( !IsPremiumSubscriber() ) )
+
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF18") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( IsPremiumSubscriber() ) )
+
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT,
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) <= 6 ), 
+								rotation 90; ) 
+#endif //#ifdef CONSOLE								
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, close self; )
+#else // #ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )		
+#endif // #else // #ifdef PC
+}    
+
+menuDef																			    
+{                                                                           
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_myrecentgames_transfer_confirm, activateblur; execNow raiseFeederEvent Populate;, deactivateblur; close self;, 1 )					                                                              
+	onClose	                                                                
+	{                                                                       
+		deactivateblur;                                                     
+		play CHOICE_FOCUS_SOUND;                                            
+		execNow raiseFeederEvent Clear;                                           
+	}  	
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )													
+
+	itemDef                                                                 
+	{		                                                                
+		DYNAMIC_MENU_COMMON_FIELDS                                          
+		backgroundItemListbox		"white"                                 
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400	            
+		menuItemsDef                                                        
+		{                                                                   
+			maxRows 4                                                       
+			DYNAMIC_MENU_COMMON_COLUMNS                                     
+			menuColDef                                                      
+			{                                                               
+				type MENU_ITEM_TYPE_LOC_TEXT                                
+					rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE 
+					maxChars 50                                                 
+			}                                                               
+		}                                                                   
+		onEvent Yes			                                                
+		{	                                                                    
+			open menu_fileshare_myrecentgames_transfer_save;                                         
+			close self;                                                     
+		}                                                                   
+		onEvent No			{	close self;				}                   
+		onEvent Clear		{	execNow clearFeeder;	}                   
+		onEvent Populate	{	                                            
+								execNow addToFeeder Yes	MENU_YES;	                            
+								execNow	addToFeeder	No	MENU_CANCEL;	                        	
+							}                                                                   
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}       
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		    
+		execNow raiseFeederEvent; 	}       
+	}                                                                       
+} 
+
+
+
+
+
+
+
+// =========================================================================================
+// RECENT GAMES (OTHER PLAYER)
+//	menu_fileshare_recentgames
+//			Shows the list of recent games
+//
+//	menu_fileshare_recentgames_choose
+//			Options when one of those games are chosen
+//
+//  menu_fileshare_recentgames_transfer
+//			For transferring to the user's file share, this brings up a slot selection screen.
+//
+//  menu_fileshare_recentgames_confirm	
+//			If a slot is being overwritten, this shows a confirm dialogue
+// =========================================================================================
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION		\
+	deactivateBlur;			\
+	close self;				\
+	open menu_playercard;
+
+menuDef
+{
+	name					menu_fileshare_recentgames
+	rect					0 0 640 480
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT 
+	
+	onOpen	
+	{
+		activateBlur;
+		execnow set showHeatmapSpinner 0; 
+		execnow fileShareSetPooledFileContext "friend";
+		execnow fileShareGetRecentGames ( dvarString( selectedPlayerXuid ) );
+		execnow ui_animate menu_fileshare_recentgames heatMap WaitForHeatmap 0;
+		execnow set fsSelectedFileID 0;
+	}
+	onFocus 
+	{ 
+	}
+	onClose	
+	{
+		deactivateBlur;
+		execnow ui_animate menu_fileshare_recentgames heatMap Hidden 0;
+	}
+	onESC	
+	{
+		ON_ESC_ACTION
+	}
+	
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, dvarString("selectedFriendName") + locString("MENU_APOSTROPHE_S")+" "+locString("MENU_PLAYERCARD_CAPS"), 1 )
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_RECENTGAMES_CAPS", 1 )
+
+	FRIEND_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	itemDef
+	{ 
+		name						fileShareRecentGames
+		type						ITEM_TYPE_LISTBOX 
+		feeder						FEEDER_FILESHARE_SEARCHRESULTS
+		rect						-265 -127 250 230 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		origin						0 0 
+		elementwidth				30 
+		elementheight				16
+		elementtype					LISTBOX_TEXT 
+		textstyle					ITEM_TEXTSTYLE_NORMAL 
+		textfont					UI_FONT_NORMAL 
+		textscale					TEXTSIZE_DEFAULT 
+		textalign					HORIZONTAL_ALIGN_LEFT
+		textalignx					12 
+		forecolor					CHOICE_TEXTCOLOR 
+		focusColor					CHOICE_TEXTCOLOR
+		disableColor				CHOICE_TEXTCOLOR 
+		#ifdef XENON
+			selectIcon				"ui_button_xenon_3d_a_32x32"
+		#endif
+		#ifdef PS3
+			selectIcon				"ui_button_ps3_x_32x32"
+		#endif
+		outlinecolor				1 1 1 1
+		elementHighlightColor		0 0 0 1
+		elementBackgroundColor		NEW_FRAME_TRANSPARENCY
+		noBlinkingHighlight 
+		modal
+		noscrollbars 
+		/*					x	y	w	h	len	horzAlign		vertAlign*/			
+		userarea	1		10	-1	200	18	50	ITEM_ALIGN_LEFT	ITEM_ALIGN_TOP		
+		visible		1
+		onListboxSelectionChange 
+		{ 
+			if( getFeederData( "count" ) > 1 )
+			{
+				play CHOICE_FOCUS_SOUND; 
+				execnow ui_animate menu_fileshare_recentgames heatMap RemoveStaleHeatmap 0;
+			}
+		} 
+		doubleclick		
+		{	
+			if( getFeederData( "count" ) > 0.0 )
+			{
+				execnow set fsSelectedFileName ( getFeederData( name ) );
+				execnow set fsSelectedRecentGameID ( getFeederData( fileID ) );
+				execnow set fsIsSelectedFileNameModified ( getFeederData( isModifiedName ) );
+				execnow set fsSelectedFileDescription ( getFeederData( description ) );
+				execnow set fsIsSelectedFileDescriptionModified ( getFeederData( isModifiedDescription ) );
+				open menu_fileshare_recentgames_choose;
+			}
+		}	
+	}
+
+	itemDef
+	{  
+		type			ITEM_TYPE_OWNERDRAW     
+		rect			75 -130 150 150 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		forecolor		1 1 1 1
+		ownerdraw		UI_DRAWHEATMAP      
+		visible 		when( FILESHARE_DETAILS_CONDITION )
+		decoration      
+	}
+
+	FILESHARE_PROGRESS_INDICATOR_SIZE( 150, 0, 64, 64, 0, ( !FILESHARE_DETAILS_CONDITION && FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) )
+
+	// File details
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX FILESHARE_MATCHDETAILS_BGY FILESHARE_MATCHDETAILS_BGW 300 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.1 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX (FILESHARE_MATCHDETAILS_BGY + 220 ) FILESHARE_MATCHDETAILS_BGW 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.2 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	itemDef		
+	{	
+		style			WINDOW_STYLE_SHADER 
+		rect			FILESHARE_MATCHDETAILS_BGX (FILESHARE_MATCHDETAILS_BGY + 260) FILESHARE_MATCHDETAILS_BGW 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		origin			0 0 
+		background		"white" 
+		forecolor		0 0 0 0.2 
+		visible			when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) )
+		decoration 
+	} 
+
+	/* BACKGROUND TEAM ICON */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX+ ( FILESHARE_MATCHDETAILS_W / 2 ) - 40 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 80 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,				
+									( "menu_mp_lobby_" + getPooledFileDetails( "mapTeam" ) ), 0.9 0.9 0.9 0.2,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  && getPooledFileDetails( "isTeamBased" ) == "1" ),							
+									; )
+
+	/* BACKGROUND WAGER */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX + ( FILESHARE_MATCHDETAILS_W / 2 ) - 80 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 160 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "menu_mp_lobby_chipstack", 0.3 0.3 0.3 0.2, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "1" ), ; )																							
+
+	/* BACKGROUND FREEFORALL */
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_BGX + ( FILESHARE_MATCHDETAILS_W / 2 ) - 40 ) (FILESHARE_MATCHDETAILS_BGY + 220 ) 80 80 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "playlist_ffa", 0.3 0.3 0.3 0.2, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" ), ; )																							
+
+	/* TEXT KEY VALUES */
+	FILESHARE_TEXTITEM_KEY( 1, text ( locString( "@MENU_FILESHARE_DATETIME" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+	FILESHARE_TEXTITEM_VALUE( 1, text ( getFeederData( "fileShareRecentGames", "datetime" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 2, text ( locString( "@MENU_FILESHARE_LENGTH" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+	FILESHARE_TEXTITEM_VALUE( 2, text ( getFeederData( "fileShareRecentGames", "length" ) ), when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 3, text ( locString( "MENU_FILESHARE_KILLS" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) ) 
+	FILESHARE_TEXTITEM_VALUE( 3, text ( getPooledFileDetails( "mapKills" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) ) 
+
+	FILESHARE_TEXTITEM_KEY( 4,	text ( locString( "MENU_FILESHARE_DEATHS" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) )
+	FILESHARE_TEXTITEM_VALUE( 4, text ( getPooledFileDetails( "mapDeaths" ) ), when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" ) )
+
+	/* TEAM ALLIES */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y + 35 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAlliesScore" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y - 23 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAlliesName" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1"  )
+		decoration		
+	}
+
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 4 ) - 20 )  ( FILESHARE_MATCHDETAILS_Y - 5 ) 40 40 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,				
+									( getPooledFileDetails( "mapAlliesIcon" ) ), 1 1 1 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1"  ),							
+									; )
+
+
+	/* TEAM AXIS */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y + 35 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAxisScore" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y - 23 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "mapAxisName" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1"  )
+		decoration		
+	}
+
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + FILESHARE_MATCHDETAILS_W / 2 + ( FILESHARE_MATCHDETAILS_W / 4 ) - 20 )  ( FILESHARE_MATCHDETAILS_Y - 5 ) 40 40 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER ,				
+									( getPooledFileDetails( "mapAxisIcon" ) ), 1 1 1 0.8,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1"  ),							
+									; )
+
+
+	/* VICTORY, DEFEAT OR DRAW */
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_VICTORY" ) )
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "victory" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DRAW" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_BLUE_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "draw" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DEFEAT" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "mapVictory" ) == "defeat" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "1" )
+		decoration		
+	}	
+
+	////////////////////////
+	// WAGER MATCHES
+	////////////////////////
+
+	// Placement medals
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_first", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "1" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_second", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "2" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_third", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && getPooledFileDetails( "position" ) == "3" && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( (FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_fourth", 1 1 1 1, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && int( getPooledFileDetails( "position" ) ) >= 4 && getPooledFileDetails( "isValid" ) == "1" ), ; ) 
+	
+	PREPROC_TEXT_DRAW_VIS(	(FILESHARE_MATCHDETAILS_X + (FILESHARE_MATCHDETAILS_W/2) - (PLACEMENT_MEDAL_SIZE/2) - 1 ) ( FILESHARE_MATCHDETAILS_Y - 5) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getPooledFileDetails( "position" ), 
+								TEXTSIZE_BIG, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.3, when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "1" && int( getPooledFileDetails( "position" ) ) >= 4 && getPooledFileDetails( "isValid" ) == "1" ); ) 
+		
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) + 2 ) ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_EARNINGS_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isWager" ) == "1" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y +15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MENU_POINTS", int( getPooledFileDetails( "wagerPayout" ) ) ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isWager" ) == "1" )
+		decoration		
+	}	
+
+	////////////////////////
+	// FREE FOR ALL
+	////////////////////////
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_VICTORY" ) )
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		NEW_FRAME_GREEN_RGB 1
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "0" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "position" ) == "1" )
+		decoration		
+	}	
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			(FILESHARE_MATCHDETAILS_X) ( FILESHARE_MATCHDETAILS_Y + 5 ) FILESHARE_MATCHDETAILS_W 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DEFEAT" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isWager" ) == "0" && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "position" ) != "1" )
+		decoration		
+	}	
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_POSITION_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" )
+		decoration		
+	}
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + ( FILESHARE_MATCHDETAILS_W / 2 ) ) ( FILESHARE_MATCHDETAILS_Y +15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "position" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_DEFAULT	
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" && getPooledFileDetails( "isWager" ) == "0" )
+		decoration		
+	}	
+
+
+	////////////////////////
+	// FREE FOR ALL AND WAGER
+	////////////////////////
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y - 8 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "@MPUI_SCORE_CAPS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_SMALL		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" )
+		decoration		
+	}
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			FILESHARE_MATCHDETAILS_X ( FILESHARE_MATCHDETAILS_Y + 15 ) ( FILESHARE_MATCHDETAILS_W / 2 ) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( getPooledFileDetails( "score" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_CENTER	
+		textscale		TEXTSIZE_DEFAULT		
+		forecolor		LIGHT_GRAY	
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" && getPooledFileDetails( "isTeamBased" ) == "0" )
+		decoration		
+	}
+
+
+	// Tooltip - Recent Game
+	PREPROC_TEXT_DRAW_VIS_EX( -255 115 230 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MENU_FILESHARE_RECENTGAMESDESC" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ), autowrapped; ) 
+	PREPROC_SHADER_DRAW_VIS_EX( -265 116 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", 1 1 1 1, when( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) ), ; )																							
+
+	
+	// Legend
+	PREPROC_SHADER_DRAW_VIS_EX( ( FILESHARE_MATCHDETAILS_X + 170 )  ( FILESHARE_MATCHDETAILS_Y - 155 ) 5 5 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER ,				
+									"white", 1 0 0 1,	
+									when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1"  ),							
+									; )
+
+	itemDef		
+	{ 
+		type			ITEM_TYPE_TEXT	
+		rect			( FILESHARE_MATCHDETAILS_X + 180 )  ( FILESHARE_MATCHDETAILS_Y - 155 ) 5 5 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	
+		exp				text( locString( "MENU_FILESHARE_DEATHS" ) )	
+		textfont		CHOICE_TEXTFONT		
+		textalign		ITEM_ALIGN_MIDDLE_LEFT
+		textscale		TEXTSIZE_DEFAULT
+		forecolor		1 0.3 0.3 0.8
+		visible			when( FILESHARE_DETAILS_CONDITION && getPooledFileDetails( "isValid" ) == "1" )
+		decoration		
+	}	
+
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			0 0 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		text			"@MENU_FILESHARE_NORECENTGAME_OTHER" 
+		textfont		CHOICE_TEXTFONT  
+		textalign		ITEM_ALIGN_MIDDLE_CENTER
+		textscale		TEXTSIZE_SMALL  
+		forecolor		LIGHT_GRAY
+		visible			when ( !( FILESHARE_TASKSINPROGRESS ) &&  getFeederData( fileShareRecentGames, count ) < 1 )  
+		decoration  
+	} 
+
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC_ACTION )
+		
+	#include "ui/safearea.menu"
+}
+
+menuDef                                                        
+{                                                              
+	name					menu_fileshare_recentgames_transfer                           
+	rect					0 0 640 480                        
+	focuscolor				COLOR_FOCUSED                      
+	style					WINDOW_STYLE_FILLED                
+	priority				MENU_PRI_ONTOP                     
+	soundloop 				MENU_MUSIC                         
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED				
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED				
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT                                                    
+	onOpen	                                                   
+	{                       
+		activateBlur;
+		READ_FILE_SHARE;                                       
+	}                                                          
+	onFocus                                                    
+	{                                                          
+		play CHOICE_FOCUS_SOUND;                                                                       
+	}                                                          
+	onClose	                                                   
+	{                                                          
+		deactivateblur;                                                
+	}                                                          
+	onESC	                                                   
+	{                                                                        
+		close self;                                            
+	}                                   
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	                                             
+
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT ) 
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYSHARE_CAPS", 1 )	
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_CHOOSESLOT", 1 )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )	
+
+	itemDef                                                                                      
+	{                                                                                       
+		name				fileShareSlots                                                  
+		type				ITEM_TYPE_LISTBOX                                               
+		feeder				FEEDER_FILESHARE_MYSLOTS                                        
+		FILESHARE_COMMON_OPTIONS 
+		elementwidth		70                                                              
+		elementheight		70                                                              
+		elementtype			LISTBOX_TEXT	                                                
+		textalign			HORIZONTAL_ALIGN_LEFT                                           
+		textfont			UI_FONT_NORMAL                                                  
+		forecolor			CHOICE_TEXTCOLOR                                                     
+		modal											                                    
+		doubleclick	                                                                        
+		{                                                                                   
+			if ( !( FILESHARE_TASKSINPROGRESS ) )                                       
+			{                                                                           
+				play CHOICE_FOCUS_SOUND;                                                
+				if ( getFeederData( "slotOccupied" ) != 1 )                             
+				{                                                                       
+					open menu_fileshare_recentgames_transfer_save;                                             
+				}                                                                       
+				else                                                                    
+				{                                                                       
+					open menu_fileshare_recentgames_transfer_confirm;                                          
+				}                                                                       
+			}                                                                               
+		}                                                                                   
+		onListboxSelectionChange    { play CHOICE_FOCUS_SOUND;  }                           
+		visible				1                                                               
+			FILESHARE_SLOTS_USERAREAS	                                                        
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )			                                                                            
+	FILESHARE_DETAILS(	35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_fileshare_recentgames_transfer", "fileShareSlots",													
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )	
+
+#ifdef CONSOLE	
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF6") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( !IsPremiumSubscriber() ) )
+
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF18") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( IsPremiumSubscriber() ) )
+
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT,
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) <= 6 ), 
+								rotation 90; ) 
+#endif //#ifdef CONSOLE								
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, close self; )		
+#else // #ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )		
+#endif // #else // #ifdef PC
+}  
+
+menuDef																			    
+{                                                                           
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_recentgames_transfer_confirm, activateblur; execNow raiseFeederEvent Populate;, deactivateblur; close self;, 1 )					                                                              
+	onClose	                                                                
+	{                                                                       
+		deactivateblur;                                                     
+		play CHOICE_FOCUS_SOUND;                                            
+		execNow raiseFeederEvent Clear;                                           
+	}  	
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )													
+
+	itemDef                                                                 
+	{		                                                                
+		DYNAMIC_MENU_COMMON_FIELDS                                          
+		backgroundItemListbox		"white"                                 
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400	            
+		menuItemsDef                                                        
+		{                                                                   
+			maxRows 4                                                       
+			DYNAMIC_MENU_COMMON_COLUMNS                                     
+			menuColDef                                                      
+			{                                                               
+				type MENU_ITEM_TYPE_LOC_TEXT                                
+					rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE 
+					maxChars 50                                                 
+			}                                                               
+		}                                                                   
+		onEvent Yes			                                                
+		{	                                                                    
+			open menu_fileshare_recentgames_transfer_save;                                         
+			close self;                                                     
+		}                                                                   
+		onEvent No			{	close self;				}                   
+		onEvent Clear		{	execNow clearFeeder;	}                   
+		onEvent Populate	{	                                            
+								execNow addToFeeder Yes	MENU_YES;	                            
+								execNow	addToFeeder	No	MENU_CANCEL;	                        	
+							}                                                                   
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}       
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		    
+		execNow raiseFeederEvent; 	}       
+	}                                                                       
+} 
+
+
+
+
+
+
+
+
+// =========================================================================================
+// COMMUNITY
+//	menu_fileshare_community_choose
+//			On selecting an item from any search results, brings up choices on what to do with it
+//
+//	menu_fileshare_community_transfer
+//			If transferring from the community search results to you file share, it shows
+//			your private slots to choose which one to transfer it to.
+//
+//	fileshare_searchbox
+//			Shows a search box that allows filtering search results
+// =========================================================================================
+
+menuDef                                                        
+{                                                              
+	name					menu_fileshare_community_transfer                           
+	rect					0 0 640 480                        
+	focuscolor				COLOR_FOCUSED                      
+	style					WINDOW_STYLE_FILLED                
+	priority				MENU_PRI_ONTOP                     
+	soundloop 				MENU_MUSIC                         
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED				
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED				
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT                                                    
+	onOpen	                                                   
+	{                    
+		activateBlur;
+		READ_FILE_SHARE;                                       
+	}                                                          
+	onFocus                                                    
+	{                                                          
+		play CHOICE_FOCUS_SOUND;                                                                     
+	}                                                          
+	onClose	                                                   
+	{                                                          
+		deactivateblur;                                                
+	}                                                          
+	onESC	                                                   
+	{                                                                        
+		close self;                                            
+	}                                   
+	execKeyInt APAD_LEFT    {	play CHOICE_FOCUS_SOUND;    }                               
+	execKeyInt DPAD_LEFT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt APAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}                               
+	execKeyInt DPAD_RIGHT	{	play CHOICE_FOCUS_SOUND;	}         
+	execKeyInt APAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_UP		{ execnow set fshSelectLastSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt APAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	
+	execKeyInt DPAD_DOWN	{ execnow set fshSelectFirstSlotRow 1;	setfocus fileShareSlots; }	                                             
+
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT ) 
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_MYSHARE_CAPS", 1 )	
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@MENU_FILESHARE_CHOOSESLOT", 1 )
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )	
+
+	itemDef                                                                                      
+	{                                                                                       
+		name				fileShareSlots                                                  
+		type				ITEM_TYPE_LISTBOX                                               
+		feeder				FEEDER_FILESHARE_MYSLOTS                                        
+		FILESHARE_COMMON_OPTIONS 
+		elementwidth		70                                                              
+		elementheight		70                                                              
+		elementtype			LISTBOX_TEXT	                                                
+		textalign			HORIZONTAL_ALIGN_LEFT                                           
+		textfont			UI_FONT_NORMAL                                                  
+		forecolor			CHOICE_TEXTCOLOR                                                     
+		modal											                                    
+		doubleclick	                                                                        
+		{                                                                                   
+			if ( !( FILESHARE_TASKSINPROGRESS ) )                                       
+			{                                                                           
+				play CHOICE_FOCUS_SOUND;                                                
+				if ( getFeederData( "slotOccupied" ) != 1 )                             
+				{                                                                       
+					open menu_fileshare_community_transfer_save;                                             
+				}                                                                       
+				else                                                                    
+				{                                                                       
+					open menu_fileshare_community_transfer_confirm;                                          
+				}                                                                       
+			}                                                                               
+		}                                                                                   
+		onListboxSelectionChange    { play CHOICE_FOCUS_SOUND;  }                           
+		visible				1                                                               
+			FILESHARE_SLOTS_USERAREAS	                                                        
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )			                                                                            
+	FILESHARE_DETAILS(	35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, 
+						"menu_fileshare_community_transfer", "fileShareSlots",													
+						getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )	
+
+#ifdef CONSOLE	
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF6") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( !IsPremiumSubscriber() ) )
+
+	PREPROC_TEXT_DRAW_VIS(	-144 158 30 15 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+						( int( getFeederData( "fileShareSlots", "slot" ) ) + " " + locString( "@MENU_FILESHARE_OF18") ), 
+						TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, 1 1 1 1, when( IsPremiumSubscriber() ) )
+
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_left", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-107 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT,
+								when( getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), 
+								rotation 90; )
+	PREPROC_SHADER_DRAW_VIS_EX(	-114 160 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+								"ui_arrow_right", COLOR_BODY_TEXT, 
+								when( getFeederData( "fileShareSlots", "slot" ) <= 6 ), 
+								rotation 90; )
+#endif //#ifdef CONSOLE
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, close self; )		
+#else // #ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )		
+#endif // #else // #ifdef PC
+}  
+
+
+menuDef																			    
+{                                                                           
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_community_transfer_confirm, activateblur; execNow raiseFeederEvent Populate;, deactivateblur; close self;, 1 )					                                                              
+	onClose	                                                                
+	{                                                                       
+		deactivateblur;                                                     
+		play CHOICE_FOCUS_SOUND;                                            
+		execNow raiseFeederEvent Clear;                                           
+	}  	
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )													
+
+	itemDef                                                                 
+	{		                                                                
+		DYNAMIC_MENU_COMMON_FIELDS                                          
+		backgroundItemListbox		"white"                                 
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400	            
+		menuItemsDef                                                        
+		{                                                                   
+			maxRows 4                                                       
+			DYNAMIC_MENU_COMMON_COLUMNS                                     
+			menuColDef                                                      
+			{                                                               
+				type MENU_ITEM_TYPE_LOC_TEXT                                
+					rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE 
+					maxChars 50                                                 
+			}                                                               
+		}                                                                   
+		onEvent Yes			                                                
+		{	                                                                    
+			open menu_fileshare_community_transfer_save;                                         
+			close self;                                                     
+		}                                                                   
+		onEvent No			{	close self;				}                   
+		onEvent Clear		{	execNow clearFeeder;	}                   
+		onEvent Populate	{	                                            
+								execNow addToFeeder Yes	MENU_YES;	                            
+								execNow	addToFeeder	No	MENU_CANCEL;	                        	
+							}                                                                   
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}       
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		    
+		execNow raiseFeederEvent; 	}       
+	}                                                                       
+} 
+
+
+
+#define SPINNERS_START_X 102
+#define SPINNERS_START_Y 40
+
+#undef ON_APPLY_ACTION
+#define ON_APPLY_ACTION														\
+	execnow set fshSearchBusy 1;											\
+	execnow ui_animate menu_fileshare_community StateChanger Wait 0;		\
+	execnow ui_animate menu_fileshare_community StateChanger Search 1500;	\
+	play CHOICE_FOCUS_SOUND;												\
+	close self;
+	
+#undef ON_ESC
+#define ON_ESC																\
+	execnow fileShareFilterRestore;											\
+	setdvar fsSearchRowValue1 dvarint(backup_fsSearchRowValue1);			\
+	setdvar fsSearchRowValue2 dvarint(backup_fsSearchRowValue2);			\
+	setdvar fsSearchRowValue3 dvarint(backup_fsSearchRowValue3);			\
+	setdvar fsSearchRowValue4 dvarint(backup_fsSearchRowValue4);			\
+	setdvar fsSearchRowValue5 dvarint(backup_fsSearchRowValue5);			\
+	setdvar fsSearchRowValue6 dvarint(backup_fsSearchRowValue6);			\
+	setdvar fsSearchRowText1 dvarstring(backup_fsSearchRowText1);			\
+	setdvar fsSearchRowText2 dvarstring(backup_fsSearchRowText2);			\
+	setdvar fsSearchRowText3 dvarstring(backup_fsSearchRowText3);			\
+	setdvar fsSearchRowText4 dvarstring(backup_fsSearchRowText4);			\
+	setdvar fsSearchRowText5 dvarstring(backup_fsSearchRowText5);			\
+	setdvar fsSearchRowText6 dvarstring(backup_fsSearchRowText6);			\
+	close self;
+
+ 
+menuDef
+
+{
+	SYSTEM_POPUP_SETUP_VIS( fileshare_searchbox, ;, ;, 1 ) 
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_CHOOSEFILTER", 1 )
+
+	onOpen
+	{
+		activateblur;
+		execnow fileShareFilterBackup;
+
+		setdvar backup_fsSearchRowValue1 dvarint(fsSearchRowValue1);
+		setdvar backup_fsSearchRowValue2 dvarint(fsSearchRowValue2);
+		setdvar backup_fsSearchRowValue3 dvarint(fsSearchRowValue3);
+		setdvar backup_fsSearchRowValue4 dvarint(fsSearchRowValue4);
+		setdvar backup_fsSearchRowValue5 dvarint(fsSearchRowValue5);
+		setdvar backup_fsSearchRowValue6 dvarint(fsSearchRowValue6);
+
+		setdvar backup_fsSearchRowText1 dvarstring(fsSearchRowText1);
+		setdvar backup_fsSearchRowText2 dvarstring(fsSearchRowText2);
+		setdvar backup_fsSearchRowText3 dvarstring(fsSearchRowText3);
+		setdvar backup_fsSearchRowText4 dvarstring(fsSearchRowText4);
+		setdvar backup_fsSearchRowText5 dvarstring(fsSearchRowText5);
+		setdvar backup_fsSearchRowText6 dvarstring(fsSearchRowText6);
+
+		if ( dvarInt( fsSearchFileType ) != FILESHARE_FILETYPE_CUSTOMGAME )
+		{
+			setfocus fileShareSearchRow1;
+		}
+		else
+		{
+			setfocus fileShareSearchRow2;
+		}
+	}
+	onClose	
+	{ 			
+		deactivateblur;
+	}
+	onESC
+	{
+		ON_ESC
+	}
+
+	SYSTEM_POPUP_BACK_BUTTON_EX( ON_ESC );
+	SYSTEM_POPUP_BUTTON2( "@PLATFORM_APPLY_FILTER", ON_APPLY_ACTION, 1 ) 
+
+	SEARCH_SPINNER( "@MENU_FILESHARE_SORTING",	 1, 2, 6, SPINNERS_START_X, ( SPINNERS_START_Y + 0   ), 251, setdvar fsSearchSelectedRow 1;, 1, 0 )
+	SEARCH_SPINNER( "@MENU_FILESHARE_MAP",		 2, 3, 1, SPINNERS_START_X, ( SPINNERS_START_Y + 20  ), 251, setdvar fsSearchSelectedRow 2;, 1, ( dvarInt( fsSearchRowValue1 ) != 0 || dvarInt( fsSearchFileType ) == FILESHARE_FILETYPE_CUSTOMGAME ) )
+	SEARCH_SPINNER( "@MENU_FILESHARE_GAMETYPE",	 3, 4, 2, SPINNERS_START_X, ( SPINNERS_START_Y + 40  ), 251, setdvar fsSearchSelectedRow 3;, 1, ( dvarInt( fsSearchRowValue1 ) != 0 ) )
+	SEARCH_SPINNER( "@MENU_FILESHARE_AGE",		 4, 5, 3, SPINNERS_START_X, ( SPINNERS_START_Y + 60  ), 251, setdvar fsSearchSelectedRow 4;, 1, ( dvarInt( fsSearchRowValue1 ) != 0 ) )
+	SEARCH_SPINNER( "@MENU_FILESHARE_TAG",		 5, 6, 4, SPINNERS_START_X, ( SPINNERS_START_Y + 80  ), 251, setdvar fsSearchSelectedRow 5;, 1, ( dvarInt( fsSearchRowValue1 ) != 0 ) )
+	SEARCH_SPINNER( "@MENU_FILESHARE_PLAYERPREF",6, 1, 5, SPINNERS_START_X, ( SPINNERS_START_Y + 100 ), 251, setdvar fsSearchSelectedRow 6;, 1, ( dvarInt( fsSearchRowValue1 ) != 0 ) )
+
+	execKeyInt BUTTON_A
+	{
+		ON_APPLY_ACTION
+	}
+}
+
+
+// =========================================================================================
+// IN-GAME
+//	fileshare_slotselection_clip
+//			Selection screen when uploading a recorded clip
+//
+//  fileshare_slotselection_scr
+//			Selection screen when uploading a screenshot
+// =========================================================================================
+FILESHARE_INGAME_SLOTSELECTION( fileshare_slotselection_clip, "@PLATFORM_UPLOAD_CLIP", execnow demo_saveanduploadclip ( dvarInt( demo_cmdNum ) ) ( getFeederData( fileshare_slotselection_clip, fileShareSlots, ingameSlot ) );, open clip_save_screen; )
+FILESHARE_INGAME_SLOTSELECTION( fileshare_slotselection_scr, "@PLATFORM_UPLOAD_SCREENSHOT", execnow demo_savescreenshot 0 ( getFeederData( fileshare_slotselection_scr, fileShareSlots, ingameSlot ) );, open screenshot_save_screen )
+
+
+
+
+// =========================================================================================
+// SCREENSHOT
+//	menu_screenshot
+//			Renders a selected screenshot.
+// =========================================================================================
+#define SCREENSHOT_VIEWER_BIAS			20
+#define SCREENSHOT_VIEWER_WIDTH			600
+#define SCREENSHOT_VIEWER_HEIGHT		360
+#define SCREENSHOT_EXPAND_MARGIN		10
+#define SCREENSHOT_VIEWER_X_EXPANDED	(-SCREENSHOT_VIEWER_WIDTH/2)
+#define SCREENSHOT_VIEWER_Y_EXPANDED	(-SCREENSHOT_VIEWER_HEIGHT/2)
+#define SCREENSHOT_SPINNER_SIZE			80
+
+#define ALREADY_RATED ( GetUserFileRating( dvarString( fsSelectedFileID ) ) != 0 )
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION									\
+	if ( isTaskInProgress( "LiveFileShareReadFile" ) )	\
+	{													\
+		execnow screenshotAbortDownload;				\
+	}													\
+	close self;
+	
+menuDef
+{
+	name "menu_screenshot"
+	visible 1
+	fullscreen 0
+	rect 0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	backcolor 0 0 0 0
+	style WINDOW_STYLE_FILLED
+	priority MENU_PRI_POPUP
+	popup
+
+	onOpen
+	{
+		activateblur;
+
+		if ( isTaskInProgress( "LiveFileShareReadFile" ) )
+		{
+			execnow ui_animate menu_screenshot * Default 0;
+		}
+		else
+		{
+			execnow ui_animate menu_screenshot * Expand 0;
+		}
+	}
+
+	onClose
+	{
+		deactivateblur;
+	}
+
+	onEsc
+	{
+		ON_ESC_ACTION
+	}
+		
+	execKeyInt K_MWHEELDOWN
+	{
+		execNow screenshotZoom -0.1;
+	}
+	
+	execKeyInt K_MWHEELUP
+	{
+		execNow screenshotZoom 0.1;
+	}
+
+
+	itemDef
+	{
+			name            "frame"
+			style			WINDOW_STYLE_SHADER_FRAMED
+			type			ITEM_TYPE_IMAGE
+			rect			(-SCREENSHOT_SPINNER_SIZE/2) (-SCREENSHOT_SPINNER_SIZE/2) SCREENSHOT_SPINNER_SIZE SCREENSHOT_SPINNER_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		.2 .2 .2 1
+			exp				material( "menu_mp_lobby_frame_circle" )
+			frame           16 0.5 FRAME_SIDE_ALL
+			visible			1
+			decoration
+
+			state
+			{
+				name "expand"
+				rect SCREENSHOT_VIEWER_X_EXPANDED SCREENSHOT_VIEWER_Y_EXPANDED SCREENSHOT_VIEWER_WIDTH SCREENSHOT_VIEWER_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+
+				onEnter
+				{
+					execNow ui_animate menu_screenshot screenshot display 300;
+				}
+			}
+	}
+
+	itemDef
+	{
+		style WINDOW_STYLE_SPINNER
+		rect (-SCREENSHOT_SPINNER_SIZE/2) (-SCREENSHOT_SPINNER_SIZE/2) SCREENSHOT_SPINNER_SIZE SCREENSHOT_SPINNER_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		visible when( isTaskInProgress( "LiveFileShareReadFile" ) )
+		decoration
+	}
+
+	itemDef
+	{
+		type			ITEM_TYPE_TEXT
+		rect			0 0  1 1 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		textfont		UI_FONT_NORMAL
+		textscale		TEXTSIZE_SMALL
+		textalign       ITEM_ALIGN_MIDDLE_CENTER
+		exp				text ( getDownloadProgress() )
+		visible			when( isTaskInProgress( "LiveFileShareReadFile" ) )
+		decoration
+	}
+
+	itemDef
+	{
+		name            "screenshot"
+		type			ITEM_TYPE_OWNERDRAW 
+		rect			(-(SCREENSHOT_VIEWER_WIDTH-SCREENSHOT_VIEWER_BIAS)/2) (-(SCREENSHOT_VIEWER_HEIGHT-SCREENSHOT_VIEWER_BIAS)/2) (SCREENSHOT_VIEWER_WIDTH-SCREENSHOT_VIEWER_BIAS) (SCREENSHOT_VIEWER_HEIGHT-SCREENSHOT_VIEWER_BIAS) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		ownerdraw		UI_SCREENSHOT
+		visible 	    1
+		forecolor       1 1 1 0
+		decoration
+
+		state
+		{
+			name "display"
+			forecolor 1 1 1 1
+		}
+	}
+
+	execKeyInt BUTTON_X
+	{
+		if ( !ALREADY_RATED )
+		{
+			setdvar fileshare_rating_screenshot 1;
+			setdvar fileshare_rating_film 0;
+			setdvar fileshare_rating_clip 0;
+			setdvar fileshare_rating_gametype 0;
+			open fileshare_submitrating;
+		}
+		else
+		{
+			open fileshare_ratingsubmitted;
+		}
+	}
+
+#ifdef PC
+	NEW_FRAME_BUTTON_PC_LEFT_OFFSET( SCREENSHOT_VIEWER_WIDTH, SCREENSHOT_VIEWER_HEIGHT, 0, "@PLATFORM_BACK", ON_ESC_ACTION, when( getDownloadProgress() == 100 ); )
+#else // #ifdef PC
+	NEW_FRAME_BACK_BUTTON( (SCREENSHOT_VIEWER_WIDTH-(SCREENSHOT_VIEWER_BIAS*2)), SCREENSHOT_VIEWER_HEIGHT )
+#endif // #else // #ifdef PC
+
+#define RATE_SCREENSHOT_ACTION				\
+	setdvar fileshare_rating_screenshot 1;	\
+	setdvar fileshare_rating_film 0;		\
+	setdvar fileshare_rating_clip 0;		\
+	setdvar fileshare_rating_gametype 0;	\
+	open fileshare_submitrating;
+	
+#define BUTTON_SPACING 20
+#define RATING_BUTTON_OFFSET ( getTextWidth( locString( "@PLATFORM_BACK" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+
+	// Rate Screenshot
+	NEW_FRAME_BUTTON_PC_LEFT_OFFSET( SCREENSHOT_VIEWER_WIDTH, SCREENSHOT_VIEWER_HEIGHT, RATING_BUTTON_OFFSET, 
+		"@PLATFORM_DEMO_RATE_SCREENSHOT", 
+		RATE_SCREENSHOT_ACTION, 
+		when( getDownloadProgress() == 100 && GetUserFileRating( dvarString( fsSelectedFileID ) ) == 0 ) )
+
+	// See Rating
+	NEW_FRAME_BUTTON_PC_LEFT_OFFSET( SCREENSHOT_VIEWER_WIDTH, SCREENSHOT_VIEWER_HEIGHT, RATING_BUTTON_OFFSET, 
+		"@PLATFORM_DEMO_SEERATING", 
+		open fileshare_ratingsubmitted;, 
+		when( getDownloadProgress() == 100 && GetUserFileRating( dvarString( fsSelectedFileID ) ) != 0 ) )
+
+#define TEXT_SPACING 40
+
+#define ZOOM_TEXT_X ( SCREENSHOT_VIEWER_WIDTH/2 - NEW_FRAME_DEFAULT_TITLE_X_OFFSET - getTextWidth( locString( "@PATCH_SCREENSHOT_ZOOM" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) )
+
+#define PAN_TEXT_X ( ZOOM_TEXT_X - TEXT_SPACING - getTextWidth( locString( "@PATCH_SCREENSHOT_PAN" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) )
+
+	// Pan
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			((-SCREENSHOT_VIEWER_WIDTH/2)+220) (SCREENSHOT_VIEWER_HEIGHT/2+4) 0 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				rect X( PAN_TEXT_X )
+		text			"@PATCH_SCREENSHOT_PAN" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_MIDDLE_LEFT  
+		visible			when( getDownloadProgress() == 100 )
+		decoration  
+	} 	
+
+	// Zoom
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			((-SCREENSHOT_VIEWER_WIDTH/2)+420) (SCREENSHOT_VIEWER_HEIGHT/2+4) 0 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				rect X( ZOOM_TEXT_X )
+		text			"@PATCH_SCREENSHOT_ZOOM" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_MIDDLE_LEFT  
+		visible			when( getDownloadProgress() == 100 )
+		decoration  
+	} 
+}
+
+
+
+// =========================================================================================
+// ERROR MENUS
+//	menu_fileshare_transfererror
+//			Any HTTP/Demonware error while transferring
+//
+//  menu_fileshare_downloaderror
+//			Any HTTP/Demonware error while downloading
+//
+//	menu_fileshare_uploaderror
+//			Any HTTP/Demonware error while uploading
+// =========================================================================================
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		1
+
+FILESHARE_ERROR_MENU( menu_fileshare_transfererror,	MENU_FILESHARE_TRANSFERERROR )
+FILESHARE_ERROR_MENU( menu_fileshare_downloaderror,	MENU_FILESHARE_DOWNLOADERROR )
+FILESHARE_ERROR_MENU( menu_fileshare_uploaderror,	MENU_FILESHARE_UPLOADERROR )
+FILESHARE_ERROR_MENU( menu_fileshare_maxlocalplayers,	MENU_FILESHARE_MAX_LOCAL_PLAYERS )
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		5
+
+#ifdef PC
+#define IS_PC 1
+#define RENDER 1
+#define SETUP_ACTION_PLAY_DEMO( isUserFile, menuName, feederName )											\
+		close self;																							\
+		if ( isTaskInProgress( "LiveFileShareReadFile" ) != 1 )												\
+		{																									\
+			if( menuisopen( "menu_cr_matches_heat_map" ) )													\
+			{																								\
+				execNow set ui_mapname (GetFileshareGameMap(dvarInt("selectedRecentGameIndex")));			\
+				execNow set ui_gametype (GetFileshareGameType(dvarInt("selectedRecentGameIndex")));			\
+				execNow set ui_demoname (GetFileshareFileName(dvarInt("selectedRecentGameIndex")));			\
+				execNow set ui_theater_fileid (GetFileshareFileId(dvarInt("selectedRecentGameIndex")));		\
+				execNow set ui_theater_filesize (GetFileshareFileSize(dvarInt("selectedRecentGameIndex"))); \
+			}																								\
+			else																							\
+			{																								\
+				execNow set ui_mapname (getFeederData( menuName, feedername, "map" ));						\
+				execNow set ui_gametype (getFeederData( menuName, feedername, "gametype" ));				\
+				execNow set ui_demoname (getFeederData( menuName, feedername, "fileName" ));				\
+				execNow set ui_theater_fileid (getFeederData( menuName, feederName, "fileID" ));			\
+				execNow set ui_theater_filesize (getFeederData( menuName, feederName, "fileSize" ));		\
+			}																								\
+			open popup_downloadingfile;																		\
+			setdvar ui_combatResetViewDvars "0";															\
+			execNow downloaddemofile ( isUserFile ) ( dvarString( ui_theater_fileid ) ) ( dvarString( ui_theater_filesize ) ) ( dvarString( ui_demoname ) ) (!RENDER);	\
+		}	
+#define SETUP_ACTION_RENDER_DEMO( isUserFile, menuName, feederName )						\
+		close self;																			\
+		if ( isTaskInProgress( "LiveFileShareReadFile" ) != 1 )								\
+		{																					\
+			open popup_downloadingfile;														\
+			execNow set ui_mapname (getFeederData( menuName, feederName, "map" ));			\
+			execNow set ui_gametype (getFeederData( menuName, feederName, "gametype" ));	\
+			execNow set ui_demoname (getFeederData( menuName, feederName, "fileName" ));	\
+			execNow downloaddemofile ( isUserFile ) ( getFeederData( menuName, feederName, "fileID" )) (getFeederData( menuName, feederName, "fileSize" )) (getFeederData( menuName, feederName, "fileName" )) (RENDER);	\
+		}		
+
+#else // #ifdef PC
+#define IS_PC 0
+#endif // #else // #ifdef PC
+
+#define ON_OPEN_THEATER_BUTTON_TEXT	 \
+		if ( dvarBool( xblive_theater ) == 0 ) \ 
+		{	\
+			setlocalvarstring ui_theater_button_text MENU_FILESHARE_THEATER; \
+		} \
+		else \
+		{ \
+			setlocalvarstring ui_theater_button_text MENU_FILESHARE_SELECT_FOR_PLAYBACK; \
+		}
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_myshare_options,  ON_OPEN_THEATER_BUTTON_TEXT; execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 6
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+
+		onEvent Screenshot      
+		{
+			ACTION_VIEW_SCREENSHOT( "menu_fileshare_myshare", "fileShareSlots" )        
+		}
+
+		onEvent	PlayPC			
+		{	
+				SETUP_ACTION_PLAY_DEMO( 1, "menu_fileshare_myshare", "fileShareSlots" )
+		}
+		onEvent	RenderPC			
+		{	
+				SETUP_ACTION_RENDER_DEMO( 1, "menu_fileshare_myshare", "fileShareSlots" )
+		}
+		onEvent RatePC
+		{
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				close self;
+				if ( !ALREADY_RATED )
+				{
+					open fileshare_submitrating;
+				}
+				else
+				{
+					open fileshare_ratingsubmitted;
+				}
+			}
+		}
+		
+		onEvent	Theatre			
+		{	
+			if ( IS_LOBBY_HOST || !dvarBool( "xblive_theater" ) ) 
+			{ 
+				if ( !CanSwitchToLobby( dvarInt( party_maxplayers_theater ), dvarInt( party_maxlocalplayers_theater ) ) )
+				{
+					open menu_fileshare_maxlocalplayers;
+				}
+				else
+				{
+					ACTION_GOTO_THEATER( 1, "menu_fileshare_myshare", "fileShareSlots" )
+				}
+			}	
+		}
+
+		onEvent GoToCustom
+		{
+			ACTION_GOTO_CUSTOMGAME( 1, "menu_fileshare_myshare", "fileShareSlots" )
+		}
+
+		onEvent Remove			
+		{
+			close self;
+			open menu_fileshare_myshare_remove;			
+		}
+
+		onEvent EditInfo
+		{
+			close self;
+			execNow set fsSelectedFileName ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "name" ) );
+			execNow set fsIsSelectedFileNameModified ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "isModifiedName" ) );
+			execNow set fsSelectedFileDescription ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "description" ) );
+			execNow set fsIsSelectedFileDescriptionModified ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "isModifiedDescription" ) );
+			execNow set fsSelectedFileTagIndex ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "userTagIndex" ) );
+			open menu_fileshare_myshare_editinfo;
+		}
+
+		onEvent Cancel			{	close self;									}
+		onEvent Clear			{	execNow clearFeeder;						}
+		onEvent Populate
+		{	
+			if ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "fileType" ) == "screenshot" )
+			{
+														//onFocus	// Disable condition		// text
+				execNow addToFeederExtended Screenshot	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_VIEW;
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 1;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATESCREENSHOT;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}		
+			elseif ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "fileType" ) != "customgamemode" )
+			{
+				if ( IS_PC )
+				{	
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					
+					if ( CLIP_SELECTED( "menu_fileshare_myshare", "fileShareSlots" ) )
+					{
+						setdvar fileshare_rating_clip 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_CLIP;
+						execNow addToFeederExtended		RenderPC	noop		(FILESHARE_TASKSINPROGRESS)		MPUI_DEMO_RENDER_CLIP;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_CLIP_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+						}
+					}
+					else
+					{
+						setdvar fileshare_rating_film 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_FILM;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_FILM_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+						}
+					}
+				}
+				else
+				{
+					if ( dvarBool( xblive_theater ) == 0 )
+					{
+						execNow addToFeeder	Theatre			(localVarString( ui_theater_button_text ));
+					}
+					else
+					{
+																//onFocus	// Disable condition		// text
+						execNow addToFeederExtended Theatre		noop		(IS_NOT_LOBBY_HOST)			(localVarString( ui_theater_button_text ));
+					}
+				}
+			}
+			elseif ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "fileType" ) == "customgamemode" )
+			{	
+				if( !IS_PC )
+				{
+					execNow addToFeeder	GoToCustom		MPUI_START_CUSTOMGAME;
+				}
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 1;
+					
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_CUSTOM_ACTION;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}
+			
+			execNow addToFeeder	EditInfo				MENU_FILESHARE_EDITINFO;
+			
+			if (  getFeederData( "menu_fileshare_myshare", "fileShareSlots", "slotOccupied" ) )
+			{
+				execNow addToFeeder Remove			MENU_FILESHARE_REMOVE;
+			}
+
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_mymovie_options, execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START ( CHOICE_Y_START + 20 ) CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 6
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+
+		onEvent Cancel
+		{
+			close self;
+		}
+
+		onEvent Remove			
+		{
+			open menu_fileshare_mymovie_remove;			
+		}
+
+		onEvent EditInfo
+		{
+			close self;
+			execNow set fsSelectedFileName ( getMySlotInfo( 20, "name" ) );
+			execNow set fsIsSelectedFileNameModified ( getMySlotInfo( 20, "isModifiedName" ) );
+			execNow set fsSelectedFileDescription ( getMySlotInfo( 20, "description" ) );
+			execNow set fsIsSelectedFileDescriptionModified ( getMySlotInfo( 20, "isModifiedDescription" ) );
+			open menu_fileshare_mymovie_editinfo;
+		}
+
+		onEvent Cancel			{	close self;									}
+		onEvent Clear			{	execNow clearFeeder;						}
+		onEvent Populate
+		{	
+			execNow addToFeeder	EditInfo		MENU_FILESHARE_EDITINFO;
+			execNow addToFeeder Remove			MENU_FILESHARE_REMOVE;
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		3
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_myrecentgames_choose, ON_OPEN_THEATER_BUTTON_TEXT; execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400
+		backgroundItemListbox		"white"
+		
+		menuItemsDef
+		{
+			maxRows 4
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent RenameAndPlace	{	;	}
+		onEvent	PlaceInShare	{	
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				open menu_fileshare_myrecentgames_transfer;
+				exec "wait; closeMenu menu_fileshare_myrecentgames_choose";
+			}
+		}
+		onEvent	PlayPC			
+		{	
+				SETUP_ACTION_PLAY_DEMO( 0, "menu_fileshare_myrecentgames", "fileShareRecentGames" )
+		}
+		onEvent	RenderPC			
+		{	
+				SETUP_ACTION_RENDER_DEMO( 0, "menu_fileshare_myrecentgames", "fileShareRecentGames" )
+		}
+		onEvent	Theatre			
+		{	
+			if ( IS_LOBBY_HOST || !dvarBool( "xblive_theater" ) ) 
+			{ 
+				if ( !CanSwitchToLobby( dvarInt( party_maxplayers_theater ), dvarInt( party_maxlocalplayers_theater ) ) )
+				{
+					open menu_fileshare_maxlocalplayers;
+				}
+				else
+				{
+					ACTION_GOTO_THEATER( 0, "menu_fileshare_myrecentgames", "fileShareRecentGames" )	
+				}
+			}	
+		}
+		onEvent Cancel			{	close self;				}
+		onEvent Clear			{	execNow clearFeeder;	}
+		onEvent Populate
+		{
+			if ( IS_PC )
+			{	
+				if ( !menuisopen( menu_cr_matches_heat_map ) && CLIP_SELECTED( "menu_fileshare_myrecentgames", "fileShareRecentGames" ) )
+				{
+					execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)			MPUI_START_CLIP;
+					execNow addToFeederExtended		RenderPC	noop		(FILESHARE_TASKSINPROGRESS)			MPUI_DEMO_RENDER_CLIP;
+				}
+				else
+				{
+					execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)			MPUI_START_FILM;
+				}
+			}
+			else
+			{
+				//						Action			1 - Menu Item Text			
+				if ( dvarBool( xblive_theater ) == 0 ) { execNow addToFeeder	Theatre			(localVarString( ui_theater_button_text )); }
+				if ( dvarBool( xblive_theater ) == 1 ) 
+				{ 
+															//onFocus	// Disable condition		// text
+					execNow addToFeederExtended Theatre		noop		(IS_NOT_LOBBY_HOST)			(localVarString( ui_theater_button_text ));				
+				}
+			}
+														//onFocus	// Disable condition		// text
+			execNow addToFeederExtended PlaceInShare	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_PLACEINSHARE;
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	DYNAMIC_MENU_INIT( menu_fileshare_myrecentgames_choose )	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		2
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_myshare_remove, execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REMOVECONFIRM", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 4
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent Yes			
+		{	
+			execNow fileShareRemove ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "slot" ) );	
+			close menu_fileshare_myshare_options;
+			close self;
+		}
+		onEvent No			{	close self;				}
+		onEvent Clear		{	execNow clearFeeder;	}
+		onEvent Populate	{	
+			//						Action		1 - Menu Item Text			
+			execNow addToFeeder		Yes			MENU_YES;	
+			execNow	addToFeeder		No			MENU_CANCEL;			
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_mymovie_remove, execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REMOVECONFIRM", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 4
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent Yes			
+		{	
+			execNow fileShareRemove ( 20 );	
+			close menu_fileshare_mymovie_options;
+			close self;
+		}
+		onEvent No			{	close self;				}
+		onEvent Clear		{	execNow clearFeeder;	}
+		onEvent Populate	{	
+			//						Action		1 - Menu Item Text			
+			execNow addToFeeder		Yes			MENU_YES;	
+			execNow	addToFeeder		No			MENU_CANCEL;			
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		4
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_share_options, ON_OPEN_THEATER_BUTTON_TEXT; execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 5
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent Screenshot      {   ACTION_VIEW_SCREENSHOT( "menu_fileshare_share", "fileShareSlots" )      }
+		onEvent	PlayPC			
+		{	
+				SETUP_ACTION_PLAY_DEMO( 1, "menu_fileshare_share", "fileShareSlots" )
+		}
+		onEvent	RenderPC			
+		{	
+				SETUP_ACTION_RENDER_DEMO( 1, "menu_fileshare_share", "fileShareSlots" )
+		}
+		onEvent	Theatre			
+		{	
+			if ( IS_LOBBY_HOST  || !dvarBool( "xblive_theater" ) ) 
+			{ 
+				if ( !CanSwitchToLobby( dvarInt( party_maxplayers_theater ), dvarInt( party_maxlocalplayers_theater ) ) )
+				{
+					open menu_fileshare_maxlocalplayers;
+				}
+				else
+				{
+					ACTION_GOTO_THEATER( 1, "menu_fileshare_share", "fileShareSlots" )	
+				}
+			}	
+		}
+		onEvent RatePC
+		{
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				close self;
+				if ( !ALREADY_RATED )
+				{
+					open fileshare_submitrating;
+				}
+				else
+				{
+					open fileshare_ratingsubmitted;
+				}
+			}
+		}
+		onEvent GoToCustom
+		{
+			ACTION_GOTO_CUSTOMGAME( 1, "menu_fileshare_share", "fileShareSlots" )
+		}
+		onEvent Cancel			{	close self;				}
+		onEvent Clear			{	execNow clearFeeder;	}
+		onEvent Transfer		
+		{	
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				close self;
+				open menu_fileshare_share_transfer;	
+			}
+		}
+		onEvent Populate
+		{	
+			if ( getFeederData( "menu_fileshare_share", "fileShareSlots", "fileType" ) == "screenshot" )
+			{
+														//onFocus	// Disable condition		// text
+				execNow addToFeederExtended Screenshot	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_VIEW;
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 1;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATESCREENSHOT;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}
+			elseif ( getFeederData( "menu_fileshare_share", "fileShareSlots", "fileType" ) != "customgamemode" )
+			{
+				if ( IS_PC )
+				{	
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					
+					if ( CLIP_SELECTED( "menu_fileshare_share", "fileShareSlots" ) )
+					{
+						setdvar fileshare_rating_clip 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_CLIP;
+						execNow addToFeederExtended		RenderPC	noop		(FILESHARE_TASKSINPROGRESS)		MPUI_DEMO_RENDER_CLIP;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_CLIP_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+						}
+					}
+					else
+					{
+						setdvar fileshare_rating_film 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_FILM;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_FILM_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+						}
+					}
+				}
+				else
+				{
+					if ( dvarBool( xblive_theater ) == 0 )
+					{
+						execNow addToFeeder	Theatre			(localVarString( ui_theater_button_text ));
+					}
+					else
+					{
+																//onFocus	// Disable condition		// text
+						execNow addToFeederExtended Theatre		noop		(IS_NOT_LOBBY_HOST)			(localVarString( ui_theater_button_text ));
+					}
+				}
+			}
+			elseif ( getFeederData( "menu_fileshare_share", "fileShareSlots", "fileType" ) == "customgamemode" )
+			{
+				if( !IS_PC )
+				{
+					execNow addToFeeder	GoToCustom	MPUI_START_CUSTOMGAME;
+				}
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 1;
+					
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_CUSTOM_ACTION;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}
+			if ( getFeederData( "menu_fileshare_share", "fileShareSlots", "slotOccupied" ) )
+			{
+														//onFocus	// Disable condition		// text
+				execNow addToFeederExtended Transfer	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_PLACEINSHARE;
+			}
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		3
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_recentgames_choose, ON_OPEN_THEATER_BUTTON_TEXT; execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 4
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent PlaceInShare	
+		{	
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				close self;
+				open menu_fileshare_recentgames_transfer;	
+			}
+		}
+		onEvent	PlayPC			
+		{	
+				SETUP_ACTION_PLAY_DEMO( 0, "menu_fileshare_recentgames", "fileShareRecentGames" )
+		}
+		onEvent	RenderPC			
+		{	
+				SETUP_ACTION_RENDER_DEMO( 0, "menu_fileshare_recentgames", "fileShareRecentGames" )
+		}
+		onEvent	Theatre			
+		{	
+			if ( IS_LOBBY_HOST  || !dvarBool( "xblive_theater" ) ) 
+			{ 
+				if ( !CanSwitchToLobby( dvarInt( party_maxplayers_theater ), dvarInt( party_maxlocalplayers_theater ) ) )
+				{
+					open menu_fileshare_maxlocalplayers;
+				}
+				else
+				{
+					ACTION_GOTO_THEATER( 0, "menu_fileshare_recentgames", "fileShareRecentGames" )	
+				}
+			}	
+		}
+		onEvent Cancel			{	close self;				}
+		onEvent Clear			{	execNow clearFeeder;	}
+		onEvent Populate
+		{	
+			if ( IS_PC )
+			{	
+				if ( CLIP_SELECTED( "menu_fileshare_myrecentgames", "fileShareRecentGames" ) )
+				{
+					execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_CLIP;
+					execNow addToFeederExtended		RenderPC	noop		(FILESHARE_TASKSINPROGRESS)		MPUI_DEMO_RENDER_CLIP;
+				}
+				else
+				{
+					execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)		MPUI_START_FILM;
+				}
+			}
+			else
+			{
+				//						Action		1 - Menu Item Text		
+				if ( dvarBool( xblive_theater ) == 0 ) { execNow addToFeeder	Theatre			(localVarString( ui_theater_button_text )); }
+				if ( dvarBool( xblive_theater ) == 1 ) 
+				{
+															//onFocus	// Disable condition		// text
+					execNow addToFeederExtended Theatre		noop		(IS_NOT_LOBBY_HOST)			(localVarString( ui_theater_button_text ));			
+				}
+			}
+														//onFocus	// Disable condition		// text
+			execNow addToFeederExtended PlaceInShare	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_PLACEINSHARE;
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		4
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_community_choose, ON_OPEN_THEATER_BUTTON_TEXT; execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_FILE_ACTION", 1 )
+
+	itemDef
+	{		
+		DYNAMIC_MENU_COMMON_FIELDS
+		backgroundItemListbox		"white"
+		rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 //HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_MIDDLE
+
+		menuItemsDef
+		{
+			maxRows 5
+			// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE.
+			DYNAMIC_MENU_COMMON_COLUMNS 
+
+			menuColDef
+			{
+				type MENU_ITEM_TYPE_LOC_TEXT
+				rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+				maxChars 50
+			}
+		}
+		onEvent PlaceInShare	
+		{	
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				open menu_fileshare_community_transfer;	
+				exec "wait; closeMenu menu_fileshare_community_choose";
+			}
+		}
+		onEvent Screenshot      {   close self; ACTION_VIEW_SCREENSHOT( "menu_fileshare_community", "fileShareCommunitySearch" )        }
+		onEvent	Theatre			
+		{	
+			if ( IS_LOBBY_HOST  || !dvarBool( "xblive_theater" ) ) 
+			{ 
+				if ( !CanSwitchToLobby( dvarInt( party_maxplayers_theater ), dvarInt( party_maxlocalplayers_theater ) ) )
+				{
+					open menu_fileshare_maxlocalplayers;
+				}
+				else
+				{
+					ACTION_GOTO_THEATER( 1, "menu_fileshare_community", "fileShareCommunitySearch" )	
+				}
+			}	
+		}
+		onEvent Cancel			{	close self;				}
+		onEvent Clear			{	execNow clearFeeder;	}
+		onEvent	PlayPC			
+		{	
+				SETUP_ACTION_PLAY_DEMO( 1, "menu_fileshare_community", "fileShareCommunitySearch" )
+		}
+		onEvent	RenderPC			
+		{	
+				SETUP_ACTION_RENDER_DEMO( 1, "menu_fileshare_community", "fileShareCommunitySearch" )
+		}
+
+		onEvent GoToCustom
+		{
+			ACTION_GOTO_CUSTOMGAME( 1, "menu_fileshare_community", "fileShareCommunitySearch" )
+		}
+
+		onEvent RatePC
+		{
+			if ( !(FILESHARE_TASKSINPROGRESS) )
+			{
+				close self;
+				if ( !ALREADY_RATED )
+				{
+					open fileshare_submitrating;
+				}
+				else
+				{
+					open fileshare_ratingsubmitted;
+				}
+			}
+		}
+		onEvent Populate
+		{	
+			if ( getFeederData( "menu_fileshare_community", "fileShareCommunitySearch", "fileType" ) == "screenshot" )
+			{
+														//onFocus	// Disable condition		// text
+				execNow addToFeederExtended Screenshot	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_VIEW;
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 1;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATESCREENSHOT;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}
+			elseif ( getFeederData( "menu_fileshare_community", "fileShareCommunitySearch", "fileType" ) != "customgamemode" )
+			{
+				if ( IS_PC )
+				{	
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 0;
+					
+					if ( CLIP_SELECTED( "menu_fileshare_community", "fileShareCommunitySearch" ) )
+					{
+						setdvar fileshare_rating_clip 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)			MPUI_START_CLIP;
+						execNow addToFeederExtended		RenderPC	noop		(FILESHARE_TASKSINPROGRESS)			MPUI_DEMO_RENDER_CLIP;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)			MENU_FILESHARE_RATE_CLIP_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)			PLATFORM_DEMO_SEERATING;
+						}
+					}
+					else
+					{
+						setdvar fileshare_rating_film 1;
+						execNow addToFeederExtended		PlayPC		noop		(FILESHARE_TASKSINPROGRESS)			MPUI_START_FILM;
+						if( !ALREADY_RATED )
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)			MENU_FILESHARE_RATE_FILM_ACTION;
+						}
+						else
+						{
+							execNow addToFeederExtended	RatePC		noop		(FILESHARE_TASKSINPROGRESS)			PLATFORM_DEMO_SEERATING;
+						}
+					}
+				}
+				else
+				{
+					if ( dvarBool( xblive_theater ) == 0 )
+					{
+						execNow addToFeeder	Theatre			(localVarString( ui_theater_button_text ));
+					}
+					else
+					{
+																//onFocus	// Disable condition		// text
+						execNow addToFeederExtended Theatre		noop		(IS_NOT_LOBBY_HOST)			(localVarString( ui_theater_button_text ));
+					}
+				}
+			}
+			elseif ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "fileType" ) == "customgamemode" )
+			{
+				if( !IS_PC )
+				{
+					execNow addToFeeder	GoToCustom		MPUI_START_CUSTOMGAME;
+				}
+				if( IS_PC )
+				{
+					setdvar fileshare_rating_screenshot 0;
+					setdvar fileshare_rating_film 0;
+					setdvar fileshare_rating_clip 0;
+					setdvar fileshare_rating_gametype 1;
+					
+					if( !ALREADY_RATED )
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		MENU_FILESHARE_RATE_CUSTOM_ACTION;
+					}
+					else
+					{
+						execNow addToFeederExtended		RatePC		noop		(FILESHARE_TASKSINPROGRESS)		PLATFORM_DEMO_SEERATING;
+					}
+				}
+			}
+														//onFocus	// Disable condition		// text
+			execNow addToFeederExtended PlaceInShare	noop		(FILESHARE_TASKSINPROGRESS)	MENU_FILESHARE_PLACEINSHARE;
+			execNow addToFeeder Cancel			MENU_CANCEL;
+		}
+		onfocus						{	play CHOICE_FOCUS_SOUND;	}		
+		onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}
+		doubleclick					{	play CHOICE_FOCUS_SOUND;		
+										execNow raiseFeederEvent; 	}
+	}
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		2
+
+menuDef																					    														
+{																																					
+	SYSTEM_POPUP_SETUP_VIS( fileshare_slotselection_clip_confirm, execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )	
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )																					
+																																					
+	itemDef                                                                                 														
+    {		                                                                                														
+	    DYNAMIC_MENU_COMMON_FIELDS                                                          														
+	    backgroundItemListbox		"white"                                                 														
+	    rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400 																						
+	    menuItemsDef                                                                        														
+	    {                                                                                   														
+		    maxRows 4                                                                       														
+		    DYNAMIC_MENU_COMMON_COLUMNS                                                     														
+		    menuColDef                                                                      														
+		    {                                                                               														
+			    type MENU_ITEM_TYPE_LOC_TEXT                                                														
+			    rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE                 														
+			    maxChars 50                                                                 														
+		    }                                                                               														
+	    }                                                                                   														
+	    onEvent Yes			                                                                														
+	    {	                                                                                														      
+		    execnow demo_saveanduploadclip ( dvarInt( demo_cmdNum ) ) ( getFeederData( fileshare_slotselection_clip, fileShareSlots, ingameSlot ) );                                                     														
+		    close self;                                                                     														
+	    }                                                                                   														
+	    onEvent No			{	close self;				}                                   														
+	    onEvent Clear		{	execNow clearFeeder;	}                                   														
+	    onEvent Populate	{	                                                            														
+		    execNow addToFeeder Yes	MENU_YES;	                                            														
+		    execNow	addToFeeder	No	MENU_CANCEL;	                                        																
+	    }                                                                                   														
+	    onfocus						{	play CHOICE_FOCUS_SOUND;	}		                														
+	    onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}                       														
+	    doubleclick					{	play CHOICE_FOCUS_SOUND;		                    														
+									    execNow raiseFeederEvent; 	}                       														
+    }                                                                                       														
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define POPUP_BUTTON_COUNT		2
+
+menuDef																					    														
+{																																					
+	SYSTEM_POPUP_SETUP_VIS( fileshare_slotselection_scr_confirm, execNow raiseFeederEvent Populate;, execNow raiseFeederEvent Clear;, 1 )	
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_REPLACECONFIRM", 1 )																					
+																																					
+	itemDef                                                                                 														
+    {		                                                                                														
+	    DYNAMIC_MENU_COMMON_FIELDS                                                          														
+	    backgroundItemListbox		"white"                                                 														
+	    rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 400  																						
+	    menuItemsDef                                                                        														
+	    {                                                                                   														
+		    maxRows 4                                                                       														
+		    DYNAMIC_MENU_COMMON_COLUMNS                                                     														
+		    menuColDef                                                                      														
+		    {                                                                               														
+			    type MENU_ITEM_TYPE_LOC_TEXT                                                														
+			    rect 0 0 50 CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE                 														
+			    maxChars 50                                                                 														
+		    }                                                                               														
+	    }                                                                                   														
+	    onEvent Yes			                                                                														
+	    {	                                                                                														      
+		    execnow demo_savescreenshot 0 ( getFeederData( fileshare_slotselection_scr, fileShareSlots, ingameSlot ) );                                                             														
+		    close self;                                                                     														
+	    }                                                                                   														
+	    onEvent No			{	close self;				}                                   														
+	    onEvent Clear		{	execNow clearFeeder;	}                                   														
+	    onEvent Populate	{	                                                            														
+		    execNow addToFeeder Yes	MENU_YES;	                                            														
+		    execNow	addToFeeder	No	MENU_CANCEL;	                                        																
+	    }                                                                                   														
+	    onfocus						{	play CHOICE_FOCUS_SOUND;	}		                														
+	    onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND;	}                       														
+	    doubleclick					{	play CHOICE_FOCUS_SOUND;		                    														
+									    execNow raiseFeederEvent; 	}                       														
+    }                                                                                       														
+}
+
+
+// Rating
+
+menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( fileshare_submitrating, execnow fileShareResetRating;, FILESHARE_RATINGCLOSE_ACTION, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_RATESCREENSHOT", when( dvarBool( fileshare_rating_screenshot ) == 1 ) )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_RATE_FILM_ACTION", when( dvarBool( fileshare_rating_film ) == 1 ) )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_RATE_CLIP_ACTION", when( dvarBool( fileshare_rating_clip ) == 1 ) )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_RATE_CUSTOM_ACTION", when( dvarBool( fileshare_rating_gametype ) == 1 ) )
+
+		FILESHARE_RATING_MENU_BODY( fileshare_submitrating, execnow fileShareSubmitRating ( dvarString( fsSelectedFileID ) ) )
+	}
+
+menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( fileshare_ratingsubmitted, execnow fileShareResetRating;, close self;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_SEERATING", 1 )
+
+		FILESHARE_RATINGSUBMITTED_MENU_BODY( fileshare_ratingsubmitted )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( menu_fileshare_error, ;, ;, 1 )
+		execkeyint BUTTON_START { }
+		onEsc { close self; }
+
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_ERROR", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_FILESHARE_FILENOTFOUND", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; ) 
+	}
+
+// Redefinitions for MEDIUM_POPUP_SETUP popups
+	#undef	POPUP_WIDTH
+	#define	POPUP_WIDTH								MEDIUM_POPUP_WIDTH		
+	#undef	POPUP_HEIGHT
+	#define	POPUP_HEIGHT							MEDIUM_POPUP_HEIGHT
+	#undef	CHOICE_SIZE_X			
+	#define CHOICE_SIZE_X							(POPUP_WIDTH-(POPUP_SIDE_PAD*2))
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START							POPUP_HEADER_HEIGHT
+	#undef	PLAYER_INFO_ALIGN
+	#define PLAYER_INFO_ALIGN						// Purposely set to nothing. The popup setup macro sets the alignment. If items within it set their own aligment, they end up offset incorrectly.
+	#undef	PLAYER_INFO_X_START
+	#define	PLAYER_INFO_X_START( frameWidth )		( frameWidth - PLAYER_INFO_WIDTH - PLAYER_INFO_PAD )
+	#undef	PLAYER_INFO_Y_START
+	#define	PLAYER_INFO_Y_START( frameHeight )		( PLAYER_INFO_PAD * 2 )
+	#undef	BG_BACKCOLOR
+	#define BG_BACKCOLOR							POPUP_BACKCOLOR
+	// Redefinitions for MEDIUM_POPUP_SETUP popups
+
+
+	#define SHARE_TRANSFER_SAVE_ACTION	\
+			execNow fileShareTransferFromUser ( getFeederData( "menu_fileshare_share", "fileShareSlots", "fileID" ) ) ( getFeederData( "menu_fileshare_share_transfer", "fileShareSlots", "slot" ) );
+
+	menuDef                                                                                     											
+	{                                                                                           											
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_share_transfer_save, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )	
+		onClose	                                                                                											
+		{                                                                                       											
+			deactivateblur;                                                                     	 										
+			play CHOICE_FOCUS_SOUND;                                                            											
+		}                                                                                       											
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_SAVE_INFORMATION_CAPS", 1 )																			
+																																			
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+		FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						SHARE_TRANSFER_SAVE_ACTION; close self; close menu_fileshare_share_transfer; )					
+		MEDIUM_POPUP_BACK_BUTTON																											
+	} 
+
+	#define MY_RECENTGAMES_TRANSFER_ACTION				\
+			close menu_fileshare_myrecentgames_choose;	\
+			execNow fileShareTransferFromPooled ( dvarstring( fsSelectedRecentGameID ) ) ( getFeederData( "menu_fileshare_myrecentgames_transfer", "fileShareSlots", "slot" ) );
+
+	menuDef                                                                                     											
+	{                                                                                           											
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_myrecentgames_transfer_save, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )	
+		onClose	                                                                                											
+		{                                                                                       											
+			deactivateblur;                                                                     	 										
+			play CHOICE_FOCUS_SOUND;                                                            											
+		}                                                                                       											
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_SAVE_INFORMATION_CAPS", 1 )																			
+																																			
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+		FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						MY_RECENTGAMES_TRANSFER_ACTION; close self; close menu_fileshare_myrecentgames_transfer; )					
+		MEDIUM_POPUP_BACK_BUTTON																											
+	} 
+
+	
+	#define RECENTGAMES_TRANSFER_ACTION	\
+			execNow fileShareTransferFromPooled ( dvarstring( fsSelectedRecentGameID ) ) ( getFeederData( "menu_fileshare_recentgames_transfer", "fileShareSlots", "slot" ) ); 
+
+	menuDef                                                                                     											
+	{                                                                                           											
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_recentgames_transfer_save, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )	
+		onClose	                                                                                											
+		{                                                                                       											
+			deactivateblur;                                                                     	 										
+			play CHOICE_FOCUS_SOUND;                                                            											
+		}                                                                                       											
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_SAVE_INFORMATION_CAPS", 1 )																			
+																																			
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+		FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						RECENTGAMES_TRANSFER_ACTION; close self; close menu_fileshare_recentgames_transfer; )					
+		MEDIUM_POPUP_BACK_BUTTON																											
+	} 
+
+	#define COMMUNITY_TRANSFER_ACTION	\
+			execNow fileShareTransferFromCommunity ( getFeederData( "menu_fileshare_community", "fileShareCommunitySearch", "fileID" ) ) ( getFeederData( "menu_fileshare_community_transfer", "fileShareSlots", "slot" ) );
+
+	
+	menuDef                                                                                     											
+	{                                                                                           											
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_community_transfer_save, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )	
+		onClose	                                                                                											
+		{                                                                                       											
+			deactivateblur;                                                                     	 										
+			play CHOICE_FOCUS_SOUND;                                                            											
+		}                                                                                       											
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_SAVE_INFORMATION_CAPS", 1 )																			
+																																			
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+		FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						COMMUNITY_TRANSFER_ACTION; close self; close menu_fileshare_community_transfer; )					
+		MEDIUM_POPUP_BACK_BUTTON																											
+	} 
+
+	#define FILESHARE_CHANGE_TAG_LEFT				\
+			if ( localVarInt( ui_highlight ) == 6 )	\
+			{										\
+				execnow fileShareUserTagLeft;		\
+			}
+
+	#define FILESHARE_CHANGE_TAG_RIGHT				\
+			if ( localVarInt( ui_highlight ) == 6 )	\
+			{										\
+				execnow fileShareUserTagRight;		\
+			}
+
+	menuDef                                                                                     
+	{                                                                                           
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_myshare_editinfo, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )   
+		onClose	                                                                                
+		{                                                                                       
+			deactivateblur;                                                                     
+			play CHOICE_FOCUS_SOUND;                                                            		
+		}
+		execKeyInt APAD_LEFT 
+		{ 
+			FILESHARE_CHANGE_TAG_LEFT
+		} 
+		execKeyInt DPAD_LEFT 
+		{ 
+			FILESHARE_CHANGE_TAG_LEFT
+		} 
+		execKeyInt APAD_RIGHT 
+		{ 
+			FILESHARE_CHANGE_TAG_RIGHT
+		} 
+		execKeyInt DPAD_RIGHT 
+		{ 
+			FILESHARE_CHANGE_TAG_RIGHT
+		} 
+
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_EDIT_INFORMATION", 1 )
+                                                                
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )
+		
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+		
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 5 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MENU_FILESHARE_USERTAG" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )	
+		
+		#define FILESHARE_TAG_X_OFFSET		20
+		#define FILESHARE_TAG_BUTTON_WIDTH	280
+		#define FILESHARE_TAG_ARROW_SPACING	7
+
+		FRAME_CHOICE_BUTTON( 6, "",	FILESHARE_CHANGE_TAG_RIGHT; )					
+		
+		FILESHARE_BUTTON_TAGS( CHOICE_X( 6 ), CHOICE_Y( 6 ), getUserTagFromIndex( dvarInt( fsSelectedFileTagIndex ) ), localVarInt( ui_highlight ) == 6  )
+
+		FRAME_CHOICE_BUTTON( 8, "@MENU_CONTINUE", execnow fileShareEditInfo ( getFeederData( "menu_fileshare_myshare", "fileShareSlots", "fileID" ) ); close self; close menu_fileshare_myshare_options; )  
+		MEDIUM_POPUP_BACK_BUTTON                                                        
+	}   
+
+	
+	menuDef                                                                                     
+	{                                                                                           
+		MEDIUM_POPUP_SETUP_VIS( menu_fileshare_mymovie_editinfo, activateblur;, deactivateblur; close self;, POPUP_GLOW_WHITE, 0, 1 )                                                                                          
+		onClose	                                                                                
+		{                                                                                       
+			deactivateblur;                                                                     
+			play CHOICE_FOCUS_SOUND;                                                            		
+		}          
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_EDIT_INFORMATION", 1 )
+	                          
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 1 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_TITLE" )+" :",																			
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )
+		
+		FRAME_CHOICE_BUTTON( 2, dvarString(fsSelectedFileName), execNow demo_keyboard fileshareFileName; )									
+		
+		PREPROC_TEXT_DRAW_VIS(	CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	
+								locString( "@MPUI_DESCRIPTION" )+" :",																		
+								TEXTSIZE_SMALL, 0, 0, CHOICE_TEXTALIGN, 1 1 1 1,															
+								1 )																											
+		
+		FRAME_CHOICE_BUTTON( 4, dvarString(fsSelectedFileDescription),	execNow demo_keyboard fileshareFileDescription; )					
+			                                                             
+		FRAME_CHOICE_BUTTON( 6, "@MENU_CONTINUE",						execnow fileShareEditInfo ( getMySlotInfo( 20, fileID ) ); close self; close menu_fileshare_myshare_options; )					
+		
+		MEDIUM_POPUP_BACK_BUTTON                                                            
+	}   
+
+	

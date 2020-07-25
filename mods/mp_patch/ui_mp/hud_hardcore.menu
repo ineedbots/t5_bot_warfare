@@ -1,0 +1,1316 @@
+// CONSOLE HUD - MP
+
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/hud_gametypes.inc"
+
+{
+	#include "ui_mp/hud_dirt.inc"
+	
+	// Sticky grenade overlay
+	menuDef
+	{
+		name			"sticky_grenade_overlay"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+		visibilityBits  bits( !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_DEMO_ALL_GAME_HUD_HIDDEN !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+		
+		itemDef 
+		{
+			name			"overlay"
+			style			WINDOW_STYLE_SHADER
+			rect			0 0 640 480
+			background		"overlay_low_health"
+			forecolor		1 1 1 0
+			visible			1
+			decoration
+
+			state
+			{
+				name		"pulse"
+				forecolor	1 1 1 0.6
+				onEnter { changeState Default 100; }
+			}
+		}
+	}
+	
+	// Low health overlay
+	menuDef
+	{
+		name			"Low Health"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			name			"healthoverlay"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 640 480
+			forecolor		1 1 1 1
+			background		"overlay_low_health_splat"
+			ownerdraw		CG_PLAYER_LOW_HEALTH_OVERLAY
+			visible			1
+			visibilityBits  bits( !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+	
+	// Directional hit indicator
+	menuDef
+	{
+		name			"Directional Hit Indicator"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			name			"directionalhitIndicator"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			-16 -16 32 32 
+			forecolor		1 1 1 1
+			background		"directional_damage_feedback"
+			ownerdraw		CG_PLAYER_DIRECTIONAL_HIT_INDICATOR
+			visibilityBits  bits( !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+
+	// Invalid cmd hint
+	menuDef 
+	{
+		name			"InvalidCmdHint"
+		rect			0 -130 0 0 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+
+		itemDef 
+		{
+			name			"chRect"
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			0 0 0 0
+			textscale		TEXTSIZE_SMALL
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			ownerdraw		CG_INVALID_CMD_HINT
+			textfont		UI_FONT_NORMAL
+			visibilityBits  bits( !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_DEMO_CAMERA_MODE_THIRDPERSON )
+			decoration
+		}
+	}
+	
+	// Cursor hints
+	menuDef
+	{
+		name			"Cursorhints"
+		rect			0 70 40 40 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+		visibilityBits  bits( !BIT_UI_ACTIVE !BIT_IS_DEMO_PLAYING !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+
+		itemDef
+		{
+			name			"chRect"
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			-20 0 40 40 // 64x64
+			exp				rect Y( 0 - (ONLINEGAME * ONLINEGAME_OFFSET) );
+			textscale		TEXTSIZE_SMALL
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			ownerdraw		CG_CURSORHINT
+			visible			1
+			visibilityBits  bits( !BIT_SPECTATING_CLIENT )
+			forecolor		1 1 1 HUD_ALPHA
+			decoration
+		}
+	}
+
+
+	//WRIST WATCH
+	menuDef
+	{
+		name "WristWatch"
+		fullScreen MENU_FALSE
+		visible 1
+		ui3dWindowId	0
+		rect 0 0 640 480
+		itemDef
+		{
+			name	"WristWatchFace"
+			type ITEM_TYPE_OWNERDRAW
+			rect	0 0 640 480
+			forecolor	1.0 1.0 1.0 1.0
+			ownerdraw CG_PLAYER_WRISTWATCH
+			visible		when( !dvarInt( "hideUi3d" ) );
+			decoration
+		}
+	}
+
+
+	#define MINIMAP_ORIGIN 2 2
+	
+	// These are no longer used, they have been replaced by visibility bits.
+	//#define ALLIES_HAVE_RADAR ( isVisibilityBitSet( BIT_RADAR_ALLIES ) && team( name ) == "TEAM_ALLIES" )
+	//#define AXIS_HAVE_RADAR ( isVisibilityBitSet( BIT_RADAR_AXIS ) && team( name ) == "TEAM_AXIS" )
+	//#define CLIENT_HAS_RADAR ( isVisibilityBitSet( BIT_RADAR_CLIENT ) && team( name ) == "TEAM_FREE" )
+	
+	#define RECT_COMPASS			8 8 COMPASS_SIZE_MP COMPASS_SIZE_MP HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_TOP
+	#define FRAME_OFFSET			1
+	#define EXTRACAM_ON				( ( isExtraCamActive() || isExtraCamStatic() ) && !InVehicle() && !isDemoCameraEditMode() )
+	#define EXTRACAM_SCALE			1.5
+	#define EXTRACAM_FRAME_OFFSET	2
+	#define REC_TEXT_VISIBILE		( !isDemoDollyCamera() )
+	
+	menudef
+	{
+		name			spike_cam
+		rect			RECT_COMPASS
+		fullScreen		0
+		visible			when ( dvarString( createfx ) != "on" );
+		visibilityBits  bits( !BIT_SELECTING_LOCATION !BIT_IN_KILLCAM !BIT_IS_FLASH_BANGED !BIT_UI_ACTIVE !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC !BIT_IS_SCOPED BIT_EXTRACAM_ON !BIT_DEMO_ALL_GAME_HUD_HIDDEN )
+
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin			MINIMAP_ORIGIN
+			exp				material( "extracam2d" );
+			forecolor		1 1 1 1
+			visible			1
+			visibilityBits	bits( !BIT_EXTRACAM_STATIC );
+			decoration
+			
+			state
+			{
+				name	"spike_cam_on"
+				rect	MINIMAP_X_MP MINIMAP_Y_MP (MINIMAP_W_MP*EXTRACAM_SCALE) (MINIMAP_H_MP*EXTRACAM_SCALE)
+			}
+		}
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin			MINIMAP_ORIGIN
+			exp				material( "compass_static" );
+			forecolor		1 1 1 1
+			visible			1
+			visibilityBits	bits( BIT_EXTRACAM_STATIC );
+			
+			decoration
+			
+			state
+			{
+				name	"spike_cam_on"
+				rect	MINIMAP_X_MP MINIMAP_Y_MP (MINIMAP_W_MP*EXTRACAM_SCALE) (MINIMAP_H_MP*EXTRACAM_SCALE)
+			}
+		}
+		// frame
+		itemDef
+		{
+			style		WINDOW_STYLE_SHADER
+			type		ITEM_TYPE_IMAGE
+			rect		(MINIMAP_X_MP-FRAME_OFFSET) (MINIMAP_Y_MP-FRAME_OFFSET) (MINIMAP_W_MP+FRAME_OFFSET*2) (MINIMAP_H_MP+FRAME_OFFSET*2)
+			origin		MINIMAP_ORIGIN
+			forecolor	1 1 1 1
+			exp			material( "compass_map_border" );
+			visible		1
+			decoration
+			
+			state
+			{
+				name	"spike_cam_on"
+				rect	(MINIMAP_X_MP-EXTRACAM_FRAME_OFFSET) (MINIMAP_Y_MP-EXTRACAM_FRAME_OFFSET) (MINIMAP_W_MP*EXTRACAM_SCALE+EXTRACAM_FRAME_OFFSET*2) (MINIMAP_H_MP*EXTRACAM_SCALE+EXTRACAM_FRAME_OFFSET*2)
+			}
+		}
+		// REC text
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			rect			(MINIMAP_X_MP+1) (MINIMAP_Y_MP+14) MINIMAP_W_MP MINIMAP_H_MP
+			origin			MINIMAP_ORIGIN
+			textstyle		ITEM_TEXTSTYLE_NORMAL
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.33
+			forecolor		EXTRACAM_RED_COLOR 1
+			text			"REC"
+			visible			when( REC_TEXT_VISIBILE )
+			visibilityBits	bits( !BIT_EXTRACAM_STATIC );
+			decoration
+		}
+		// Blinking REC light
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			(MINIMAP_X_MP+23) (MINIMAP_Y_MP+1.5) 9 9
+			origin			MINIMAP_ORIGIN
+			forecolor		EXTRACAM_RED_COLOR 1
+			exp				material( "hud_dpad_eqip_count_backing" );
+			visible			when( REC_TEXT_VISIBILE )
+			visibilityBits	bits( !BIT_EXTRACAM_STATIC );
+			decoration
+			
+			state
+			{
+				name		"spike_cam_on"
+				onEnter
+				{
+					changeState	spike_cam_on_wait 750;
+				}
+			}
+			state
+			{
+				name		"spike_cam_on_wait"
+				onEnter
+				{
+					changeState spike_cam_off 0;
+				}
+			}
+			state
+			{
+				name		"spike_cam_off"
+				forecolor	EXTRACAM_RED_COLOR 0
+				onEnter
+				{
+					changeState spike_cam_off_wait 750;
+				}
+			}
+			state
+			{
+				name		"spike_cam_off_wait"
+				forecolor	EXTRACAM_RED_COLOR 0
+				onEnter
+				{
+					changeState spike_cam_on 0;
+				}
+			}
+		}
+	}
+
+// This condition is now replaced by a single bit BIT_COMPASS_VISIBLE which is set in code cl_scrn_mp.cpp in the function CL_UpdateUIVisibilityBits() 
+// ( !isVisibilityBitSet( BIT_HUD_HARDCORE ) || ALLIES_HAVE_RADAR || AXIS_HAVE_RADAR || CLIENT_HAS_RADAR || isVisibilityBitSet( BIT_G_COMPASS_SHOW_ENEMIES ) )
+	
+#define COMPASS_ALPHA	0.8
+
+	// Compass
+	menuDef
+	{
+		name			"Compass_old"
+ 	   	rect			RECT_COMPASS
+ 	   	fullScreen		0
+		visible			when ( (dvarString( createfx ) != "on") );
+		visibilityBits  bits( BIT_HUD_VISIBLE BIT_COMPASS_VISIBLE !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_DEMO_ALL_GAME_HUD_HIDDEN !BIT_SELECTING_LOCATION !BIT_IN_KILLCAM !BIT_IS_FLASH_BANGED !BIT_UI_ACTIVE !BIT_IS_SCOPED !BIT_EXTRACAM_ON )
+
+		itemDef
+ 	   	{
+			name			"mini_map_background"
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		0 0 0 0.4
+			exp				material( "white" );
+			visible			1
+			decoration
+ 	   	}
+
+		itemDef
+ 	   	{
+			name			"mini_map"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			background		"compass_map_default"
+			ownerdraw		CG_PLAYER_COMPASS_MAP
+			visible			1
+			decoration
+ 	   	}
+
+ 	   	// Friendly Compass scrambler indicator 
+		itemDef
+ 	   	{
+			name			"compass_map_scrambler_friendlies"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_SCRAMBLER_FRIENDLY
+			visible			1
+ 	   	}
+
+		// Grid
+		itemDef
+ 	   	{
+			name			"compass_map_grid"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			background		"map_grid_square"
+			ownerdraw		CG_PLAYER_COMPASS_GRID
+			visible			1
+			decoration
+ 	   	}
+		itemDef
+		{
+			name			"compass_grid_points"
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 (COMPASS_ALPHA*0.7)
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textscale		0.26
+			ownerdraw		CG_PLAYER_COMPASS_GRID_POINTS
+			visible			1
+		}
+		// frame
+		itemDef
+		{
+			name			"compassframe"
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			(MINIMAP_X_MP-FRAME_OFFSET) (MINIMAP_Y_MP-FRAME_OFFSET) (MINIMAP_W_MP+FRAME_OFFSET) (MINIMAP_H_MP+FRAME_OFFSET)
+			origin			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			exp				material( "compass_map_border" );
+			visible			1
+			decoration
+		}
+		// tank pointers
+		itemDef
+		{
+			name			"compasstanks"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_TANKS
+			visible			1
+		}
+		// dog pointers
+		itemDef
+		{
+			name			"compassdogs"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_DOGS
+			visible			1
+		}
+		// turret pointers
+		itemDef
+		{
+			name			"compassturrets"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_TURRETS
+			visible			1
+		}
+		// guided missile pointers
+		itemDef
+		{
+			name			"compassguidedmissiles"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+			origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_GUIDED_MISSILE
+			visible			1
+		}
+		// Objective pointers
+		itemDef
+		{
+			name			"compasspointers"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			background		"objective_line"
+			ownerdraw		CG_PLAYER_COMPASS_POINTERS
+			visible			1
+			visibilityBits  bits( BIT_HUD_SHOWOBJICONS )
+			decoration
+		}
+ 	   	// Friendlies pointers
+		itemDef
+		{
+			name			"compassfriendlies"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_FRIENDS
+			visible			1
+		}
+ 	   	// Enemy pings
+		itemDef
+		{
+			name			"compassenemies"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_ENEMIES
+			visible			1
+		}
+	   	// Fake fire pings
+		itemDef
+		{
+			name			"compassfakefire"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_FAKE_FIRE
+			visible			1
+		}
+ 	   	// Helicopter pointers
+		itemDef
+		{
+			name			"compasshelicopters"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_HELICOPTERS
+			visible			1
+		}
+ 	   	// Plane pointers
+		itemDef
+		{
+			name			"compassplanes"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_PLANES
+			visible			1
+		}
+		// Player direction indicator
+		itemDef
+		{
+			name			"compassplayer"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			background		"compassping_player"
+			ownerdraw		CG_PLAYER_COMPASS_PLAYER
+			visible			1
+		}
+  	 	// Artillery Icon
+		itemDef
+		{
+			name			"compassartilleryicon"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_ARTILLERY_ICON
+			visible			1
+		}
+	    // Radar lines
+		itemDef
+		{
+			name			"compassradareffects"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 COMPASS_ALPHA
+			ownerdraw		CG_PLAYER_COMPASS_RADAR_EFFECTS
+			visible			1
+		}
+		// Map flicker
+		itemDef
+		{
+			name			"compassflicker"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			forecolor		1 1 1 1
+			background		"compass_map_flicker"
+			ownerdraw		CG_PLAYER_COMPASS_FLICKER
+			visible			1
+			decoration
+		}
+		itemDef
+ 	   	{
+			name			"compass_map_static"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			MINIMAP_X_MP MINIMAP_Y_MP MINIMAP_W_MP MINIMAP_H_MP
+	 	   	origin 			MINIMAP_ORIGIN
+			background		"tow_filter_overlay_no_signal"
+			forecolor		1 1 1 1
+			ownerdraw		CG_PLAYER_COMPASS_STATIC
+			visible			1
+ 	   	}
+	}
+
+
+	// Full Screen Map for location selection
+	#define FULL_SCREEN_MAP_WIDTH 375
+	#define FULL_SCREEN_MAP_HEIGHT 375
+	#define MAP_ALPHA 1
+	#define MAP_TEXT_ALPHA 0.9
+
+	#define FSM_VISIBILITY_BITS BIT_SELECTING_LOCATION !BIT_SPECTATING_CLIENT !BIT_IS_DEMO_PLAYING !BIT_SCOREBOARD_OPEN
+
+	menuDef
+	{
+		name			"FullScreenMap"
+ 	   	rect			-100 -100 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+ 	   	fullScreen		0
+  	   	visible			1
+#ifdef CONSOLE
+		blurWorld		2.0
+#endif	
+		visibilityBits  bits( FSM_VISIBILITY_BITS )
+
+		itemDef
+ 	   	{
+			name			"map_backdrop"
+			style			WINDOW_STYLE_SHADER
+			rect			-200 -200 (FULL_SCREEN_MAP_WIDTH+200) (FULL_SCREEN_MAP_HEIGHT+200) HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+			forecolor		0.1 0.1 0.1 (0.7*MAP_ALPHA)
+			background		"menu_black_box_faded"
+			visible			1
+			decoration
+ 	   	}
+
+		itemDef
+ 	   	{
+			name			"map_top_black_bar"
+			style			WINDOW_STYLE_SHADER
+			rect			-98 -118 (FULL_SCREEN_MAP_WIDTH-4) 20 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+			forecolor		0 0 0 (MAP_ALPHA+0.2)
+			background		"white"
+			visible			1
+			decoration
+ 	   	}
+
+		itemDef
+ 	   	{
+			name			"map_map"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			background		"compass_map_default"
+			ownerdraw		CG_PLAYER_FULLMAP_MAP
+			visible			1
+			decoration
+ 	   	}
+
+		itemDef
+ 	   	{
+			name			"map_bottom_black_bar"
+			style			WINDOW_STYLE_SHADER
+			rect			-98 273 (FULL_SCREEN_MAP_WIDTH-4) 20 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+			forecolor		0 0 0 (MAP_ALPHA+0.2)
+			background		"white"
+			visible			1
+			decoration
+ 	   	}
+
+ 	   	// Friendly Compass scrambler indicator
+		itemDef
+ 	   	{
+			name			"compass_map_scrambler_friendlies_locationSelector"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_SCRAMBLER_FRIENDLY
+			visible			1
+			decoration
+ 	   	}
+ 	   	
+		// Static
+		itemDef
+		{
+			name			"pause_map_static"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 1
+			background		"compass_static"
+			ownerdraw		CG_PLAYER_FULLMAP_STATIC
+			visible			1
+			decoration
+		}		
+		
+
+		// Grid
+		itemDef
+ 	   	{
+			name			"map_grid"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 (MAP_ALPHA*0.75)
+			background		"map_grid_square"
+			ownerdraw		CG_PLAYER_FULLMAP_GRID
+			visible			1
+			decoration
+ 	   	}
+
+		itemDef
+		{
+			name			"grid_points"
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT 
+			forecolor		1 1 1 (MAP_ALPHA*0.75)
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textscale		0.3
+			ownerdraw		CG_PLAYER_FULLMAP_GRID_POINTS
+			visible			1
+			decoration
+		}
+		
+		// Vehicles
+		itemDef
+		{
+			name			"mapvehicles"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_VEHICLES
+			visible			1
+		}
+		
+		// Helicopter
+		itemDef
+		{
+			name			"mapvehicles"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_HELICOPTER
+			visible			1
+		}
+
+		// Objective pointers
+		itemDef
+		{
+			name			"mappointers"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			background		"objective_line"
+			ownerdraw		CG_PLAYER_FULLMAP_POINTERS
+			visible			1
+			decoration
+		}
+ 	   	// Friendlies pointers
+		itemDef
+		{
+			name			"mapfriendlies"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_FRIENDS
+			visible			1
+		}
+ 	   	// Enemies pointers
+		itemDef
+		{
+			name			"mapenemies"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_ENEMIES
+			visible			1
+		}
+		
+	  // Fake fire pointers
+		itemDef
+		{
+			name			"mapfakefire"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_FAKE_FIRE
+			visible			1
+		}
+
+		// Static
+		itemDef
+		{
+			name			"mapscrambler"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			background		"compass_static"
+			ownerdraw		CG_PLAYER_FULLMAP_SCRAMBLER
+			visible			1
+		}
+		
+		itemDef
+ 	   	{
+			name			"map_locator"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			background		"compass_map_default"
+			ownerdraw		CG_PLAYER_FULLMAP_LOCATION_SELECTOR
+			visible			1
+			visibilityBits  bits( BIT_SELECTING_LOCATIONAL_KILLSTREAK )
+			decoration
+ 	   	}
+
+		// Player direction indicator
+		itemDef
+		{
+			name			"mapplayer"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			background		"compassping_player"
+			ownerdraw		CG_PLAYER_FULLMAP_PLAYER
+			visible			1
+		}
+		
+		// Artillery Icon
+		itemDef
+		{
+			name			"mapartilleryicon"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_ARTILLERY_ICON
+			visible			1
+		}
+
+		// Dogs
+		itemDef
+		{
+			name			"mapdogs"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_DOGS
+			visible			1
+		}
+
+		// Turrets
+		itemDef
+		{
+			name			"mapturrets"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_TURRETS
+			visible			1
+		}
+
+		//Guided Missiles
+		itemDef
+		{
+			name			"mapguidedmissiles"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_GUIDED_MISSILE
+			visible			1
+		}
+
+		// Radar lines
+		itemDef
+		{
+			name			"mapradareffects"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 FULL_SCREEN_MAP_WIDTH FULL_SCREEN_MAP_HEIGHT
+			forecolor		1 1 1 MAP_ALPHA
+			ownerdraw		CG_PLAYER_FULLMAP_RADAR_EFFECTS
+			visible			1
+			decoration
+		}
+
+		// instruction
+		itemDef
+		{
+			name			"airstrikeinstruction"
+			type			ITEM_TYPE_TEXT
+			rect			-90 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			text			"@PLATFORM_PRESS_TO_SET_AIRSTRIKE"
+			visible			when( IsSelectingAirstrike() );
+			decoration
+		}
+		
+		// instruction
+		itemDef
+		{
+			name			"artilleryinstruction"
+			type			ITEM_TYPE_TEXT
+			rect			-90 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			text			"@PLATFORM_PRESS_TO_SET_ARTILLERY"
+			visible			when( IsSelectingArtillery() );
+			decoration
+		}
+		
+		// instruction
+		itemDef
+		{
+			name			"napalminstruction"
+			type			ITEM_TYPE_TEXT
+			rect			-90 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			text			"@PLATFORM_PRESS_TO_SET_NAPALM"
+			visible			when( IsSelectingNapalm() );
+			decoration
+		}
+		// instruction
+		itemDef
+		{
+			name			"comlinkinstruction"
+			type			ITEM_TYPE_TEXT
+			rect			-90 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			text			"@PLATFORM_PRESS_TO_SET_COMLINK"
+			visible			when( IsSelectingComlink() );
+			decoration
+		}
+
+		// instruction
+		itemDef
+		{
+			name			"mortarStrikesLeft"
+			type			ITEM_TYPE_TEXT
+			rect			-90 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			exp				text( locString( "@PLATFORM_PRESS_TO_SET_MORTAR", dvarint( mortarStrikesLeft ) ) );
+			visible			when( IsSelectingMortar() && dvarint( mortarStrikesLeft ) );
+			decoration
+		}
+		
+		itemDef
+		{
+			name			"squadback"
+			type			ITEM_TYPE_TEXT
+			rect			245 290 20 20
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_RIGHT
+			textfont		UI_FONT_NORMAL
+			textscale		0.3
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			text			"@PLATFORM_SQUAD_BACK"
+			visible			1
+			decoration
+		}
+		
+		itemDef
+		{
+			name			"MapName"
+			type			ITEM_TYPE_TEXT
+			rect			-90 -98 100 100
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.4
+			forecolor		1 1 1 MAP_TEXT_ALPHA
+			exp text		( "@"+tablelookup("mp/mapsTable.csv",0,dvarString(mapname),3) );
+			visible			1
+			decoration
+		}
+	}
+
+	#define KILLCAMBARS( BARSNAME, COLOR, VISIBLEWHEN, VISIBILITY_BITS )									\
+			menuDef																							\
+			{																								\ 
+				name			BARSNAME																	\
+				rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN			\
+				fullScreen		0																			\
+				visible 		VISIBLEWHEN;																\ 
+				visibilityBits  bits( VISIBILITY_BITS )														\
+				itemDef																						\ 
+				{																							\
+					style			WINDOW_STYLE_SHADER														\
+					rect			0 0 640 112 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN		\
+					background		"white"																	\
+					forecolor		COLOR																	\ 
+					visible			1																		\
+					decoration																				\
+				}																							\
+				itemDef																						\ 
+				{																							\
+					style			WINDOW_STYLE_SHADER														\ 
+					rect			0 112 640 22 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN		\
+					background		"white"																	\
+					forecolor		COLOR																	\
+					visible			when( dvarInt( xblive_basictraining ) );								\
+					decoration																				\
+				}																							\
+				itemDef																						\ 
+				{																							\
+					style			WINDOW_STYLE_SHADER														\ 
+					rect			0 368 640 112 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN		\
+					background		"white"																	\
+					forecolor		COLOR																	\
+					visible			1																		\
+					decoration																				\
+				}																							\
+			}
+	
+	KILLCAMBARS( "killcam", .49 .05 .03 0.5, 1, BIT_IN_KILLCAM !BIT_FINAL_KILLCAM !BIT_ROUND_END_KILLCAM )
+	KILLCAMBARS( "killcam_final", 0 0 0 0.5, when ( isVisibilityBitSet( BIT_FINAL_KILLCAM ) || isVisibilityBitSet( BIT_ROUND_END_KILLCAM ) ), BIT_IN_KILLCAM )
+
+	#define KILLCAMTEXT( TEXTNAME, TEXTDISPLAY, VISIBILITY_BITS )									\
+			menuDef																					\
+			{																						\
+				name			TEXTNAME															\ 
+				rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN	\ 
+				fullScreen		0																	\ 
+				visible			1																	\ 
+				visibilityBits  bits( VISIBILITY_BITS )												\
+				itemDef																				\
+				{																					\
+					type			ITEM_TYPE_TEXT													\
+					rect			0 55 1 1 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_TOP		\
+					origin			0 0																\
+					exp text		( TEXTDISPLAY );												\ 
+					forecolor		1 1 1 0.2														\
+					textfont		UI_FONT_EXTRABIG												\
+					textscale		TEXTSIZE_LARGEST												\
+					textalign		ITEM_ALIGN_CENTER												\
+					visible 		when( !USE_SMALLER_FONT )										\
+					decoration																		\
+				}																					\
+				itemDef																				\
+				{																					\
+					type			ITEM_TYPE_TEXT													\
+					rect			0 55 1 1 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_TOP		\
+					origin			0 0																\
+					exp text		( TEXTDISPLAY );												\ 
+					forecolor		1 1 1 0.2														\
+					textfont		UI_FONT_EXTRABIG												\
+					textscale		( TEXTSIZE_LARGEST * FOREIGN_LANGUAGE_MULTIPLIER )				\
+					textalign		ITEM_ALIGN_CENTER												\
+					visible 		when( USE_SMALLER_FONT )										\
+					decoration																		\
+				}																					\
+			}
+	
+	KILLCAMTEXT( "killcam_text",			"@MP_KILLCAM_CAPS",			BIT_IN_KILLCAM !BIT_FINAL_KILLCAM !BIT_ROUND_END_KILLCAM !BIT_NEMESIS_KILLCAM )
+	KILLCAMTEXT( "killcam_nemesis_text",	"@MP_NEMESIS_KILLCAM_CAPS",	BIT_IN_KILLCAM !BIT_FINAL_KILLCAM !BIT_ROUND_END_KILLCAM BIT_NEMESIS_KILLCAM )
+	KILLCAMTEXT( "killcam_final_text",		"@MP_FINAL_KILLCAM_CAPS",	BIT_IN_KILLCAM BIT_FINAL_KILLCAM )
+	KILLCAMTEXT( "killcam_end_round_text",	"@MP_ROUND_END_KILLCAM",	BIT_IN_KILLCAM BIT_ROUND_END_KILLCAM )
+		
+	// Center obituary (you killed/were killed by)
+	menuDef
+	{
+		name			"CenterObituary"
+		rect			0 170 0 0 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+
+		itemDef 
+		{
+			name			"chRect"
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			0 0 0 0
+			exp				rect Y( 0 - (ONLINEGAME * ONLINEGAME_OFFSET) );
+			textscale		TEXTSIZE_DEFAULT
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			ownerdraw		CG_CENTER_MESSAGE
+			forecolor 		1 1 1 HUD_ALPHA
+			visible			1
+			decoration
+		}
+	}
+	
+	// game messages
+	menuDef
+	{
+		name			"gamemessages"
+		rect			6 -75 10 10 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+		fullScreen		0
+		visibilityBits  bits( !BIT_DEMO_ALL_GAME_HUD_HIDDEN !BIT_IN_KILLCAM !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC !BIT_IS_WAGER_MATCH )
+		
+		itemDef
+		{
+			rect				0 0 0 0
+			exp					rect Y( 0 - (ONLINEGAME * ONLINEGAME_OFFSET) );
+			type				ITEM_TYPE_GAME_MESSAGE_WINDOW
+			gamemsgwindowindex	0
+			gamemsgwindowmode	MODE_BOTTOMUP_ALIGN_BOTTOM
+			textfont			UI_FONT_DEFAULT
+			textstyle			ITEM_TEXTSTYLE_SHADOWED
+			textalign			ITEM_ALIGN_LEFT
+			textscale			TEXTSIZE_SMALL
+			visible				1
+			visibilityBits		bits( !BIT_UI_ACTIVE BIT_HUD_OBITUARIES )
+		}
+	}
+	
+	menuDef
+	{
+		name			"boldgamemessages"
+		rect			0 -65 10 10 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+		visibilityBits  bits( !BIT_DEMO_ALL_GAME_HUD_HIDDEN !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_IN_KILLCAM )
+
+		itemDef
+		{
+			origin				0 0
+			type				ITEM_TYPE_GAME_MESSAGE_WINDOW
+			gamemsgwindowindex	1
+			gamemsgwindowmode	MODE_BOTTOMUP_ALIGN_BOTTOM
+			textfont			UI_FONT_NORMAL
+			textstyle			ITEM_TEXTSTYLE_SHADOWED
+			textalign			ITEM_ALIGN_CENTER
+			textscale			TEXTSIZE_DEFAULT 
+			visible				1
+			visibilityBits		bits( !BIT_UI_ACTIVE BIT_HUD_OBITUARIES )
+		}
+	}
+	
+	// debug hit location
+	menuDef 
+	{
+		name			"hitloc"
+    	rect			0 0 0 0 HORIZONTAL_ALIGN_USER_RIGHT VERTICAL_ALIGN_USER_BOTTOM
+
+		fullScreen		0
+		visible			when( dvarint( "ui_hidehitlocs" ) == 0 )
+		
+		#define HITLOCSINGLE( INDEX, YPOS ) \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_TEXT \
+			rect			0 -50 1 1 HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM \
+			origin			0 YPOS \
+			exp text		( dvarstring( "ui_hitloc_damage_" + INDEX ) ); \
+			textfont		UI_FONT_NORMAL \
+			textscale		0.3 \
+			textalign		ITEM_ALIGN_RIGHT \
+			textstyle		ITEM_TEXTSTYLE_SHADOWEDMORE \
+			visible 		when ( dvarstring( "ui_hitloc_" + INDEX ) != "" ) \
+			decoration \
+		} \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_TEXT \
+			rect			-30 -50 1 1 HORIZONTAL_ALIGN_USER_RIGHT VERTICAL_ALIGN_USER_BOTTOM \
+			origin			0 YPOS \
+			exp text		( dvarstring( "ui_hitloc_" + INDEX ) ); \
+			textfont		UI_FONT_NORMAL \
+			textscale		0.3 \
+			textalign		ITEM_ALIGN_RIGHT \
+			textstyle		ITEM_TEXTSTYLE_SHADOWEDMORE \
+			visible 		1 \
+			decoration \
+		}
+		
+		HITLOCSINGLE( 0, 0   )
+		HITLOCSINGLE( 1, -15 )
+		HITLOCSINGLE( 2, -30 )
+		HITLOCSINGLE( 3, -45 )
+		HITLOCSINGLE( 4, -60 )
+		HITLOCSINGLE( 5, -75 )
+	}
+
+	// Safe area
+	menuDef
+	{
+		name			"safeareaa"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		#include "ui/safearea.menu"
+	}
+
+	menuDef 
+	{
+		name			"deadscreen"
+		fullScreen		0				
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop		""
+		visible			1
+		
+		// Death quote
+		itemDef 
+		{
+			name			quote
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			dvar			"ui_deadquote"
+			textscale		TEXTSIZE_DEFAULT
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			rect			80 200 480 20
+			textalign		ITEM_ALIGN_CENTER
+			textaligny		0 // point to center around
+			textalignx		0 // point to center around
+			ownerdraw		CG_DEADQUOTE
+			forecolor		1 1 1 1
+			visible			1
+			decoration 
+		}
+		
+		itemDef
+		{
+			name			hud_grenadeicon
+			rect			315 300 60 60
+			origin			0 0
+			style			WINDOW_STYLE_SHADER
+			background		"hud_grenadeicon"
+			dvartest		"ui_grenade_death"
+			showdvar		{ "1" }
+			visible			1
+			decoration
+		}
+
+		itemDef
+		{
+			name			hud_grenadepointer
+			rect			320 270 50 25
+			origin			0 0
+			style			WINDOW_STYLE_SHADER
+			background		"hud_grenadepointer"
+			dvartest		"ui_grenade_death"
+			showdvar		{ "1" }
+			visible			1
+			decoration
+		}
+	}
+	
+	// Target highlights
+	menuDef
+	{
+		name			"target_highlights"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 640 480
+			forecolor		1 1 1 1
+			background		"compassping_enemysatellite_diamond"
+			ownerdraw		CG_PLAYER_TARGET_HIGHLIGHTS
+			visible			1
+			visibilityBits	bits( !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+	menuDef
+	{
+		name			"target_highlights_friendly"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 640 480
+			forecolor		1 1 1 1
+			background		"compassping_yousatellite_diamond"
+			ownerdraw		CG_PLAYER_TARGET_HIGHLIGHTS_FRIENDLY
+			visible			1
+			visibilityBits	bits( !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_SPECTATING_CLIENT !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+
+	menuDef
+	{
+		name			"target_highlights_guided_missile"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 640 480
+			forecolor		1 1 1 1
+			background		"compassping_enemysatellite_diamond"
+			ownerdraw		CG_PLAYER_TARGET_HIGHLIGHTS_GUIDED_MISSILE
+			visible			1
+			visibilityBits	bits( !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_SPECTATING_CLIENT BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+	menuDef
+	{
+		name			"target_highlights_friendly_guided_missile"
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		fullScreen		0
+		visible			1
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 640 480
+			forecolor		1 1 1 1
+			background		"compassping_yousatellite_diamond"
+			ownerdraw		CG_PLAYER_TARGET_HIGHLIGHTS_FRIENDLY
+			visible			1
+			visibilityBits	bits( !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_SPECTATING_CLIENT BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+			decoration
+		}
+	}
+
+	// Guided Missile Fuel
+	menuDef
+	{
+    	name			"missile_fuel"
+    	rect			182 -122 150 10 HORIZONTAL_ALIGN_USER_CENTER VERTICAL_ALIGN_USER_CENTER
+		fullScreen		0
+		visible			1
+		visibilityBits	bits( !BIT_IN_KILLCAM !BIT_DEMO_CAMERA_MODE_THIRDPERSON !BIT_DEMO_CAMERA_MODE_MOVIECAM !BIT_SPECTATING_CLIENT BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+
+		itemDef 
+		{ 
+			style			WINDOW_STYLE_SHADER 
+			rect			0 0 13 224
+			//origin 			-76 169
+			forecolor		0.4 0.4 0.4 0.5 
+			background		"menu_white_line"
+			visible			1 
+			decoration 
+		}
+
+		itemDef
+		{
+			name			"fuel_bar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			0 0 13 224
+			ownerdraw		CG_PLAYER_GUIDED_MISSILE_FUEL
+			visible			1
+			forecolor		1 1 1 1
+			background		"menu_white_line"
+			decoration
+		}
+	}
+}

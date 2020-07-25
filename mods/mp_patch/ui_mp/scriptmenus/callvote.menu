@@ -1,0 +1,844 @@
+#include "ui/menudef.h"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/menustyle.inc"
+#include "ui_mp/choices_setup_teams.menu"
+
+#define PC_INGAME	1
+#include "ui_mp/overlaybg.inc"
+
+#define GAME_DESC_VIS_ARG ( dvarInt( "xblive_basictraining" ) || dvarBool( splitscreen ) || dvarBool( systemlink ) || (dvarString("ui_gametype_idx") != "0") )
+
+menuDef
+{
+	name			"pausedbkgnd_callvote"
+	fullScreen		0
+	rect			0 0 640 480
+	focusColor		COLOR_FOCUSED
+	blurWorld		4.8
+	visible 		1
+
+	#define SINGLE_PLAYER	1
+	#include "ui_mp/ingamebg.inc"
+}
+
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X					170
+
+#define BACKGROUND_COLOR_GRAY_RGB		0.62 0.70 0.70
+
+#ifdef PC	
+	#undef  CHOICE_X_START
+	#define CHOICE_X_START				30
+	#undef  CHOICE_Y_START
+	#define CHOICE_Y_START				-120
+	#define CHOICE_SEP_1				5
+#else
+	#undef  CHOICE_X_START
+	#define CHOICE_X_START				30
+	#undef  CHOICE_Y_START
+	#define CHOICE_Y_START				-30
+	#define CHOICE_SEP_1				3
+#endif
+
+#undef	CHOICE_GROUP
+#define CHOICE_GROUP					"callvote"
+
+#undef	CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_LEFT
+
+#undef	CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN			VERTICAL_ALIGN_CENTER
+
+#undef	BUTTON_BG_X_START
+#define BUTTON_BG_X_START				30
+#undef	BUTTON_BG_Y_START	
+#define	BUTTON_BG_Y_START				42
+
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+
+#undef CHOICE_TEXTSIZE
+#define CHOICE_TEXTSIZE					TEXTSIZE_DEFAULT
+
+{
+	menuDef 
+	{
+		name 			callvote
+		fullScreen 		0				
+		rect 			0 0 640 480	HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN // Size and position of the menu
+		focusColor 		COLOR_FOCUSED			// Menu focus color for text and items
+#ifdef CONSOLE
+		blurWorld		7.0
+#endif
+		onOpen	
+		{
+			showMenu "pausedbkgnd_callvote";
+		}
+		
+		onClose
+		{
+			hideMenu "pausedbkgnd_callvote";
+		}
+
+		onEsc 			
+		{
+			close self; 
+			open "class";
+		}
+
+		#define CALLVOTE_SUBTITLE ""
+		#include "ui_mp/scriptmenus/callvote_buttons.inc"
+
+		NEW_FRAME_BACK_BUTTON_ACTION_PC_VIS( close self;, 1 )
+	}
+
+	menuDef 
+	{
+		name 			changegametype
+		fullScreen 		0				
+		rect 			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN				// Size and position of the menu
+		focusColor 		COLOR_FOCUSED			// Menu focus color for text and items
+#ifdef CONSOLE
+		blurWorld		7.0
+#endif		
+		onEsc 			
+		{
+			showMenu callvote;
+			close self; 
+		}
+
+		onOpen	
+		{
+			setdvar invite_visible "0"; 
+			
+			setDvar ui_mapname "mp_array";
+			setDvar ui_gametype "tdm";
+			setdvar ui_gametype_idx "1";
+			
+			setDvar ui_preview dvarString( "ui_mapname" );
+			setdvar ui_preview_gt dvarString( "ui_gametype" );
+			setdvar ui_preview_gt_idx dvarString( "ui_gametype_idx" );
+			setDvar settings_map_selected 1;
+			execNow movefeeder top gamemode_selection;
+			execNow movefeeder top maplist;
+		}
+		
+		onClose
+		{
+		}
+
+		#undef CALLVOTE_SUBTITLE
+		#define CALLVOTE_SUBTITLE "@MPUI_CHANGE_GAME_TYPEMAP"
+		#include "ui_mp/scriptmenus/callvote_buttons.inc"
+
+		#define GAMEMODE_X 210
+		#define MAPSELECT_X 430
+		#define MAPSELECT_Y 255
+		#define GAMEMODE_Y 255
+		#define THUMBNAIL_Y 18
+		
+		itemDef 
+		{
+			name			gamemode_image
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE			
+			rect			GAMEMODE_X THUMBNAIL_Y 170 135 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			border			0
+			bordercolor		.5 .5 .5 .5
+			origin			0 0
+			exp				material( tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_gametype ), 3 ) ); // ui_preview_gt
+			visible			when(GAME_DESC_VIS_ARG);
+			decoration
+		}
+		
+		itemDef 
+		{
+			name			gamemode_custom_image
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE			
+			rect			GAMEMODE_X THUMBNAIL_Y 170 135 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			border			0
+			bordercolor		.5 .5 .5 .5
+			origin			0 0
+			exp				material( "playlist_infantry" );
+			visible			when(!GAME_DESC_VIS_ARG);
+			decoration
+		}
+
+		itemDef 
+		{
+			name			gamemode_name
+			type			ITEM_TYPE_TEXT
+			rect			GAMEMODE_X 175 170 20 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.4
+			forecolor		1 1 1 1
+			exp text		"@" + tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_gametype ), 1 ); // ui_preview_gt
+			visible			when(GAME_DESC_VIS_ARG)
+			decoration
+		}
+		
+		itemDef 
+		{
+			name			gamemode_custom_name
+			type			ITEM_TYPE_TEXT
+			rect			GAMEMODE_X 175 170 20 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.4
+			forecolor		1 1 1 1
+			text			"@CUSTOM_CUSTOM_GAME_MODE_CAPS"
+			visible			when(!GAME_DESC_VIS_ARG)
+			decoration
+		}
+
+		itemDef
+		{
+			name			gamemode_desc
+			type			ITEM_TYPE_TEXT
+			rect			GAMEMODE_X 195 170 35 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_SMALL
+			textscale		0.3
+			forecolor		1 1 1 1
+			exp text		"@" + tableLookup( "mp/gametypesTable.csv",	0, dvarString( ui_gametype ), 2 ); // ui_preview_gt
+			visible			when(GAME_DESC_VIS_ARG);
+			autowrapped
+			decoration
+		}
+		
+		itemDef
+		{
+			name			gamemode_custom_desc
+			type			ITEM_TYPE_TEXT
+			rect			GAMEMODE_X 195 170 35 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_SMALL
+			textscale		0.3
+			forecolor		1 1 1 1
+			text			"@CUSTOM_SELECT_FROM_FILESHARE_DESC"
+			visible			when(!GAME_DESC_VIS_ARG);
+			autowrapped
+			decoration
+		}		
+		
+#ifdef PC
+	#define LIST_PARAMS( listName )	\
+	usePaging						\
+	mouseEnter						\
+	{								\
+		setFocus listName;			\
+	}
+#else // #ifdef PC
+	#define LIST_PARAMS( listName )
+#endif // #else // #ifdef PC
+
+		itemDef 
+		{
+			name			gamemode_selection
+			type			ITEM_TYPE_LISTBOX
+			noBlinkingHighlight
+			rect			GAMEMODE_X GAMEMODE_Y 170 170 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			style			WINDOW_STYLE_FILLED
+			textscale		CHOICE_TEXTSIZE
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textfont		UI_FONT_NORMAL
+			elementtype		LISTBOX_TEXT
+			elementwidth	120
+			elementheight	18
+			textalignx 		6
+			textaligny 		0
+			backcolor 		0 0 0 0.2
+			border			1
+			bordersize		1
+			bordercolor		1 1 1 0.15
+			outlinecolor 	1 1 1 0
+			forecolor 		CHOICE_TEXTCOLOR
+			focusColor		1 1 1 1
+			disableColor	1 1 1 1
+			feeder			FEEDER_GAMETYPES_INGAME
+			LIST_PARAMS( gamemode_selection )
+			visible			1
+			userarea	2			-1		0		155					20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE
+									6		0		155					20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE
+			doubleclick
+			{
+				setDvar ui_gametype_idx dvarString( "ui_preview_gt_idx" );
+				if( !GAME_DESC_VIS_ARG )
+				{
+					open "custom_select_from_fileshare_1";
+				}
+				else
+				{
+					if( dvarString( "ui_preview_gt" ) != dvarString( "ui_gametype" ) )
+					{
+						execNow "resetCustomGametype";
+					}
+
+					play CHOICE_ACTION_SOUND;
+				}
+				setDvar ui_gametype dvarString( ui_preview_gt );
+			}
+			action
+			{
+				setDvar ui_gametype_idx dvarString( "ui_preview_gt_idx" );
+				if( !GAME_DESC_VIS_ARG )
+				{
+					open "custom_select_from_fileshare_1";
+				}
+				else
+				{
+					if( dvarString( "ui_preview_gt" ) != dvarString( "ui_gametype" ) )
+					{
+						execNow "resetCustomGametype";
+					}
+
+					play CHOICE_ACTION_SOUND;
+				}
+				setDvar ui_gametype dvarString( ui_preview_gt );
+			}
+		}
+
+		itemDef 
+		{
+			name			mappreview
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE			
+			rect			MAPSELECT_X THUMBNAIL_Y 170 135 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			border			0
+			bordercolor		.5 .5 .5 .5
+			origin			0 0
+			exp				material( tablelookup("mp/mapsTable.csv",0,dvarString(ui_mapname),4) ); // ui_preview
+			visible			1
+			decoration
+		}
+		
+		itemDef
+		{
+			name			map_name
+			type			ITEM_TYPE_TEXT
+			rect			MAPSELECT_X 175 170 20 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		0.4
+			forecolor		1 1 1 1
+			exp text		"@" + tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_mapname )	, 3 ); // ui_preview
+			visible			1
+			decoration
+		}
+		
+		itemDef
+		{
+			name			map_desc
+			type			ITEM_TYPE_TEXT
+			rect			MAPSELECT_X 195 170 35 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textalign		ITEM_ALIGN_LEFT
+			textfont		UI_FONT_SMALL
+			textscale		0.3
+			forecolor		1 1 1 1
+			exp text		"@" + tableLookup( "mp/mapsTable.csv",		0, dvarString( ui_mapname )	, 6 ); // ui_preview
+			visible			1
+			autowrapped
+			decoration
+		}			
+
+		itemDef 
+		{
+			name			maplist
+			rect			MAPSELECT_X MAPSELECT_Y 170 170 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			type			ITEM_TYPE_LISTBOX
+			noBlinkingHighlight
+			style			WINDOW_STYLE_FILLED
+			textscale		CHOICE_TEXTSIZE
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textfont		UI_FONT_NORMAL
+			elementtype		LISTBOX_TEXT
+			elementwidth	120
+			elementheight	18
+			textalignx 		6
+			textaligny 		0
+			backcolor 		0 0 0 0.2
+			border			1
+			bordersize		1
+			bordercolor		1 1 1 0.15
+			outlinecolor 	1 1 1 0
+			forecolor 		CHOICE_TEXTCOLOR
+			focusColor		1 1 1 1
+			disableColor	1 1 1 1
+			feeder			FEEDER_MAPS
+			LIST_PARAMS( maplist )
+			visible			1
+			userarea	2				-1		0		155				20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* FEEDER_MAPSELECTION_COLUMN_BACKGROUND */
+										6		0		155				20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE 	/* FEEDER_MAPSELECTION_COLUMN_NAME */
+			
+			doubleclick					{ setDvar ui_mapname dvarString( ui_preview ); }
+			action	{ setDvar ui_mapname dvarString( ui_preview ); }
+		}
+
+		itemDef 
+		{
+			name			vote
+			type			ITEM_TYPE_BUTTON
+			rect			MAPSELECT_X (MAPSELECT_Y+170+4) 40 20 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			exp				rect W( getTextWidth(locString("@MPUI_VOTE"),UI_FONT_NORMAL,TEXTSIZE_DEFAULT)+8 )
+			text			"@MPUI_VOTE"
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			style			WINDOW_STYLE_FILLED	
+			visible			1
+			forecolor		1 1 1 1
+			backcolor		1 1 1 0
+			border			1
+			bordersize		1
+			bordercolor		CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA
+			mouseEnter		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_SELECTED_RGBA; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA; }
+			action 
+			{
+				play CHOICE_FOCUS_SOUND;
+#ifdef CONSOLE
+				setDvar ui_gametype dvarString( ui_preview_gt );
+				setDvar ui_mapname dvarString( ui_preview );
+				uiScript voteTypeMapDVar ui_preview_gt ui_preview;
+#else //#ifdef CONSOLE
+				uiScript voteTypeMapDVar ui_gametype ui_mapname;				
+#endif //#ifdef CONSOLE
+				close self; 
+			}
+		}
+
+		
+#define TAB_1_TEXT						(locString( "@MPUI_MAPS_CAPS" ))
+#define TAB_2_TEXT						(locString( "@MPUI_DLC_MAPS_CAPS" ))
+
+#define TAB_BG_PAD						5
+#define TAB_1_WIDTH						( getTextWidth( TAB_1_TEXT, UI_FONT_NORMAL, TEXTSIZE_DEFAULT ) + (TAB_BG_PAD*2) )
+#define TAB_2_WIDTH						( getTextWidth( TAB_2_TEXT, UI_FONT_NORMAL, TEXTSIZE_DEFAULT ) + (TAB_BG_PAD*2) )
+#define TAB_HEIGHT						15
+
+#define MAP_TAB_1_X						MAPSELECT_X
+#define MAP_TAB_2_X						( MAP_TAB_1_X + TAB_1_WIDTH )
+
+#define MAP_TAB_Y						( MAPSELECT_Y - TAB_HEIGHT )
+#define MAPS_TAB_VISIBLE		( 1 )
+#define DLC_TAB_VISIBLE			( dvarBool( "dlc2" ) || dvarBool( "dlc3" ) || dvarBool( "dlc4" ) )
+
+		itemDef 
+		{
+			name			switch_to_original_maps
+			type			ITEM_TYPE_BUTTON
+			rect			MAP_TAB_1_X MAP_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			exp				rect W( TAB_1_WIDTH )
+			text			"@MPUI_MAPS_CAPS"
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			style			WINDOW_STYLE_FILLED	
+			visible			when( DLC_TAB_VISIBLE )
+			forecolor		1 1 1 1
+			backcolor		1 1 1 0
+			border			1
+			bordersize		1
+			bordercolor		CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA
+			mouseEnter		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_SELECTED_RGBA; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA; }
+			action 
+			{
+				setDvar ui_showDLCMaps 0;
+			}
+		}
+
+		itemDef 
+		{
+			name			switch_to_dlc_maps
+			type			ITEM_TYPE_BUTTON
+			rect			0 MAP_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			exp				rect W( TAB_2_WIDTH )
+			exp				rect X( MAP_TAB_2_X )
+			text			"@MPUI_DLC_MAPS_CAPS"
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			style			WINDOW_STYLE_FILLED	
+			visible			when( DLC_TAB_VISIBLE )
+			forecolor		1 1 1 1
+			backcolor		1 1 1 0
+			border			1
+			bordersize		1
+			bordercolor		CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA
+			mouseEnter		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_SELECTED_RGBA; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA; }
+			action 
+			{
+				setDvar ui_showDLCMaps 1;
+			}
+		}
+
+		NEW_FRAME_BACK_BUTTON_ACTION_PC_VIS( exec "wait"; close self;, 1 )
+	}
+		
+	
+	menuDef 
+	{
+		name 			kickplayer
+		fullScreen 		0				
+		rect 			0 0 640 480	HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN			// Size and position of the menu
+		focusColor 		COLOR_FOCUSED			// Menu focus color for text and items
+#ifdef CONSOLE
+		blurWorld		7.0
+#endif		
+		onEsc 			
+		{
+			showMenu callvote;
+			close self;
+		}
+
+		onClose
+		{
+		}
+
+		#undef CALLVOTE_SUBTITLE
+		#define CALLVOTE_SUBTITLE "@MPUI_KICK_PLAYER"
+		#include "ui_mp/scriptmenus/callvote_buttons.inc"
+
+		itemDef 
+		{
+			name			playerlist
+			type			ITEM_TYPE_LISTBOX
+			noBlinkingHighlight
+			visible			1
+			rect			GAMEMODE_X 90 260 330 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			style			WINDOW_STYLE_FILLED
+			textscale		CHOICE_TEXTSIZE
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			textfont		UI_FONT_NORMAL
+			elementtype		LISTBOX_TEXT
+			elementwidth	120
+			elementheight	18
+			textalignx 		6
+			textaligny 		0
+			backcolor 		0 0 0 0.2
+			border			1
+			bordersize		1
+			bordercolor		1 1 1 0.15
+			outlinecolor 	1 1 1 0
+			forecolor 		CHOICE_TEXTCOLOR
+			focusColor		1 1 1 1
+			disableColor	1 1 1 1
+			feeder			FEEDER_PLAYER_LIST
+			LIST_PARAMS( playerlist )
+			userarea	2			-1		0		244					20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE
+									6		0		244					20		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE
+		}
+		
+		itemDef 
+		{
+			name			vote
+			type			ITEM_TYPE_BUTTON
+			rect			GAMEMODE_X (90+330+4) 40 20 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP
+			exp				rect W( getTextWidth(locString("@MPUI_VOTE"),UI_FONT_NORMAL,TEXTSIZE_DEFAULT)+8 )
+			text			"@MPUI_VOTE"
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_MIDDLE_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			style			WINDOW_STYLE_FILLED	
+			visible			1
+			forecolor		1 1 1 1
+			backcolor		1 1 1 0
+			border			1
+			bordersize		1
+			bordercolor		CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA
+			mouseEnter		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_SELECTED_RGBA; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ setcolor bordercolor CHOICE_BUTTON_BORDER_COLOR_UNSELECTED_RGBA; }
+			action 
+			{
+				play CHOICE_FOCUS_SOUND;
+				uiScript voteTempBan;
+				close self;
+			}	
+		}
+
+		NEW_FRAME_BACK_BUTTON_ACTION_PC_VIS( close self;, 1 )
+	}
+}
+
+#undef CHOICE_SIZE_X
+#define CHOICE_SIZE_X			150
+
+#undef CHOICE_X_START
+#define CHOICE_X_START			0
+#undef CHOICE_Y_START
+#define CHOICE_Y_START			65
+
+#undef CHOICE_SEP_OFFSET_Y
+#define CHOICE_SEP_OFFSET_Y		-2
+#undef CHOICE_SIDEITEM_SPACING
+#define CHOICE_SIDEITEM_SPACING	-310
+
+#undef CHOICE_DVAR_OFFSET_X
+#define CHOICE_DVAR_OFFSET_X	(CHOICE_SIZE_X+20)
+#undef CHOICE_DVAR_TEXTALIGN
+#define CHOICE_DVAR_TEXTALIGN	ITEM_ALIGN_MIDDLE_LEFT
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_popmenu.menu"
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/fileshare.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+
+#include "ui_mp/popup_player_info.inc"
+
+
+#define GAME_MODE_FILESHARE_UPLOAD_ACTION \
+	execNow uploadCustomGametype ( getFeederData( "menu_game_mode_upload_1", "fileShareSlots", "slot" ) ); \
+	execNow "set customGameMode 1"; \
+	execNow "xupdatepartystate"; \
+	if( dvarInt( ui_custom_gobackonupload ) ) \
+	{ \
+		closeimmediate custom_game_create; \
+		closeimmediate select_game_mode; \
+	}
+
+#include "ui_mp/popupstyle.inc"
+
+FILESHARE_SLOT_SELECTOR_EX ( menu_game_mode_upload_1, GAME_MODE_FILESHARE_UPLOAD_ACTION, ;, open custom_game_create;, ; )
+
+#undef CHOICE_SIZE_X
+#define CHOICE_SIZE_X			260
+
+#undef CHOICE_X_START
+#define CHOICE_X_START			0
+
+#undef CHOICE_Y_START
+#define CHOICE_Y_START			85
+#undef CHOICE_TEXTSTYLE
+#define CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+
+#undef ON_ESC
+#define ON_ESC		\
+	close self;
+
+menuDef
+{
+	name					custom_select_from_fileshare_1
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	priority				MENU_PRI_ONTOP
+	control					MENU_CONTROL_OPENER
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED 
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED 
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT 
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT
+	
+	onOpen	
+	{
+#ifdef PC
+//		exec readfileshare
+#endif
+	}
+	onFocus 
+	{ 
+		activateBlur;
+	}
+	onClose	
+	{
+		deactivateBlur;
+	}
+	onESC	
+	{
+		ON_ESC
+	}
+	
+	NEW_FRAME( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+
+	NEW_FRAME_TITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@CUSTOM_FILESHARE_SELECT_MODE_TITLE", 1 )
+	NEW_FRAME_SUBTITLE( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, "@CUSTOM_FILESHARE_SELECT_MODE_DESC", 1 )
+
+	PLAYER_INFO_VIS( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, 1 )
+
+	itemDef 
+	{
+		name				fileShareSlots
+		type				ITEM_TYPE_LISTBOX
+		feeder				FEEDER_FILESHARE_MYSLOTS
+		FILESHARE_COMMON_OPTIONS
+		origin				0 0
+		elementwidth		70
+		elementheight		67
+		elementtype			LISTBOX_TEXT	
+		textalign			ITEM_ALIGN_MIDDLE_CENTER
+		textfont			UI_FONT_NORMAL
+		textscale			TEXTSIZE_SUBTITLE
+		forecolor			CHOICE_TEXTCOLOR
+		modal
+		doubleclick			
+		{ 
+			if ( getFeederData( "slotOccupied" ) && !( FILESHARE_TASKSINPROGRESS ) )
+			{
+				if( getFeederData( "fileType" ) == "customgamemode" )
+				{
+					execNow downloadCustomGametype (getFeederData( "fileID" )) (getFeederData( "fileSize" ));
+					closeimmediate custom_select_from_fileshare_1;
+					closeimmediate select_game_mode;
+				}
+			}
+		}
+
+		visible				1
+
+		FILESHARE_SLOTS_USERAREAS
+	}
+	FILESHARE_BOTTOM( fileShareSlots, 1 )
+
+	/* SLOT OCCUPIED */
+#define SLOT_OCCUPIED_CONDITION \
+	( getFeederData( "fileShareSlots", "slotOccupied" ) && getFeederData( "fileShareSlots", "count" ) > 0.0 )
+
+#define SLOT_HAS_GAME_MODE \
+	( getFeederData( "fileShareSlots", "fileType" ) == "customgamemode" )
+	
+#undef FILESHARE_SELECTOR_TOOLTIP_Y	
+#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y FILESHARE_TOOLTIP_PC_Y
+#else //#ifdef PC
+	#define FILESHARE_SELECTOR_TOOLTIP_Y 95
+#endif //#ifdef PC
+
+
+	// Tooltip - Occupied Slot with custom game mode
+	PREPROC_TEXT_DRAW_VIS_EX( -255 FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "CUSTOM_FILESHARE_CGM_HIGHLIGHTED" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( SLOT_OCCUPIED_CONDITION && SLOT_HAS_GAME_MODE ), autowrapped; )
+	PREPROC_SHADER_DRAW_VIS_EX( -265 FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( SLOT_OCCUPIED_CONDITION && SLOT_HAS_GAME_MODE ), ; )
+
+	// Tooltip - Occupied Slot that is not a custom game mode
+	PREPROC_TEXT_DRAW_VIS_EX( -255 FILESHARE_SELECTOR_TOOLTIP_Y 280 36 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "CUSTOM_FILESHARE_CANT_SELECT" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, when( SLOT_OCCUPIED_CONDITION && !SLOT_HAS_GAME_MODE ), autowrapped; )
+	PREPROC_SHADER_DRAW_VIS_EX( -265 FILESHARE_SELECTOR_TOOLTIP_Y 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( SLOT_OCCUPIED_CONDITION && !SLOT_HAS_GAME_MODE ), ; )
+
+	FILESHARE_SPINNER( 145, -45, when( FILESHARE_TASKSINPROGRESS ), 350 )
+
+	execKeyInt APAD_UP
+	{
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_UP
+	{
+		execnow set fshSelectLastSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt APAD_DOWN
+	{
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+
+	execKeyInt DPAD_DOWN
+	{
+		execnow set fshSelectFirstSlotRow 1;
+		setfocus fileShareSlots;
+	}
+	/*
+	execKeyInt BUTTON_X
+	{
+		open fileshare_mymovie;
+	}
+	
+#ifdef CONSOLE
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-210 206 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		text			"@PLATFORM_FILESHARE_MYMOVIE" 
+		textfont		CHOICE_TEXTFONT  
+
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_LEFT  
+		visible			1
+		decoration  
+	} 
+#endif
+	*/
+
+#ifndef PC
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-210 206 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		text			"@PLATFORM_SELECT" 
+		textfont		CHOICE_TEXTFONT  
+
+		textscale		TEXTSIZE_DEFAULT  
+		textalign		ITEM_ALIGN_BOTTOM_LEFT  
+		visible			when( getFeederData( "fileShareSlots", "slotOccupied" ) == 1 )
+		decoration  
+	} 
+#endif
+
+	NEW_FRAME_BUTTON_NOICON( 1, 28 0 0 18 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "", execnow "updatemarketplace";, ;, ;, 1, ;, ; )  
+	//FILESHARE_LIVEBLURB( -271, 50, 290, 100, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, !IsPremiumSubscriber(), ( localVarInt( ui_highlight ) == 1 ) )
+
+#ifdef CONSOLE
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-146 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		exp				text( int( getFeederData( "fileShareSlots", "slot" ) ) )
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_SMALL
+		textalign		ITEM_ALIGN_MIDDLE_RIGHT
+		forecolor		1 1 1 1
+		visible			1
+		decoration  
+	} 
+
+	itemDef 
+	{  
+		type			ITEM_TYPE_TEXT 
+		rect			-142 80 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		text			"@MENU_FILESHARE_OF18" 
+		textfont		CHOICE_TEXTFONT  
+		textscale		TEXTSIZE_SMALL
+		textalign		ITEM_ALIGN_MIDDLE_LEFT  
+		forecolor		1 1 1 1
+		visible			1
+	}
+	// Top Arrow
+	PREPROC_SHADER_DRAW_VIS_EX( -114 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_left", COLOR_BODY_TEXT, when( getFeederData( "fileShareSlots", "slot" ) > 6 ), rotation 90; )																							
+
+	// Bottom Arrow 1
+	PREPROC_SHADER_DRAW_VIS_EX( -107 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( getFeederData( "fileShareSlots", "slot" ) > 6 && getFeederData( "fileShareSlots", "slot" ) < 13 ), rotation 90; )
+
+	// Bottom Arrow 2
+	PREPROC_SHADER_DRAW_VIS_EX( -114 75 11 11 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "ui_arrow_right", COLOR_BODY_TEXT, when( getFeederData( "fileShareSlots", "slot" ) <= 6 ), rotation 90; )
+#endif //#ifdef CONSOLE
+	// File details
+	FILESHARE_DETAILS( 35, (NEW_FRAME_CHOICE_Y_START-1), HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, "custom_select_from_fileshare_1", "fileShareSlots", SLOT_OCCUPIED_CONDITION )
+
+	FILESHARE_SPINNER( 145, -45, when( FILESHARE_TASKSINPROGRESS ), 350 )
+
+	
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT, ON_ESC )
+#else //#ifdef PC
+	NEW_FRAME_BACK_BUTTON( FILESHARE_FRAME_WIDTH, FILESHARE_FRAME_HEIGHT )
+#endif //#ifdef PC
+	
+	#include "ui/safearea.menu"
+}

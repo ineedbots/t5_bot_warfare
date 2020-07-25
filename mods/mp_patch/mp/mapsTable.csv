@@ -1,0 +1,31 @@
+# Map Data Table,,,,,,,,,,,,,,,
+a0,b1,c2,d3,e4,f5,g6,h7,i8,j9,k10,,,,,
+maxnum_map,26,,,,,,,,,,,,,,
+#mapname,#allies characters,#axis characters,#mapname,#mapimage,#index,#description,#mapoverlay,#map size description,#vehicles,#splitscreen,#dlc map,,,,
+,,,,,,,,,,,,,,,
+mp_array,winterspecops,winterspecops,MPUI_array,menu_mp_array_map_select_final,0,MPUI_DESC_MAP_array,compass_overlay_map_array,LARGE,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_cracked,junglemarines,junglemarines,MPUI_CRACKED,menu_mp_cracked_map_select_final,1,MPUI_DESC_MAP_CRACKED,compass_overlay_map_cracked,LARGE,NO,YES,0,MPUI_MARINE_SHORT,MPUI_NVA_SHORT,sog,nva
+mp_crisis,cubans,cubans,MPUI_CRISIS,menu_mp_crisis_map_select_final,2,MPUI_DESC_MAP_CRISIS,compass_overlay_map_crisis,MEDIUM,NO,YES,0,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_firingrange,cubans,cubans,MPUI_firingrange,menu_mp_firingrange_map_select_final,3,MPUI_DESC_MAP_firingrange,compass_overlay_map_firingrange,SMALL,NO,YES,0,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_duga,winterspecops,winterspecops,MPUI_DUGA,menu_mp_duga_map_select_final,4,MPUI_DESC_MAP_DUGA,compass_overlay_map_duga,MEDIUM,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_hanoi,junglemarines,junglemarines,MPUI_HANOI,menu_mp_hanoi_map_select_final,5,MPUI_DESC_MAP_HANOI,compass_overlay_map_hanoi,MEDIUM,NO,YES,0,MPUI_MARINE_SHORT,MPUI_NVA_SHORT,sog,nva
+mp_cairo,cubans,cubans,MPUI_CAIRO,menu_mp_cairo_map_select_final,6,MPUI_DESC_MAP_CAIRO,compass_overlay_map_cairo,MEDIUM,NO,YES,0,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_havoc,junglemarines,junglemarines,MPUI_HAVOC,menu_mp_havoc_map_select_final,7,MPUI_DESC_MAP_HAVOC,compass_overlay_map_havoc,LARGE,NO,YES,0,MPUI_MARINE_SHORT,MPUI_NVA_SHORT,sog,nva
+mp_cosmodrome,urbanspecops,urbanspecops,MPUI_COSMODROME,menu_mp_cosmodrome_map_select_final,8,MPUI_DESC_MAP_COSMODROME,compass_overlay_map_cosmodrome,MEDIUM,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_nuked,urbanspecops,urbanspecops,MPUI_NUKED,menu_mp_nuked_map_select_final,9,MPUI_DESC_MAP_NUKED,compass_overlay_map_nuked,SMALL,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_radiation,urbanspecops,urbanspecops,MPUI_RADIATION,menu_mp_radiation_map_select_final,10,MPUI_DESC_MAP_RADIATION,compass_overlay_map_radiation,MEDIUM,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_mountain,winterspecops,winterspecops,MPUI_MOUNTAIN,menu_mp_mountain_map_select_final,11,MPUI_DESC_MAP_MOUNTAIN,compass_overlay_map_mountain,MEDIUM,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_villa,cubans,cubans,MPUI_villa,menu_mp_villa_map_select_final,12,MPUI_DESC_MAP_villa,compass_overlay_map_villa,MEDIUM,NO,YES,0,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_russianbase,winterspecops,winterspecops,MPUI_russianbase,menu_mp_russianbase_map_select_final,13,MPUI_DESC_MAP_russianbase,compass_overlay_map_russianbase,LARGE,NO,YES,0,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_berlinwall2,urbanspecops,urbanspecops,MPUI_BERLINWALL2,menu_mp_berlinwall2_map_select_final,14,MPUI_DESC_MAP_BERLINWALL2,compass_overlay_map_berlinwall2,MEDIUM,NO,YES,2,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_discovery,winterspecops,winterspecops,MPUI_DISCOVERY,menu_mp_discovery_map_select_final,15,MPUI_DESC_MAP_DISCOVERY,compass_overlay_map_discovery2,MEDIUM,NO,YES,2,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_kowloon,urbanspecops,urbanspecops,MPUI_KOWLOON,menu_mp_kowloon_map_select_final,16,MPUI_DESC_MAP_KOWLOON,compass_overlay_map_kowloon,MEDIUM,NO,YES,2,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_stadium,urbanspecops,urbanspecops,MPUI_STADIUM,menu_mp_stadium_map_select_final,17,MPUI_DESC_MAP_STADIUM,compass_overlay_map_stadium,MEDIUM,NO,YES,2,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_gridlock,urbanspecops,urbanspecops,MPUI_GRIDLOCK,menu_mp_gridlock_map_select_final,18,MPUI_DESC_MAP_GRIDLOCK,compass_overlay_map_convoy,MEDIUM,NO,YES,3,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_hotel,cubans,cubans,MPUI_HOTEL,menu_mp_hotel_map_select_final,19,MPUI_DESC_MAP_HOTEL,compass_overlay_map_hotel2,MEDIUM,NO,YES,3,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_outskirts,winterspecops,winterspecops,MPUI_OUTSKIRTS,menu_mp_outskirts_map_select_final,20,MPUI_DESC_MAP_OUTSKIRTS,compass_overlay_map_stockpile,MEDIUM,NO,YES,3,MPUI_MARINE_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_zoo,urbanspecops,urbanspecops,MPUI_ZOO,menu_mp_zoo_map_select_final,21,MPUI_DESC_MAP_ZOO,compass_overlay_map_zoo,MEDIUM,NO,YES,3,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_silo,urbanspecops,urbanspecops,MPUI_SILO,menu_mp_silo_map_select_final,22,MPUI_DESC_MAP_SILO,compass_overlay_map_silo,MEDIUM,NO,YES,4,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_golfcourse,cubans,cubans,MPUI_GOLFCOURSE,menu_mp_golfcourse_map_select_final,23,MPUI_DESC_MAP_GOLFCOURSE,compass_overlay_map_golfcourse,MEDIUM,NO,YES,4,MPUI_REBELS_SHORT,MPUI_TROPAS_SHORT,op40,tropas
+mp_drivein,urbanspecops,urbanspecops,MPUI_DRIVEIN,menu_mp_drivein_map_select_final,24,MPUI_DESC_MAP_DRIVEIN,compass_overlay_map_drivein,MEDIUM,NO,YES,4,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets
+mp_area51,urbanspecops,urbanspecops,MPUI_AREA51,menu_mp_area51_map_select_final,25,MPUI_DESC_MAP_AREA51,compass_overlay_map_area51,MEDIUM,NO,YES,4,MPUI_SPECOPS_SHORT,MPUI_RUSSIAN_SHORT,ops,spets

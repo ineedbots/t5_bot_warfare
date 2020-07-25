@@ -1,0 +1,903 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/custom_mode.inc"
+
+#define CHOICE_SEP_1 2
+#define CHOICE_SEP_2 4
+#define CHOICE_SEP_3 13
+
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/common_game_options.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui/choices_setup_popmenu.menu"
+
+#include "ui_mp/custom_mode_layout.inc"
+
+#undef	NEW_FRAME_BUTTON_NAME
+#define NEW_FRAME_BUTTON_NAME		"custom_game_create_"
+
+#undef	CHOICE_BUTTON_NAME
+#define CHOICE_BUTTON_NAME			NEW_FRAME_BUTTON_NAME
+
+#undef	MENUDEF_NAME
+#define MENUDEF_NAME				custom_game_create
+
+#undef	CHOICE_GROUP
+#define CHOICE_GROUP				"custom_game"
+
+#ifdef PC
+	#undef CHOICE_TEXTSIZE
+	#define CHOICE_TEXTSIZE			TEXTSIZE_SMALL
+#endif //PC
+
+#define CHOICE1_TEXT			"@MPUI_RULES_TIME_LIMIT_CAPS"
+#define CHOICE1_DESC			"@CUSTOM_GAME_TIME_LIMIT_DESC"
+#define CHOICE1_DVAR			"custom_timelimit"
+#define CHOICE1_DVARTEXT		CHOICE1_DVAR"_text"
+#define CHOICE1_SHOW			1
+#define CHOICE1_STR1			"@MPUI_RULES_UNLIMITED_CAPS"
+#define CHOICE1_STR2			"@MPUI_RULES_2_5MINUTES_CAPS"
+#define CHOICE1_STR3			"@MPUI_RULES_3MINUTES_CAPS"
+#define CHOICE1_STR4			"@MPUI_RULES_5MINUTES_CAPS" 
+#define CHOICE1_STR5			"@MPUI_RULES_8MINUTES_CAPS"
+#define CHOICE1_STR6			"@MPUI_RULES_10MINUTES_CAPS"
+#define CHOICE1_STR7			"@MPUI_RULES_15MINUTES_CAPS"
+#define CHOICE1_STR8			"@MPUI_RULES_20MINUTES_CAPS"
+#define CHOICE1_STR9			"@MPUI_RULES_30MINUTES_CAPS"
+#define CHOICE1_STR10			""
+#define CHOICE1_STR11			""
+#define CHOICE1_STR12			""
+#define CHOICE1_VAL1			0
+#define CHOICE1_VAL2			2.5
+#define CHOICE1_VAL3			3
+#define CHOICE1_VAL4			5
+#define CHOICE1_VAL5			8
+#define CHOICE1_VAL6			10
+#define CHOICE1_VAL7			15
+#define CHOICE1_VAL8			20
+#define CHOICE1_VAL9			30
+#define CHOICE1_VAL10			0
+#define CHOICE1_VAL11			0
+#define CHOICE1_VAL12			0
+#define CHOICE1_EXEC			;
+#define CHOICE1_STRLIST			{ CHOICE1_STR1 CHOICE1_VAL1 CHOICE1_STR2 CHOICE1_VAL2 CHOICE1_STR3 CHOICE1_VAL3 CHOICE1_STR4 CHOICE1_VAL4 CHOICE1_STR5 CHOICE1_VAL5 CHOICE1_STR6 CHOICE1_VAL6 CHOICE1_STR7 CHOICE1_VAL7 CHOICE1_STR8 CHOICE1_VAL8 CHOICE1_STR9 CHOICE1_VAL9 CHOICE1_STR10 CHOICE1_VAL10 CHOICE1_STR11 CHOICE1_VAL11 CHOICE1_STR12 CHOICE1_VAL12 }
+#define CHOICE1_NUMVALS			9
+#define CHOICE1_POPUP			1
+
+#define CHOICE2_TEXT			"@MPUI_RULES_SCORE_LIMIT_CAPS"
+#define CHOICE2_DESC			"@CUSTOM_GAME_SCORE_LIMIT_DESC"
+#define CHOICE2_DVAR			"custom_scorelimit"
+#define CHOICE2_DVARTEXT		CHOICE2_DVAR"_text"
+#define CHOICE2_STR1			"@MPUI_RULES_UNLIMITED_CAPS"
+#define CHOICE2_STR2			"@MPUI_RULES_30POINTS_CAPS"
+#define CHOICE2_STR3			"@MPUI_RULES_50POINTS_CAPS"
+#define CHOICE2_STR4			"@MPUI_RULES_70POINTS_CAPS"
+#define CHOICE2_STR5			"@MPUI_RULES_100POINTS_CAPS"
+#define CHOICE2_STR6			"@MPUI_RULES_200POINTS_CAPS"
+#define CHOICE2_STR7			"@MPUI_RULES_250POINTS_CAPS"
+#define CHOICE2_STR8			"@MPUI_RULES_300POINTS_CAPS"
+#define CHOICE2_STR9			"@MPUI_RULES_500POINTS_CAPS"
+#define CHOICE2_STR10			"@MPUI_RULES_700POINTS_CAPS"
+#define CHOICE2_STR11			"@MPUI_RULES_750POINTS_CAPS"
+#define CHOICE2_STR12			"@MPUI_RULES_1000POINTS_CAPS"
+#define CHOICE2_VAL1			0
+#define CHOICE2_VAL2			30
+#define CHOICE2_VAL3			50
+#define CHOICE2_VAL4			70
+#define CHOICE2_VAL5			100
+#define CHOICE2_VAL6			200
+#define CHOICE2_VAL7			250
+#define CHOICE2_VAL8			300
+#define CHOICE2_VAL9			500
+#define CHOICE2_VAL10			700
+#define CHOICE2_VAL11			750
+#define CHOICE2_VAL12			1000
+#define CHOICE2_EXEC			;
+#define CHOICE2_STRLIST			{ CHOICE2_STR1 CHOICE2_VAL1 CHOICE2_STR2 CHOICE2_VAL2 CHOICE2_STR3 CHOICE2_VAL3 CHOICE2_STR4 CHOICE2_VAL4 CHOICE2_STR5 CHOICE2_VAL5 CHOICE2_STR6 CHOICE2_VAL6 CHOICE2_STR7 CHOICE2_VAL7 CHOICE2_STR8 CHOICE2_VAL8 CHOICE2_STR9 CHOICE2_VAL9 CHOICE2_STR10 CHOICE2_VAL10 CHOICE2_STR11 CHOICE2_VAL11 CHOICE2_STR12 CHOICE2_VAL12 }
+#define CHOICE2_NUMVALS			12
+#define CHOICE2_POPUP			1
+#define CHOICE2_VIS				( dvarString( ui_gametype ) == "dom" || dvarString( ui_gametype ) == "koth" )
+
+#define CHOICE2_ALT_TEXT		"@MPUI_RULES_SCORE_LIMIT_CAPS"
+#define CHOICE2_ALT_DVAR		"custom_scorelimit"
+#define CHOICE2_ALT_DVARTEXT	CHOICE2_ALT_DVAR"_text"
+#define CHOICE2_ALT_STR1		"@MPUI_RULES_UNLIMITED_CAPS"
+#define CHOICE2_ALT_STR2		"@MPUI_RULES_750POINTS_CAPS"
+#define CHOICE2_ALT_STR3		"@MPUI_RULES_1000POINTS_CAPS"
+#define CHOICE2_ALT_STR4		"@MPUI_RULES_1500POINTS_CAPS"
+#define CHOICE2_ALT_STR5		"@MPUI_RULES_2500POINTS_CAPS"
+#define CHOICE2_ALT_STR6		"@MPUI_RULES_3000POINTS_CAPS"
+#define CHOICE2_ALT_STR7		"@MPUI_RULES_5000POINTS_CAPS"
+#define CHOICE2_ALT_STR8		"@MPUI_RULES_7000POINTS_CAPS"
+#define CHOICE2_ALT_STR9		"@MPUI_RULES_7500POINTS_CAPS"
+#define CHOICE2_ALT_STR10		"@MPUI_RULES_10000POINTS_CAPS"
+#define CHOICE2_ALT_STR11		"@MPUI_RULES_15000POINTS_CAPS"
+#define CHOICE2_ALT_STR12		"@MPUI_RULES_30000POINTS_CAPS"
+#define CHOICE2_ALT_VAL1		0
+#define CHOICE2_ALT_VAL2		750
+#define CHOICE2_ALT_VAL3		1000
+#define CHOICE2_ALT_VAL4		1500
+#define CHOICE2_ALT_VAL5		2500
+#define CHOICE2_ALT_VAL6		3000
+#define CHOICE2_ALT_VAL7		5000
+#define CHOICE2_ALT_VAL8		7000
+#define CHOICE2_ALT_VAL9		7500
+#define CHOICE2_ALT_VAL10		10000
+#define CHOICE2_ALT_VAL11		15000
+#define CHOICE2_ALT_VAL12		30000
+#define CHOICE2_ALT_EXEC		;
+#define CHOICE2_ALT_STRLIST		{ CHOICE2_ALT_STR1 CHOICE2_ALT_VAL1 CHOICE2_ALT_STR2 CHOICE2_ALT_VAL2 CHOICE2_ALT_STR3 CHOICE2_ALT_VAL3 CHOICE2_ALT_STR4 CHOICE2_ALT_VAL4 CHOICE2_ALT_STR5 CHOICE2_ALT_VAL5 CHOICE2_ALT_STR6 CHOICE2_ALT_VAL6 CHOICE2_ALT_STR7 CHOICE2_ALT_VAL7 CHOICE2_ALT_STR8 CHOICE2_ALT_VAL8 CHOICE2_ALT_STR9 CHOICE2_ALT_VAL9 CHOICE2_ALT_STR10 CHOICE2_ALT_VAL10 CHOICE2_ALT_STR11 CHOICE2_ALT_VAL11 CHOICE2_ALT_STR12 CHOICE2_ALT_VAL12 }
+#define CHOICE2_ALT_NUMVALS		12
+#define CHOICE2_ALT_POPUP		1
+#define CHOICE2_ALT_VIS			( dvarString( ui_gametype ) == "dm" || dvarString( ui_gametype ) == "tdm" )
+
+#define IS_CHOICE2_VIS ( CHOICE2_VIS || CHOICE2_ALT_VIS )
+
+#undef ON_ESC
+#define ON_ESC								\
+	execNow checkIfCustomGametypeChanged;	\
+	close self;
+
+{
+	menuDef	
+	{
+		name					custom_game_create
+		rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		visible					when( MenuHasFocus() || dvarBool( ui_custom_save_to_file_share ) )
+		onOpen
+		{
+			execnow ui_animate custom_game_create * highlightOff 0;
+			activateBlur;
+			focusFirst;
+			execNow beginCustomGametypeChanges;
+
+			if( IS_CHOICE2_VIS )
+			{
+				setLocalVarInt custom_shift_options_up 0;
+			}
+			else
+			{
+				setLocalVarInt custom_shift_options_up 1;
+			}
+		}
+		onFocus
+		{
+			execNow checkIfCustomGametypeChanged;
+		}
+		onEsc
+		{
+			ON_ESC
+		}
+		onClose
+		{
+			deactivateBlur;
+
+			execNow endCustomGametypeChanges;
+			if( dvarBool( "ui_custom_haschanged" ) )
+			{
+				setdvar customGameMode 1;
+				execNow "xupdatepartystate";
+			}
+			setLocalVarBool ui_choice_hideaccept 0;
+		}
+
+		NEW_FRAME( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT )
+		NEW_FRAME_TITLE( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT, "@CUSTOM_GAME_CREATE_CAPS", 1 )
+		NEW_FRAME_SUBTITLE( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT, CUSTOM_GAMETYPE_NAME, 1 )
+
+		CUSTOM_MODE_BACKGROUND_WATERMARK
+
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 1, CHOICE1_TEXT,		CHOICE1_DVAR,		CHOICE1_STRLIST,		exec checkIfCustomGametypeChanged; CHOICE1_EXEC,		SET_CHOICE_DESC( "", CHOICE1_DESC, "" ) setLocalVarBool ui_choice_hideaccept 1;,		CLEAR_CHOICE_DESC setLocalVarBool ui_choice_hideaccept 0;, 1				)
+		
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 2, CHOICE2_TEXT,		CHOICE2_DVAR,		CHOICE2_STRLIST,		exec checkIfCustomGametypeChanged; CHOICE2_EXEC,		SET_CHOICE_DESC( "", CHOICE2_DESC, "" ) setLocalVarBool ui_choice_hideaccept 1;,		CLEAR_CHOICE_DESC setLocalVarBool ui_choice_hideaccept 0;, CHOICE2_VIS		)
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 2, CHOICE2_ALT_TEXT,	CHOICE2_ALT_DVAR,	CHOICE2_ALT_STRLIST,	exec checkIfCustomGametypeChanged; CHOICE2_ALT_EXEC,	SET_CHOICE_DESC( "", CHOICE2_DESC, "" ) setLocalVarBool ui_choice_hideaccept 1;,	CLEAR_CHOICE_DESC setLocalVarBool ui_choice_hideaccept 0;, CHOICE2_ALT_VIS	)
+		
+		#define	SHOULD_SHIFT_CHOICES_UP ( localVarInt( custom_shift_options_up ) > 0 )
+
+		#define GAME_MODE_RULES_ACTION \
+				exec openMenu ( "custom_settings_" + dvarString( "ui_gametype" ) );
+
+		#define BUTTON_3( itemIndex, visArg ) \
+			CUSTOM_BUTTON( itemIndex, "@CUSTOM_GAME_MODE_OPTIONS_CAPS", GAME_MODE_RULES_ACTION, "@CUSTOM_GAME_MODE_OPTIONS_DESC", "", visArg )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_3( 2, SHOULD_SHIFT_CHOICES_UP )
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_3( 3, !SHOULD_SHIFT_CHOICES_UP )
+
+		#define BUTTON_4( itemIndex, visArg ) \
+			CUSTOM_BUTTON( itemIndex, "@CUSTOM_GENERAL_OPTIONS_CAPS", open "custom_settings_general", "@CUSTOM_GENERAL_OPTIONS_DESC", "", visArg )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_4( 3, SHOULD_SHIFT_CHOICES_UP )
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_4( 4, !SHOULD_SHIFT_CHOICES_UP )
+
+		#define CUSTOM_OPTION_HIDEACCEPT( dvarName, dvarValue )	\
+				if( dvarInt( dvarName ) == dvarValue )			\
+				{												\
+					setLocalVarBool ui_choice_hideaccept 0; 	\
+				}												\
+				else											\
+				{												\
+					setLocalVarBool ui_choice_hideaccept 1;		\
+				}
+
+		#define CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( dvarName, enabledValue, disabledString, enabledString ) \
+				if( dvarInt( dvarName ) != enabledValue ) \
+				{ \
+					execnow set ui_choice_desc ( disabledString ); \
+				} \
+				else \
+				{ \
+					execnow set ui_choice_desc ( enabledString ); \
+				} 
+
+		#define CUSTOM_OPTION_LEAVE_FOCUS		\
+				CLEAR_CHOICE_DESC				\
+				setLocalVarBool ui_choice_hideaccept 0;
+
+		#define CUSTOM_OPTION_EXTRA( dvarName, dvarValue, menuName )	\
+				execKeyInt BUTTON_A										\
+				{														\
+					if( dvarInt( dvarName ) == dvarValue )				\
+					{													\
+						open menuName;									\
+					}													\
+				}
+
+		#define CUSTOM_CLASS_ON_FOCUS																		\
+				SET_CHOICE_DESC( "", "@CUSTOM_CLASS_EDITOR_DESC", "" )	\
+				CUSTOM_OPTION_HIDEACCEPT( custom_class_mode, 1 ) \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( custom_class_mode, 1, "@CUSTOM_CLASS_EDITOR_DISABLED_DESC", "@CUSTOM_CLASS_EDITOR_DESC" ) 
+
+		#define CUSTOM_CLASS_ACTION \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( custom_class_mode, 1, "@CUSTOM_CLASS_EDITOR_DISABLED_DESC", "@CUSTOM_CLASS_EDITOR_DESC" ) \
+				CUSTOM_OPTION_HIDEACCEPT( custom_class_mode, 1 ) \
+				if( dvarInt( custom_class_mode ) == 1 ) \
+				{ \
+					execNow reset scr_player_healthregentime; \
+				} \
+				exec checkIfCustomGametypeChanged;
+
+		#define BUTTON_5( itemIndex, visArg ) \
+			FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS_EX(itemIndex, "@CUSTOM_CLASS_EDITOR_CAPS", custom_class_mode, \
+													{ "@CUSTOM_ALLOW_PLAYER_CLASSES_CAPS" 0 "@CUSTOM_CUSTOM_CLASSES_CAPS" 1 }, \
+													CUSTOM_CLASS_ACTION, \
+													CUSTOM_CLASS_ON_FOCUS, CUSTOM_OPTION_LEAVE_FOCUS, visArg, ;, \
+													CUSTOM_OPTION_EXTRA( custom_class_mode, 1, "custom_classes" ); )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_5( 4, SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 4, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_classes", when(dvarInt(custom_class_mode) == 1 && SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_5( 5, !SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 5, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_classes", when(dvarInt(custom_class_mode) == 1 && !SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+
+		#define CUSTOM_KILLSTREAK_ON_FOCUS																				\
+				SET_CHOICE_DESC( "", "@CUSTOM_KILLSTREAK_EDITOR_DESC", "" )	\
+				CUSTOM_OPTION_HIDEACCEPT( custom_killstreak_mode, 2 ) \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( custom_killstreak_mode, 2, "@CUSTOM_KILLSTREAK_EDITOR_DISABLED_DESC", "@CUSTOM_KILLSTREAK_EDITOR_DESC" ) 
+
+		#define CUSTOM_KILLSTREAK_ACTION \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( custom_killstreak_mode, 2, "@CUSTOM_KILLSTREAK_EDITOR_DISABLED_DESC", "@CUSTOM_KILLSTREAK_EDITOR_DESC" ) \
+				CUSTOM_OPTION_HIDEACCEPT( custom_killstreak_mode, 2 ) \
+				exec checkIfCustomGametypeChanged;
+
+		#define BUTTON_6( itemIndex, visArg ) \
+			FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS_EX(itemIndex, "@CUSTOM_KILLSTREAK_EDITOR", custom_killstreak_mode, \
+													{ "@MPUI_ALLOW_PLAYER_KILLSTREAKS_CAPS" 0 "@MPUI_NO_KILLSTREAKS_CAPS" 1 "@MPUI_CUSTOM_KILLSTREAKS_CAPS" 2 },  \
+													CUSTOM_KILLSTREAK_ACTION, \
+													CUSTOM_KILLSTREAK_ON_FOCUS, CUSTOM_OPTION_LEAVE_FOCUS, visArg, ;, \
+													CUSTOM_OPTION_EXTRA( custom_killstreak_mode, 2, "custom_killstreaks" ); )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_6( 5, SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 5, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_killstreaks", when(dvarInt(custom_killstreak_mode) == 2 && SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_6( 6, !SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 6, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_killstreaks", when(dvarInt(custom_killstreak_mode) == 2 && !SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+
+		#define CUSTOM_PERK_ON_FOCUS																		\
+				SET_CHOICE_DESC( "", "@CUSTOM_PERK_EDITOR_DESC", "" )	\
+				CUSTOM_OPTION_HIDEACCEPT( scr_game_perks, 1 ) \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( scr_game_perks, 1, "@CUSTOM_PERK_EDITOR_DISABLED_DESC", "@CUSTOM_PERK_EDITOR_DESC" )
+
+		#define CUSTOM_PERK_ACTION \
+				CUSTOM_OPTION_SHOW_DISABLED_TOOLTIP( scr_game_perks, 1, "@CUSTOM_PERK_EDITOR_DISABLED_DESC", "@CUSTOM_PERK_EDITOR_DESC" ) \
+				CUSTOM_OPTION_HIDEACCEPT( scr_game_perks, 1 ) \
+				exec checkIfCustomGametypeChanged;
+
+		#define BUTTON_7( itemIndex, visArg ) \
+			FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS_EX(itemIndex, "@CUSTOM_PERK_EDITOR_CAPS", scr_game_perks, \
+													{ "@CUSTOM_DISABLE_PERKS_CAPS" 0 "@CUSTOM_ENABLE_PERKS_CAPS" 1 }, \
+													CUSTOM_PERK_ACTION, \
+													CUSTOM_PERK_ON_FOCUS, CUSTOM_OPTION_LEAVE_FOCUS, visArg, ;, \
+													CUSTOM_OPTION_EXTRA( scr_game_perks, 1, "custom_specialty_editor" ); )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_7( 6, SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 6, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_specialty_editor", when(dvarInt(scr_game_perks) == 1 && SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_7( 7, !SHOULD_SHIFT_CHOICES_UP )
+#ifdef PC
+		SIMPLE_CHOICE_RECT_OFFSET_BUTTON_SOUND( 7, 6, "@PLATFORM_EDIT", ITEM_ALIGN_MIDDLE_CENTER, open "custom_specialty_editor", when(dvarInt(scr_game_perks) == 1 && !SHOULD_SHIFT_CHOICES_UP ), 20, CHOICE_SIZE_Y )
+#endif //PC
+
+		// Game Recording Option (on/off)
+		#define BUTTON_8( itemIndex, visArg ) \
+			FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( itemIndex, "@CUSTOM_GAME_RECORDING_CAPS", demo_recordPrivateMatch, \
+													{ "@MENU_DISABLED_CAPS" 0 "@MENU_ENABLED_CAPS" 1 }, \
+													play CHOICE_FOCUS_SOUND;, \
+													SET_CHOICE_DESC( "", "@CUSTOM_GAME_RECORDING_DESC", "" ), \
+													CLEAR_CHOICE_DESC, \
+													visArg && ( dvarInt( xblive_privatematch ) ) )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#define CHOICE_SEP_3 6
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_8( 7, SHOULD_SHIFT_CHOICES_UP )
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#define CHOICE_SEP_3 7
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_8( 8, !SHOULD_SHIFT_CHOICES_UP )
+
+		PREPROC_TEXT_DRAW_VIS_EX(	NEW_FRAME_CHOICE_X_START (NEW_FRAME_CHOICE_Y_START + 230) CHOICE_SIZE_X 60 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+									"@CUSTOM_WARN_DEMO_SIZE",
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1,
+									when( dvarInt( xblive_privatematch ) && dvarBool( demo_recordPrivateMatch ) ), autowrapped );
+
+#ifdef PC
+		// Pregame Enabled (yes/no)
+		#define BUTTON_9( itemIndex, visArg ) \
+			FRAME_CHOICE_DVARYESNO_FOCUS_VIS_EX( itemIndex, "@PATCH_PREGAME_ENABLED_CAPS", g_pregame_enabled, \
+													play CHOICE_FOCUS_SOUND;, \
+													SET_CHOICE_DESC( "", "@PLATFORM_PREGAME_ENABLED_DESC", "" );, \
+													CLEAR_CHOICE_DESC, \
+													visArg, ; )
+
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#undef CHOICE_SEP_4
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#define CHOICE_SEP_3 6
+		#define CHOICE_SEP_4 7
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_9( 8, SHOULD_SHIFT_CHOICES_UP )
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#undef CHOICE_SEP_4
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#define CHOICE_SEP_3 7
+		#define CHOICE_SEP_4 8
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_9( 9, !SHOULD_SHIFT_CHOICES_UP )
+
+		// Pregame Minplayers (edit)
+		#define BUTTON_10( itemIndex, visArg ) \
+			FRAME_CHOICE_DVAREDIT_NUMERIC_FOCUS_VIS_EX( itemIndex, "@PATCH_PREGAME_MINPLAYERS_CAPS", party_minplayers, 3, \
+														;, \
+														SET_CHOICE_DESC( "", "@PLATFORM_PREGAME_MINPLAYERS_DESC", "" );, \
+														CLEAR_CHOICE_DESC, \
+														visArg, ; )		
+		
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#undef CHOICE_SEP_4
+		#define CHOICE_SEP_1 1
+		#define CHOICE_SEP_2 3
+		#define CHOICE_SEP_3 6
+		#define CHOICE_SEP_4 7
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_10( 9, SHOULD_SHIFT_CHOICES_UP )
+		#undef CHOICE_SEP_1
+		#undef CHOICE_SEP_2
+		#undef CHOICE_SEP_3
+		#undef CHOICE_SEP_4
+		#define CHOICE_SEP_1 2
+		#define CHOICE_SEP_2 4
+		#define CHOICE_SEP_3 7
+		#define CHOICE_SEP_4 8
+		#include "ui/choices_sep_spacing.inc"
+		BUTTON_10( 10, !SHOULD_SHIFT_CHOICES_UP )
+	
+		CUSTOM_BUTTON( 14, "@CUSTOM_REVERT_CHANGES_CAPS", open popup_custom_confirm_revert;, "@CUSTOM_REVERT_CHANGES_DESC", "", 1 )
+#endif //#ifdef PC
+
+		CUSTOM_FRAME_HINT( ui_choice_desc )
+
+		
+#ifdef PC
+		NEW_FRAME_BACK_BUTTON_ACTION( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT, ON_ESC )
+		SAVE_TO_FILESHARE_BUTTON_NEW_FRAME_ACTION( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT )
+#else //#ifdef PC
+		NEW_FRAME_BACK_BUTTON( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT )
+		SAVE_TO_FILESHARE_BUTTON_NEW_FRAME( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT )
+#endif //#ifdef PC
+
+#ifndef PC
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			( 180 ) ( CUSTOM_MODE_FRAME_HEIGHT / 2 + 18 ) 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			origin			0 0
+			text			"@CUSTOM_BUTTON_REVERT_CHANGES"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_BOTTOM_LEFT
+			execkeyint		BUTTON_Y
+			{
+				open popup_custom_confirm_revert;
+			}
+			visible			1
+			decoration
+		}
+
+		CUSTOM_MODE_RESET_TO_DEFAULT_BUTTON( CUSTOM_MODE_FRAME_WIDTH, CUSTOM_MODE_FRAME_HEIGHT, -76, open popup_custom_confirm_revert;, dvarBool( ui_custom_haschanged ) || dvarBool( customGameMode ) )
+
+		execKeyInt		BUTTON_X 
+		{ 
+            close self;
+			UPLOAD_TO_FILESHARE 
+		}
+#endif
+	}
+
+#ifdef PC
+	#define	SAVE_ORIGINAL_SETTINGS_PC												\
+			exec set		orig_host_name			( dvarString( sv_hostname ) );	\
+			exec set		orig_min_ping			( dvarInt( sv_minping ) );		\
+			exec set		orig_max_ping			( dvarInt( sv_maxping ) );		\
+			exec set		orig_password			( dvarString( g_password ) );	\
+			exec set		orig_voice				( dvarInt( sv_voice ) );		\
+			exec set		orig_allow_vote			( dvarInt( g_allowVote ) );		\
+			exec set		orig_sv_vac				( dvarInt( sv_vac ) );
+#else
+	#define SAVE_ORIGINAL_SETTINGS_PC
+#endif
+
+	#define SAVE_ORIGINAL_SETTINGS																							\
+			exec set		orig_time				( dvarFloat( ( "scr_" + dvarString( ui_gametype ) + "_timelimit" ) ) );	\
+			exec set		orig_score				( dvarInt( ( "scr_" + dvarString( ui_gametype ) + "_scorelimit" ) ) );	\
+			exec set		temp_time				( dvarFloat( ( "scr_" + dvarString( ui_gametype ) + "_timelimit" ) ) );	\
+			exec set		temp_score				( dvarInt( ( "scr_" + dvarString( ui_gametype ) + "_scorelimit" ) ) );	\
+			exec set		orig_num_bots_friendly	( dvarInt( bot_friends ) );												\
+			exec set		orig_num_bots_enemy		( dvarInt( bot_enemies ) );												\
+			exec set		orig_bot_difficulty		( dvarString( bot_difficulty ) );										\
+			exec set		orig_bot_show_tips		( dvarInt( bot_tips ) );												\
+			exec set		orig_botUseFriendNames	( dvarInt( sv_botUseFriendNames ) );									\
+			SAVE_ORIGINAL_SETTINGS_PC
+	
+	#define SAVE_TIME_AND_SCORE																			\
+			exec set ( "scr_" + dvarString( ui_gametype ) + "_timelimit" )	( dvarFloat( temp_time ) );	\
+			exec set ( "scr_" + dvarString( ui_gametype ) + "_scorelimit" )	( dvarInt( temp_score ) );	
+
+#ifdef PC
+	#define RESET_TO_ORIGINAL_SETTINGS_PC									\
+			exec set		sv_hostname ( dvarString( orig_host_name ) );	\
+			exec set		sv_minping	( dvarInt( orig_min_ping ) );		\
+			exec set		sv_maxping	( dvarInt( orig_max_ping ) );		\
+			exec set		g_password	( dvarString( orig_password ) );	\
+			exec set		sv_voice	( dvarInt( orig_voice ) );			\
+			exec set		g_allowVote	( dvarInt( orig_allow_vote ) );		\
+			exec set		sv_vac		( dvarInt( orig_sv_vac ) );
+#else
+	#define RESET_TO_ORIGINAL_SETTINGS_PC
+#endif
+
+	#define RESET_TO_ORIGINAL_SETTINGS																						\
+			exec set		( "scr_" + dvarString( ui_gametype ) + "_scorelimit" )	( dvarInt( orig_score ) );				\
+			exec set		( "scr_" + dvarString( ui_gametype ) + "_timelimit" )	( dvarFloat( orig_time ) );				\
+			exec set		( "scr_" + dvarString( ui_gametype ) + "_scorelimit" )	( dvarInt( orig_score ) );				\
+			exec set		temp_time												( dvarFloat( orig_time ) );				\
+			exec set		temp_score												( dvarInt( orig_score ) );				\
+			exec set		bot_friends												( dvarInt( orig_num_bots_friendly ) );	\
+			exec set		bot_enemies												( dvarInt( orig_num_bots_enemy ) );		\
+			exec set		bot_difficulty											( dvarString( orig_bot_difficulty ) );	\
+			exec set		bot_tips												( dvarInt( orig_bot_show_tips ) );		\
+			exec set		sv_botUseFriendNames									( dvarInt( orig_botUseFriendNames )	);	\
+			RESET_TO_ORIGINAL_SETTINGS_PC
+			
+#undef CHOICE_SEP_1
+#undef CHOICE_SEP_2
+#include "ui/choices_sep_spacing.inc"
+
+#ifdef PC
+	#define BUTTON_SPACING			20
+	#define REVERT_CHANGES_OFFSET	( getTextWidth( locString( "@PLATFORM_BACK" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+	
+	#define BASIC_TRAINING_REVERT_CHANGES_BUTTON( FRAME_WIDTH, FRAME_HEIGHT, xArg, actionArg, visArg ) \
+		NEW_FRAME_BUTTON_PC_LEFT_OFFSET( FRAME_WIDTH, FRAME_HEIGHT, REVERT_CHANGES_OFFSET, "@PLATFORM_REVERT_CHANGES", actionArg, visArg )
+#else // #ifdef PC
+	#define BASIC_TRAINING_REVERT_CHANGES_BUTTON( FRAME_WIDTH, FRAME_HEIGHT, xArg, actionArg, visArg ) \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_BUTTON \
+			rect			( xArg ) ( FRAME_HEIGHT / 2 + 18 ) 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER \
+			origin			0 0 \
+			text			"@PLATFORM_REVERT_CHANGES" \
+			textfont		CHOICE_TEXTFONT \
+			textscale		TEXTSIZE_DEFAULT \
+			textalign		ITEM_ALIGN_BOTTOM_LEFT \
+			execkeyint		BUTTON_BACK \
+			{ \
+				actionArg \
+			} \
+			visible			when( visArg ) \
+			decoration \
+		}
+#endif // #else // #ifdef PC
+
+#undef	NEW_FRAME_BUTTON_NAME
+#define NEW_FRAME_BUTTON_NAME		"basictraining_settings_"
+#undef	CHOICE_BUTTON_NAME
+#define CHOICE_BUTTON_NAME			"basictraining_settings_"
+
+#ifdef PC
+	#undef CHOICE_TEXTSIZE
+	#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+#endif //PC
+
+#undef	MENUDEF_NAME
+#define MENUDEF_NAME				basictraining_settings
+	menuDef	
+	{
+		name			basictraining_settings
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		focuscolor		COLOR_FOCUSED
+		style			WINDOW_STYLE_FILLED
+		soundloop 		MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+		onOpen
+		{
+			execnow ui_animate basictraining_settings * highlightOff 0;
+			activateBlur;
+			focusFirst;
+			execnow "Updatedvarsfromprofile";
+			SAVE_ORIGINAL_SETTINGS
+			
+			exec "set com_maxclients 30";
+			exec "set sv_maxclients 30";
+			exec "set party_maxplayers 30";
+			exec "set sv_minping 0";
+			exec "set sv_vac 0";
+			exec "set bot_tips 0";
+		}
+		onEsc
+		{
+			close self;
+		}
+		onClose
+		{
+			SAVE_TIME_AND_SCORE
+			exec "updategamerprofile";
+			deactivateBlur;
+		}
+
+		NEW_FRAME( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT )
+		NEW_FRAME_TITLE( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, "@MPUI_BASICTRAINING_SETTINGS_CAPS", 1 )
+		
+
+		#undef	A_BUTTON_OFFSET_X
+		#define A_BUTTON_OFFSET_X		100000
+		
+		#define IS_WAGER_GAME \
+				( dvarString( "ui_gametype" ) == "hlnd" || dvarString( "ui_gametype" ) == "oic" || dvarString( "ui_gametype" ) == "gun" || dvarString( "ui_gametype" ) == "shrp" )
+		
+		#define IS_TEAM_GAME \
+			( dvarString( "ui_gametype" ) == "tdm" || dvarString( "ui_gametype" ) == "hc_tdm"  || dvarString( "ui_gametype" ) == "sd" || dvarString( "ui_gametype" ) == "dom" || dvarString( "ui_gametype" ) == "koth" || dvarString( "ui_gametype" ) == "dem" || dvarString( "ui_gametype" ) == "ctf" || dvarString( "ui_gametype" ) == "sab" )
+			
+		#define IS_FFA_GAME \
+			( dvarString( "ui_gametype" ) == "dm" || dvarString( "ui_gametype" ) == "hc_dm" )
+			
+		#define BALANCE_TEAMS_FRIENDLY															\
+			if( dvarInt( bot_friends ) + dvarInt( bot_enemies ) > dvarInt( party_maxplayers ) )	\
+			{																					\
+				exec set bot_enemies ( dvarInt( party_maxplayers ) - dvarInt( bot_friends ) );	\
+			}																					\
+			
+		#define BALANCE_TEAMS_ENEMY																\
+			if( dvarInt( bot_enemies ) + dvarInt( bot_friends ) > dvarInt( party_maxplayers ) )	\
+			{																					\
+				exec set bot_friends ( dvarInt( party_maxplayers ) - dvarInt( bot_enemies ) );	\
+			}																					\
+
+		// tdm & hardcore tdm
+		
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 1, CHOICE1_TEXT,		temp_time,	CHOICE1_STRLIST,		;,	SET_CHOICE_DESC( "", CHOICE1_DESC, "" ),	CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+		
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 2, CHOICE2_TEXT,		temp_score,		CHOICE2_STRLIST,		exec checkIfCustomGametypeChanged; CHOICE2_EXEC,		SET_CHOICE_DESC( "", CHOICE2_DESC, "" ) setLocalVarBool ui_choice_hideaccept 1;,		CLEAR_CHOICE_DESC setLocalVarBool ui_choice_hideaccept 0;, CHOICE2_VIS	&& IS_TEAM_GAME	)
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 2, CHOICE2_ALT_TEXT,	temp_score,	CHOICE2_ALT_STRLIST,	exec checkIfCustomGametypeChanged; CHOICE2_ALT_EXEC,	SET_CHOICE_DESC( "", CHOICE2_DESC, "" ) setLocalVarBool ui_choice_hideaccept 1;,	CLEAR_CHOICE_DESC setLocalVarBool ui_choice_hideaccept 0;, CHOICE2_ALT_VIS && IS_TEAM_GAME	)
+	
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	3, "@MPUI_FRIENDLY_PRACTICE_DUMMIES_CAPS",
+												bot_friends,
+												{ "@MPUI_1_BOTS" 1 "@MPUI_2_BOTS" 2 "@MPUI_3_BOTS" 3 "@MPUI_4_BOTS" 4 "@MPUI_5_BOTS" 5 "@MPUI_6_BOTS" 6 "@MPUI_7_BOTS" 7 "@MPUI_8_BOTS" 8 "@MPUI_9_BOTS" 9 "@MPUI_10_BOTS" 10 "@MPUI_11_BOTS" 11 },
+												BALANCE_TEAMS_FRIENDLY;,
+												SET_CHOICE_DESC( "", "@MPUI_FRIENDLY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+												
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	4, "@MPUI_FRIENDLY_PRACTICE_DUMMIES_CAPS",
+												bot_friends_extra,
+												{ "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9 "10" 10 "11" 11 "12" 12 "13" 13 "14" 14 "15" 15 "16" 16 "17" 17 "18" 18 "19" 19 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_FRIENDLY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	5, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies,
+												{ "@MPUI_1_BOTS" 1 "@MPUI_2_BOTS" 2 "@MPUI_3_BOTS" 3 "@MPUI_4_BOTS" 4 "@MPUI_5_BOTS" 5 "@MPUI_6_BOTS" 6 "@MPUI_7_BOTS" 7 "@MPUI_8_BOTS" 8 "@MPUI_9_BOTS" 9 "@MPUI_10_BOTS" 10 "@MPUI_11_BOTS" 11 },
+												BALANCE_TEAMS_ENEMY;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+												
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	6, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies_extra,
+												{ "-1" -1 "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9 "10" 10 "11" 11 "12" 12 "13" 13 "14" 14 "15" 15 "16" 16 "17" 17 "18" 18 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+												
+		FRAME_CHOICE_DVARSTRINGLIST_FOCUS_VIS(	7, "@MENU_BASICTRAINING_DIFFICULTY_CAPS",
+												bot_difficulty,
+												{ "@MENU_BASICTRAINING_EASY_CAPS" easy "@MENU_BASICTRAINING_NORMAL_CAPS" normal "@MENU_BASICTRAINING_HARD_CAPS" hard "@MENU_BASICTRAINING_FU_CAPS" fu },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_DIFFICULTY_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	8, "@PLATFORM_BASICTRAINING_FRIEND_NAMES_CAPS",
+												sv_botUseFriendNames,
+												{ "@MENU_DISABLED_CAPS" 0 "@MENU_ENABLED_CAPS" 1 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_FRIEND_NAMES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+												
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	9, "REASONABLE SETUPS",
+												bot_reasonable,
+												{ "DISABLED" 0 "ENABLED" 1 },
+												;, 
+												SET_CHOICE_DESC( "", "Bots will only use weapons, perks and killstreaks that are 'good' and/or 'overpowered' for themselves.", "" ), 
+												CLEAR_CHOICE_DESC, IS_TEAM_GAME )
+												
+		// ffa & hardcore ffa
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 1, CHOICE1_TEXT,		temp_time,	CHOICE1_STRLIST,		;,	SET_CHOICE_DESC( "", CHOICE1_DESC, "" ),		CLEAR_CHOICE_DESC, IS_FFA_GAME )
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS( 2, CHOICE2_ALT_TEXT,	temp_score,	CHOICE2_ALT_STRLIST,	;,	SET_CHOICE_DESC( "", CHOICE2_DESC, "" ),	CLEAR_CHOICE_DESC, IS_FFA_GAME	)
+		
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	3, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies,
+												{ "@MPUI_1_BOTS" 1 "@MPUI_2_BOTS" 2 "@MPUI_3_BOTS" 3 "@MPUI_4_BOTS" 4 "@MPUI_5_BOTS" 5 "@MPUI_6_BOTS" 6 "@MPUI_7_BOTS" 7 "@MPUI_8_BOTS" 8 "@MPUI_9_BOTS" 9 "@MPUI_10_BOTS" 10 "@MPUI_11_BOTS" 11 },
+												BALANCE_TEAMS_ENEMY;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_FFA_GAME )
+												
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	4, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies_extra,
+												{ "-1" -1 "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9 "10" 10 "11" 11 "12" 12 "13" 13 "14" 14 "15" 15 "16" 16 "17" 17 "18" 18 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_FFA_GAME )
+												
+		FRAME_CHOICE_DVARSTRINGLIST_FOCUS_VIS(	5, "@MENU_BASICTRAINING_DIFFICULTY_CAPS",
+												bot_difficulty,
+												{ "@MENU_BASICTRAINING_EASY_CAPS" easy "@MENU_BASICTRAINING_NORMAL_CAPS" normal "@MENU_BASICTRAINING_HARD_CAPS" hard "@MENU_BASICTRAINING_FU_CAPS" fu },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_DIFFICULTY_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_FFA_GAME )
+
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	6, "@PLATFORM_BASICTRAINING_FRIEND_NAMES_CAPS",
+												sv_botUseFriendNames,
+												{ "@MENU_DISABLED_CAPS" 0 "@MENU_ENABLED_CAPS" 1 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_FRIEND_NAMES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_FFA_GAME )
+											
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	7, "REASONABLE SETUPS",
+												bot_reasonable,
+												{ "DISABLED" 0 "ENABLED" 1 },
+												;, 
+												SET_CHOICE_DESC( "", "Bots will only use weapons, perks and killstreaks that are 'good' and/or 'overpowered' for themselves.", "" ), 
+												CLEAR_CHOICE_DESC, IS_FFA_GAME )
+												
+		// wager matches
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	1, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies,
+												{ "@MPUI_1_BOTS" 1 "@MPUI_2_BOTS" 2 "@MPUI_3_BOTS" 3 "@MPUI_4_BOTS" 4 "@MPUI_5_BOTS" 5 "@MPUI_6_BOTS" 6 "@MPUI_7_BOTS" 7 "@MPUI_8_BOTS" 8 "@MPUI_9_BOTS" 9 "@MPUI_10_BOTS" 10 "@MPUI_11_BOTS" 11 },
+												BALANCE_TEAMS_ENEMY;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_WAGER_GAME )
+												
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	2, "@MPUI_ENEMY_PRACTICE_DUMMIES_CAPS",
+												bot_enemies_extra,
+												{ "-1" -1 "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9 "10" 10 "11" 11 "12" 12 "13" 13 "14" 14 "15" 15 "16" 16 "17" 17 "18" 18 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_ENEMY_PRACTICE_DUMMIES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_WAGER_GAME )
+												
+		FRAME_CHOICE_DVARSTRINGLIST_FOCUS_VIS(	3, "@MENU_BASICTRAINING_DIFFICULTY_CAPS",
+												bot_difficulty,
+												{ "@MENU_BASICTRAINING_EASY_CAPS" easy "@MENU_BASICTRAINING_NORMAL_CAPS" normal "@MENU_BASICTRAINING_HARD_CAPS" hard "@MENU_BASICTRAINING_FU_CAPS" fu },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_DIFFICULTY_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_WAGER_GAME )
+
+		FRAME_CHOICE_DVARFLOATLIST_FOCUS_VIS(	4, "@PLATFORM_BASICTRAINING_FRIEND_NAMES_CAPS",
+												sv_botUseFriendNames,
+												{ "@MENU_DISABLED_CAPS" 0 "@MENU_ENABLED_CAPS" 1 },
+												;, 
+												SET_CHOICE_DESC( "", "@MPUI_BASICTRAINING_FRIEND_NAMES_DESC", "" ), 
+												CLEAR_CHOICE_DESC, IS_WAGER_GAME )
+
+		#undef	CHOICE_DVAR_WIDTH_OFFSET
+		#define	CHOICE_DVAR_WIDTH_OFFSET 60
+		FRAME_CHOICE_DVAREDIT_FOCUS_VIS_EX(		10, "@PLATFORM_SERVER_NAME_CAPS",
+												"sv_hostname", 20, 20,
+												;,
+												SET_CHOICE_DESC( "", "@PATCH_SERVER_NAME_DESC", "" ),
+												CLEAR_CHOICE_DESC, 1, ; )
+		
+		FRAME_CHOICE_DVAREDIT_NUMERIC_FOCUS_VIS_EX(	11, "@PLATFORM_MAXIMUM_PING_CAPS",
+												"sv_maxping", 4,
+												;,
+												SET_CHOICE_DESC( "", "@PATCH_MAXIMUM_PING_DESC", "" ),
+												CLEAR_CHOICE_DESC, 1, ; )
+		
+		FRAME_CHOICE_DVAREDIT_FOCUS_VIS_EX(		12, "@PLATFORM_PASSWORD1_CAPS",
+												"g_password", 12, 12,
+												;,
+												SET_CHOICE_DESC( "", "@PATCH_PASSWORD_DESC", "" ),
+												CLEAR_CHOICE_DESC, 1, ; )
+
+		FRAME_CHOICE_DVARYESNO_FOCUS_VIS_EX(	13, "@PLATFORM_VOICECHAT_CAPS",
+												"sv_voice", 
+												;,
+												SET_CHOICE_DESC( "", "@PATCH_VOICECHAT_DESC", "" ),
+												CLEAR_CHOICE_DESC, 1, ; )
+											
+		#undef CHOICE_TEXT_COLOR
+		#define CHOICE_TEXT_COLOR 1 1 1 1
+											
+		#undef	A_BUTTON_OFFSET_X
+		#define A_BUTTON_OFFSET_X		0
+
+		CUSTOM_FRAME_HINT( ui_choice_desc )
+		
+		BASIC_TRAINING_REVERT_CHANGES_BUTTON( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, -76, open popup_basictraining_confirm_revert;, 1 )
+#ifdef PC
+		NEW_FRAME_BACK_BUTTON_ACTION( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, close self; )
+#else //#ifdef PC
+		NEW_FRAME_BACK_BUTTON( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT )
+#endif //#ifdef PC
+	}
+
+	#include "ui_mp/popupstyle.inc"
+	
+// mekberg: No idea why the above include is not setting this. I've wasted a half hour trying to figure why. Instead I'm just going to hack this here.
+#ifdef PC
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X			(POPUP_WIDTH-(POPUP_SIDE_PAD*2))
+#endif // PC
+
+	menuDef
+	{
+		#define CUSTOM_ERROR_ONESC		\
+				uiScript clearError;	\
+				close self;
+
+		SYSTEM_POPUP_SETUP_VIS( popup_custom_game_error, ;, CUSTOM_ERROR_ONESC, 1 )
+		SYSTEM_POPUP_TITLE_VIS( dvarString( "com_errorTitle" ), 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( dvarString( "com_errorMessage" ), 1 )
+		
+		#define CUSTOM_ERROR_ACTION			\
+				play CHOICE_FOCUS_SOUND;	\
+				uiScript clearError;		\
+				close self;
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX( 1, "@MENU_EXIT", CUSTOM_ERROR_ACTION, play CHOICE_FOCUS_SOUND, ;, 1, ; )
+
+#ifndef PC
+		SYSTEM_POPUP_BACK_BUTTON
+#endif //#ifndef PC
+	}
+
+
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( "popup_custom_confirm_revert", setfocus popup_custom_confirm_revert_2, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@CUSTOM_REVERT_CHANGES_CONFIRM_TITLE", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES_CAPS",	execNow "revertCustomGametypeChanges"; exec "xupdatepartystate"; close self,	1, ;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO_CAPS",	close self,											1, name popup_custom_confirm_revert_2	)
+
+#ifndef PC
+		SYSTEM_POPUP_BACK_BUTTON
+#endif //#ifndef PC
+	}
+	
+
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( "popup_basictraining_confirm_revert", setfocus popup_basictraining_confirm_revert_2, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_REVERT_BASICTRAINING_CONFIRM_TITLE", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES",	RESET_TO_ORIGINAL_SETTINGS close self,	1, ;											)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO",	close self,								1, name popup_basictraining_confirm_revert_2	)
+
+#ifndef PC
+		SYSTEM_POPUP_BACK_BUTTON
+#endif //#ifndef PC
+	}
+}

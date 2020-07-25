@@ -1,0 +1,830 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+
+#define BUTTON_BG_WIDTH					180
+#define BUTTON_BG_Y_START				5
+
+#define CHOICE_X_START					-258
+#define CHOICE_Y_START					BUTTON_BG_Y_START + 35
+
+#define CHOICE_GROUP					"main"
+
+#define FLYOUT_NONE						0
+#define	FLYOUT_LIVE						1
+#define FLYOUT_OPERATIONS				2
+#define FLYOUT_THEATER					3
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/friendslist.inc"
+#include "ui_mp/stats_info.inc"
+
+#undef  CHOICE_SIZE_X
+#define CHOICE_SIZE_X					BUTTON_BG_WIDTH
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+#undef	CHOICE_Y_SPACING				
+#define CHOICE_Y_SPACING				CHOICE_SIZE_Y
+
+#undef CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_CENTER
+
+#define FLYOUT_BG_COLOR					0 0 0 0.3
+
+{
+	assetGlobalDef
+	{
+		fadeClamp		1.0						// sets the fadeup alpha
+		fadeCycle		1						// how often fade happens in milliseconds
+		fadeAmount		0.1						// amount to adjust alpha per cycle
+	}
+
+	menuDef
+	{
+		name			"main"
+		fullScreen		1
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop 		MENU_MUSIC
+		style			WINDOW_STYLE_EMPTY
+		onOpen
+		{ 
+			uiScript stopRefresh;
+			open main_text;			
+		}
+		onClose
+		{
+		}
+		onESC 
+		{
+		}
+	}
+	
+#define RESET_GAMEMODE_DVARS \
+	setdvar xblive_basictraining 0; \
+	setdvar xblive_privatematch  0; \
+	setdvar xblive_wagermatch  0; \
+	setdvar xblive_theater  0; \
+	setdvar xblive_rankedmatch  0;
+
+	menuDef
+	{
+		name			"main_text"
+		fullScreen		1
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop 		MENU_MUSIC
+		style			WINDOW_STYLE_EMPTY
+		onOpen
+		{ 			
+			setdvar ui_version_show "0";			
+			setLocalVarBool	ui_centerPopup 0;
+			setdvar ui_bg_image "";
+			RESET_GAMEMODE_DVARS
+		}
+		onFocus
+		{
+			setDvar ui_flyoutHasFocus FLYOUT_NONE;
+		}
+
+
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			rect			FULLSCREEN_WIDE
+			background		"menu_mp_background_main2"
+			forecolor		1 1 1 1
+			visible			1
+			decoration
+		}
+
+		// lower corner glows
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN;
+			background		"menu_mp_background_glow"
+			forecolor		0.384 0.725 0.725 0
+			exp forecolor	a ( ((sin(milliseconds()/1500) + 1) * 0.25) + 0.25 )
+			visible			1
+			decoration
+		}
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN;
+			background		"menu_mp_background_glow"
+			forecolor		0.384 0.725 0.725 0
+			exp forecolor	a ( ((sin(milliseconds()/480) + 1) * 0.25) + 0.25 )
+			visible			1
+			decoration
+		}
+
+		#undef	THINFOG_SCROLL_TIME
+		#define THINFOG_SCROLL_TIME 50000
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			rect			-107 0 1708 480
+			exp				rect X((-961) + ((float(milliseconds() % THINFOG_SCROLL_TIME) / THINFOG_SCROLL_TIME) * (854)))
+			background		"animbg_fogscrollthin"
+			forecolor		1 1 1 0.5
+			visible			1
+			decoration
+		}
+		#include "ui/bg.inc"
+
+
+		// cod:bo logo
+#define LOGO_X_OFFSET		45
+#define LOGO_Y_OFFSET		70
+
+#define LOGO_WIDTH			228
+#define LOGO_HEIGHT			107
+		itemDef
+		{
+			visible			1
+			rect			(-LOGO_WIDTH - LOGO_X_OFFSET) (-LOGO_HEIGHT - LOGO_Y_OFFSET) LOGO_WIDTH LOGO_HEIGHT HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM
+			forecolor		1 1 1 1
+			style			WINDOW_STYLE_SHADER
+			background		"menu_mp_background_logo"
+			decoration
+		}
+
+#define RESET_GAME_MODES 					\
+		setdvar systemlink "0";				\
+		setdvar splitscreen "0";			\
+		setdvar onlinegame "1";				\
+		setdvar xblive_privatematch "0";	\
+		setdvar xblive_rankedmatch "0";		\
+		setdvar xblive_wagermatch "0";		\
+		setdvar xblive_clanmatch "0";		\
+		setdvar xblive_theater "0";			\
+		setdvar xblive_basictraining "0";
+
+#define SIGN_IN_CMD			exec "xsigninlive";
+
+#define SETUP_SIGNIN																		\
+		if( IsSignedInToLive() ==  0 )														\
+		{																					\
+			SIGN_IN_CMD																		\
+			open error_netconnect_popmenu;													\
+		}																					\
+		elseif( isDemonwareFetchingDone() == 1 ) 											\
+		{																					\
+			execnow "setclientbeingused";													\ 
+			if( !getDStat( "CacLoadouts", "resetWarningDislayed" ) )						\
+			{																				\
+				open customclassesreset;													\
+			}																				\
+			else																			\
+			{																				\
+				open live_flyout;															\
+				execnow readFileShare;														\
+			}																				\
+		} 																					\
+		else																				\
+		{																					\
+			open popup_connectingtodwhandler;												\
+		}
+
+
+		// ----------------- BEGIN Scroller --------------------------
+		#include "ui/scroller.inc"
+		// ----------------- END Scroller ----------------------------
+
+CHOICE_MENU_TITLE_CENTER_ALIGN_VIS( "@MENU_MULTIPLAYER_CAPS",	ITEM_ALIGN_TOP_RIGHT, dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+CHOICE_MENU_TITLE_CENTER_ALIGN_VIS( "@MENU_PLAY_CAPS",	ITEM_ALIGN_TOP_RIGHT, dvarInt( ui_flyoutHasFocus ) == FLYOUT_LIVE )
+CHOICE_MENU_TITLE_CENTER_ALIGN_VIS( "@MENU_OPERATIONS_CAPS",	ITEM_ALIGN_TOP_RIGHT, dvarInt( ui_flyoutHasFocus ) == FLYOUT_OPERATIONS )
+CHOICE_MENU_TITLE_CENTER_ALIGN_VIS( "@MPUI_THEATER_LOBBY_CAPS", ITEM_ALIGN_TOP_RIGHT, dvarInt( ui_flyoutHasFocus ) == FLYOUT_THEATER )
+		
+		// ----------------- BEGIN Message of the day ------------------------
+		// size version 1: 248 126
+		
+		//#define INFO_TEXT				dvarString( "motd" )
+		//#define INFO_TITLE				"@MPUI_MOTD"
+
+		//#define MP_MOTD 1
+		
+		//#include "ui_mp/info_box.inc"		
+		// ----------------- END Message of the day --------------------------
+
+		// Menu items ------------------------------------------- 
+
+		// highlight when flyout is open
+		PREPROC_SHADER_DRAW_VIS_EX( CHOICE_ORIGIN( 1 ) (CHOICE_SIZE_X + 1) CHOICE_SIZE_Y CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", FLYOUT_BG_COLOR, when( dvarInt( ui_flyoutHasFocus ) == FLYOUT_LIVE );, ; )
+		TEMP_CHOICE_BUTTON_VIS(	1, "@MENU_PLAY_CAPS", 
+								SETUP_SIGNIN, 
+								IsSignedInToLive() && ( dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE || dvarInt( ui_flyoutHasFocus ) == FLYOUT_LIVE ) )
+		TEMP_CHOICE_BUTTON_VIS_DISABLED(	1, "@MENU_PLAY_CAPS", 
+								SETUP_SIGNIN, 
+								!IsSignedInToLive() && ( dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE || dvarInt( ui_flyoutHasFocus ) == FLYOUT_LIVE ) )
+		// Gray text when flyout is open
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 1 ), 0 0, "@MENU_PLAY_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE && dvarInt( ui_flyoutHasFocus ) != FLYOUT_LIVE ); )
+
+
+#define SETUP_OPERATIONS_FLYOUT																\
+		if( IsSignedInToLive() ==  0 )														\
+		{																					\
+			SIGN_IN_CMD																		\
+			open error_netconnect_popmenu;													\
+		}																					\
+		elseif( isDemonwareFetchingDone() == 1 ) 											\
+		{																					\
+			execnow "setclientbeingused";													\ 
+			open operations_flyout;															\
+			execnow readFileShare;															\
+		} 																					\
+		else																				\
+		{																					\
+			open popup_connectingtodwhandler;												\
+		}
+
+		// highlight when flyout is open
+		PREPROC_SHADER_DRAW_VIS_EX( CHOICE_ORIGIN( 2 ) CHOICE_SIZE_X CHOICE_SIZE_Y CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", FLYOUT_BG_COLOR, when( dvarInt( ui_flyoutHasFocus ) == FLYOUT_OPERATIONS );, ; )
+		TEMP_CHOICE_BUTTON_VIS(	2, "@MENU_OPERATIONS_CAPS", 
+								SETUP_OPERATIONS_FLYOUT, 
+								( dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE || dvarInt( ui_flyoutHasFocus ) == FLYOUT_OPERATIONS ) )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 2 ), 0 0, "@MENU_OPERATIONS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE && dvarInt( ui_flyoutHasFocus ) != FLYOUT_OPERATIONS ); )
+		
+#define SETUP_THEATER_FLYOUT																\
+		if( IsSignedInToLive() ==  0 )														\
+		{																					\
+			SIGN_IN_CMD																		\
+			open error_netconnect_popmenu;													\
+		}																					\
+		elseif( isDemonwareFetchingDone() == 1 ) 											\
+		{																					\
+			execnow "setclientbeingused";													\ 
+			open theater_flyout;															\
+			execnow readFileShare;															\
+		} 																					\
+		else																				\
+		{																					\
+			open popup_connectingtodwhandler;												\
+		}
+		
+		// highlight when flyout is open										
+		PREPROC_SHADER_DRAW_VIS_EX( CHOICE_ORIGIN( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", FLYOUT_BG_COLOR, when( dvarInt( ui_flyoutHasFocus ) == FLYOUT_THEATER );, ; )
+		TEMP_CHOICE_BUTTON_VIS( 3, "@MPUI_THEATER_LOBBY_CAPS",
+								SETUP_THEATER_FLYOUT,
+								( dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE || dvarInt( ui_flyoutHasFocus ) == FLYOUT_THEATER ) )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 3 ), 0 0, "@MPUI_THEATER_LOBBY_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE && dvarInt( ui_flyoutHasFocus ) != FLYOUT_THEATER ); )
+		
+		TEMP_CHOICE_BUTTON_VIS(	4, "@MENU_SETTINGS_CAPS", 
+								open options_new_pc, 
+								dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 4 ), 0 0, "@MENU_SETTINGS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+		/*TEMP_CHOICE_BUTTON_VIS(	5, "@MENU_STORE_CAPS", 
+								uiscript openurl "www.callofduty.com/game", 
+								dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 5 ), 0 0, "@MENU_STORE_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )*/
+
+		TEMP_CHOICE_BUTTON_VIS(	5, "@MENU_MODS_CAPS", 
+								open select_mod, 
+								dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 5 ), 0 0, "@MENU_MODS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+		TEMP_CHOICE_BUTTON_VIS(	6, "@MENU_MAIN_MENU_CAPS", 
+								open single_popmenu, 
+								dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 6 ), 0 0, "@MENU_MAIN_MENU_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+		TEMP_CHOICE_BUTTON_VIS(	7, "@MENU_QUIT_CAPS", 
+								open quit_popmenu, 
+								dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 7 ), 0 0, "@MENU_QUIT_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, NO_BG_DISABLED_COLOR, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )	
+		
+		FRIENDS_BUTTON
+	}
+
+	#define FADE_STATE( isLast, colorArg, menuName, nextName )															\
+			state																										\
+			{																											\
+				name		"FadeIn"																					\
+				forecolor	colorArg																					\
+																														\
+				onEnter																									\
+				{																										\
+					execNow if( isLast != 1 ) ui_animate menuName nextName FadeIn (FLYOUT_TIME/FLYOUT_BUTTON_COUNT);	\
+					execNow if( isLast == 1 ) set ui_flownOut 1;														\
+				}																										\
+			}
+
+	#define FLYOUT_ARGS( isLast, menuName, colorArg, myName, nextName )	\
+			name		myName											\
+			FADE_STATE( isLast, colorArg, menuName, nextName )	
+
+#undef	CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER
+#undef	CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_TOP
+
+#undef	CHOICE_TEXTALIGN
+#define CHOICE_TEXTALIGN			ITEM_ALIGN_MIDDLE_LEFT
+
+#undef	CHOICE_GROUP
+#define CHOICE_GROUP				"flyout"
+
+#define FLYOUT_TIME					200
+#define FLYOUT_BG_X_START			( -258 + BUTTON_BG_WIDTH + 1 )
+#define FLYOUT_BG_WIDTH				180
+
+#undef	CHOICE_X_START
+#define CHOICE_X_START				FLYOUT_BG_X_START
+
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X				FLYOUT_BG_WIDTH
+
+#undef	CHOICE_FOCUS_SOUND
+#define	CHOICE_FOCUS_SOUND			"uin_navigation_submenu_over"
+
+#undef FLYOUT_BUTTON_COUNT
+#define FLYOUT_BUTTON_COUNT 5
+#undef FLYOUT_FIRST_CHOICE_Y 
+#define FLYOUT_FIRST_CHOICE_Y 1
+
+#define SETUP_ACTION_LOBBY						\
+		execNow "exec "XBOXLIVE_MP_CFG;
+		
+menuDef
+	{
+		name			live_flyout
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop 		MENU_MUSIC
+		control			MENU_CONTROL_NO_GUESTS
+
+		onOpen
+		{
+			execNow ui_animate live_flyout ButtonBackground Fly FLYOUT_TIME;
+			execNow ui_animate live_flyout FirstFlyout FadeIn (FLYOUT_TIME/FLYOUT_BUTTON_COUNT);
+			execNow set ui_flownOut 0; 
+			setDvar ui_flyoutHasFocus FLYOUT_LIVE;
+		}
+		onESC 	{ close self; }
+		onClose
+		{
+			execNow ui_animate live_flyout ButtonBackground	Default 0;
+			execNow ui_animate live_flyout FirstFlyout		Default 0;
+			execNow ui_animate live_flyout SecondFlyout		Default 0;
+			execNow ui_animate live_flyout ThirdFlyout		Default 0;
+			execNow ui_animate live_flyout FourthFlyout		Default 0;
+			execNow ui_animate live_flyout FifthFlyout		Default 0;
+			execNow set ui_flownOut 0;
+			setDvar ui_flyoutHasFocus FLYOUT_NONE;
+		}
+		
+		/* exit flyout button */
+		itemDef
+		{
+			name			"ExitFlyoutButton"
+			type			ITEM_TYPE_BUTTON
+			rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+			visible			1
+			action			{ close self; }
+		}
+		
+		/* button background */ 
+		itemDef 
+		{ 
+			name			"ButtonBackground"
+			style			WINDOW_STYLE_SHADER  
+			rect			FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH CHOICE_Y_SPACING CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP  
+			forecolor		FLYOUT_BG_COLOR
+			background		"white"  
+			visible			1  
+			decoration
+			
+			state
+			{
+				name	"Fly"
+				rect	FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH ( CHOICE_Y_SPACING * FLYOUT_BUTTON_COUNT ) CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP
+			} 
+		}
+		
+		HINT_TEXT_ALL( (FLYOUT_BUTTON_COUNT + 1), (FLYOUT_BG_X_START + 10), 5, (FLYOUT_BG_WIDTH - 20), (dvarString( ui_lobby_desc )), 1 1 1 1, ( dvarInt( ui_flownOut ) == 1 ), ; )
+
+		#define SETUP_ACTION_SERVER_BROWSER \		
+				RESET_GAME_MODES			\
+				SETUP_ACTION_LOBBY			\
+				close self;					\
+				open server_browser_main;
+
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( FLYOUT_FIRST_CHOICE_Y, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( FLYOUT_FIRST_CHOICE_Y, "@MENU_SERVER_BROWSER_CAPS", 
+								SETUP_ACTION_SERVER_BROWSER, 
+								setDvar ui_lobby_desc "@MENU_SERVER_BROWSER_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								dvarBool(ui_ethernetLinkActive),
+								FLYOUT_ARGS( 0, live_flyout, TEXT_COLOR_NO_HL, FirstFlyout, SecondFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( FLYOUT_FIRST_CHOICE_Y, "@MENU_SERVER_BROWSER_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1  )
+
+		#define SETUP_ACTION_RANKEDMATCH	\
+				RESET_GAME_MODES			\
+				SETUP_ACTION_LOBBY			\
+				close self;					\
+				exec "quickmatch";
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 2, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 2, "@MENU_RANKED_MATCH_CAPS", 
+								SETUP_ACTION_RANKEDMATCH, 
+								setDvar ui_lobby_desc "@MENU_RANKED_MATCH_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								dvarBool(ui_ethernetLinkActive),
+								FLYOUT_ARGS( 0, live_flyout, TEXT_COLOR_NO_HL, SecondFlyout, ThirdFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 2, "@MENU_RANKED_MATCH_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )	
+
+
+		#define SETUP_ACTION_WAGERMATCH \
+				RESET_GAME_MODES					\
+				setDvar xblive_wagermatch "1";		\
+				SETUP_ACTION_LOBBY			\
+				close self;					\
+				exec "wagermatch";
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 3, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 3, "@MPUI_WAGER_MATCH_CAPS", 
+								SETUP_ACTION_WAGERMATCH, 
+								setDvar ui_lobby_desc "@MPUI_WAGER_MATCH_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								dvarBool(ui_ethernetLinkActive) && dvarBool(ui_mpWagerMatchEnabled),
+								FLYOUT_ARGS( 0, live_flyout, TEXT_COLOR_NO_HL, ThirdFlyout, FourthFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 3, "@MPUI_WAGER_MATCH_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 && dvarBool(ui_mpWagerMatchEnabled) )	
+
+																												
+		#define SETUP_ACTION_BASIC_TRAINING			\
+				RESET_GAME_MODES					\
+				setDvar onlinegame "1";				\
+				setDvar xblive_basictraining "1";	\
+				SETUP_ACTION_LOBBY					\
+				execNow "exec dvar_defaults.cfg";	\
+				setDvar ui_mapname "mp_mountain";	\
+				setDvar ui_gametype "tdm";			\
+				close self;							\
+				open menu_xboxlive_basictraining;
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 4, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 4, "@MPUI_BASICTRAINING_CAPS", 
+								SETUP_ACTION_BASIC_TRAINING, 
+								setDvar ui_lobby_desc "@MPUI_BASICTRAINING_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								dvarBool(ui_ethernetLinkActive),
+								FLYOUT_ARGS( 0, live_flyout, TEXT_COLOR_NO_HL, FourthFlyout, FifthFlyout ) )	
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 4, "@MPUI_BASICTRAINING_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )
+										
+		#define SETUP_ACTION_PRIVATEMATCH			\
+				RESET_GAME_MODES					\
+				setDvar onlinegame "1";				\
+				setDvar xblive_privatematch "1";	\
+				SETUP_ACTION_LOBBY					\
+				setDvar ui_mapname "mp_mountain";	\
+				setDvar ui_gametype "tdm";			\
+				close self;							\
+				open menu_xboxlive_privatelobby;	
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 5, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 5, "@MPUI_CUSTOM_MATCH_CAPS", 
+								SETUP_ACTION_PRIVATEMATCH, 
+								setDvar ui_lobby_desc "@MPUI_CUSTOM_MATCH_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								dvarBool(ui_ethernetLinkActive),
+								FLYOUT_ARGS( 1, live_flyout, TEXT_COLOR_NO_HL, FifthFlyout, NoFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 5, "@MPUI_CUSTOM_MATCH_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )	
+
+} // live_flyout
+
+#undef FLYOUT_BUTTON_COUNT
+#define FLYOUT_BUTTON_COUNT 4
+
+#undef FLYOUT_FIRST_CHOICE_Y 
+#define FLYOUT_FIRST_CHOICE_Y 2
+menuDef
+	{
+		name			operations_flyout
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop 		MENU_MUSIC
+		control			MENU_CONTROL_NO_GUESTS
+
+		onOpen
+		{
+			execNow ui_animate operations_flyout ButtonBackground Fly FLYOUT_TIME;
+			execNow ui_animate operations_flyout FirstFlyout FadeIn (FLYOUT_TIME/FLYOUT_BUTTON_COUNT);
+			execNow set ui_flownOut 0; 
+			setDvar ui_flyoutHasFocus FLYOUT_OPERATIONS;
+		}
+		onESC 	{ close self; }
+		onClose
+		{
+			execNow ui_animate operations_flyout ButtonBackground	Default 0;
+			execNow ui_animate operations_flyout FirstFlyout		Default 0;
+			execNow ui_animate operations_flyout SecondFlyout		Default 0;
+			execNow ui_animate operations_flyout ThirdFlyout		Default 0;
+			execNow ui_animate operations_flyout FourthFlyout		Default 0;
+			execNow set ui_flownOut 0;
+			setDvar ui_flyoutHasFocus FLYOUT_NONE;
+		}
+
+		/* exit flyout button */
+		itemDef
+		{
+			name			"ExitFlyoutButton"
+			type			ITEM_TYPE_BUTTON
+			rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+			visible			1
+			action			{ close self; }
+		}
+				
+		/* button background */ 
+		itemDef 
+		{ 
+			name			"ButtonBackground"
+			style			WINDOW_STYLE_SHADER  
+			rect			FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH CHOICE_Y_SPACING CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP  
+			forecolor		FLYOUT_BG_COLOR  
+			background		"white"  
+			visible			1  
+			decoration  
+			
+			state
+			{
+				name	"Fly"
+				rect	FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH ( CHOICE_Y_SPACING * FLYOUT_BUTTON_COUNT ) CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP
+			} 
+		}
+
+		HINT_TEXT_ALL( (FLYOUT_BUTTON_COUNT + FLYOUT_FIRST_CHOICE_Y), (FLYOUT_BG_X_START + 10), 5, (FLYOUT_BG_WIDTH - 20), (dvarString( ui_lobby_desc )), 1 1 1 1, ( dvarInt( ui_flownOut ) == 1 ), ; )
+
+		#define SETUP_ACTION_CREATEACLASS \				
+				close self;															\
+				if ( IsSignedInToLive() && areStatsFetched() && !IsGuest() )		\
+				{																	\
+					exec "set ui_cac_ingame 0";										\
+					setdvar invite_visible "0";										\
+					open cac_main;													\
+				}
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( FLYOUT_FIRST_CHOICE_Y, BG_HL_COLOR, FLYOUT_BG_WIDTH, ( dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ) ) )
+		TEMP_CHOICE_BUTTON_ALL( FLYOUT_FIRST_CHOICE_Y, "@MPUI_CREATE_A_CLASS_CAPS", 
+								SETUP_ACTION_CREATEACLASS, 
+								setDvar ui_lobby_desc "@MPUI_CAC_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								!IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ),
+								FLYOUT_ARGS( 0, operations_flyout, TEXT_COLOR_NO_HL, FirstFlyout, SecondFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( FLYOUT_FIRST_CHOICE_Y, "@MPUI_CREATE_A_CLASS_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ) )
+		TEMP_CHOICE_BUTTON_ALL( FLYOUT_FIRST_CHOICE_Y, "@MPUI_CREATE_A_CLASS_CAPS", 
+								/*NO-OP*/;,   
+								exec set ui_lobby_desc GET_UNLOCK_LEVEL_STRING( FEATURE_CREATE_A_CLASS );, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ),
+								FLYOUT_ARGS( 0, operations_flyout, NO_BG_DISABLED_COLOR, FirstFlyout, SecondFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( FLYOUT_FIRST_CHOICE_Y, "@MPUI_CREATE_A_CLASS_CAPS", NO_BG_DISABLED_COLOR, dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ) )
+		CHOICE_LOCKEDICON_VIS(	FLYOUT_FIRST_CHOICE_Y, "menu_mp_lobby_locked", when( dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( "FEATURE_CREATE_A_CLASS" ) ) )
+
+		#define SETUP_ACTION_CONTRACTS		\
+				close self;															\
+				if ( IsSignedInToLive() && areStatsFetched() && !IsGuest() )		\
+				{																	\
+					open menu_xboxlive_contracts;									\
+				}
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 3, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( FEATURE_CONTRACTS ) )
+		TEMP_CHOICE_BUTTON_ALL( 3, "@MENU_CONTRACTS_CAPS", 
+								SETUP_ACTION_CONTRACTS, 
+								exec set ui_lobby_desc "@MPUI_CONTRACTS_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								!IS_ITEM_LOCKED( FEATURE_CONTRACTS ),
+								FLYOUT_ARGS( 0, operations_flyout, TEXT_COLOR_NO_HL, SecondFlyout, ThirdFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 3, "@MENU_CONTRACTS_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( FEATURE_CONTRACTS ) )
+		TEMP_CHOICE_BUTTON_ALL( 3, "@MENU_CONTRACTS_CAPS", 
+								/*NO-OP*/;,   
+								exec set ui_lobby_desc GET_UNLOCK_LEVEL_STRING( FEATURE_CONTRACTS );, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								IS_ITEM_LOCKED( FEATURE_CONTRACTS ),
+								FLYOUT_ARGS( 1, operations_flyout, NO_BG_DISABLED_COLOR, SecondFlyout, ThirdFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 3, "@MENU_CONTRACTS_CAPS", NO_BG_DISABLED_COLOR, dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( FEATURE_CONTRACTS ) )
+		CHOICE_LOCKEDICON_VIS(	3, "menu_mp_lobby_locked", when( dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( FEATURE_CONTRACTS ) ) )
+
+		#define SETUP_ACTION_KILLSTREAKS	\
+				close self;															\
+				if ( IsSignedInToLive() && areStatsFetched() && !IsGuest() )		\
+				{																	\
+					open menu_xboxlive_killstreaks;									\
+				}
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 4, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) )
+		TEMP_CHOICE_BUTTON_ALL( 4, "@MENU_KILLSTREAKS_CAPS", 
+								SETUP_ACTION_KILLSTREAKS, 
+								exec set ui_lobby_desc "@MPUI_KILLSTREAKS_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								!IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ),
+								FLYOUT_ARGS( 0, operations_flyout, TEXT_COLOR_NO_HL, ThirdFlyout, FourthFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 4, "@MENU_KILLSTREAKS_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 && !IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) )
+		TEMP_CHOICE_BUTTON_ALL( 4, "@MENU_KILLSTREAKS_CAPS", 
+								/*NO-OP*/;,   
+								exec set ui_lobby_desc GET_UNLOCK_LEVEL_STRING( FEATURE_KILLSTREAKS );, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ),
+								FLYOUT_ARGS( 1, operations_flyout, NO_BG_DISABLED_COLOR, ThirdFlyout, FourthFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 4, "@MENU_KILLSTREAKS_CAPS", NO_BG_DISABLED_COLOR, dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) )
+		CHOICE_LOCKEDICON_VIS(	4, "menu_mp_lobby_locked", when( dvarInt( ui_flownOut ) == 1 && IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) ) )
+
+		// #define SETUP_ACTION_PLAYERCARD	\ defined in ui_mp\friendslist.inc
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 5, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 5, "@MENU_PLAYERCARD_CAPS", 
+								close self; SETUP_ACTION_PLAYERCARD, 
+								exec set ui_lobby_desc "@MPUI_PLAYERCARD_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								1,
+								FLYOUT_ARGS( 0, operations_flyout, TEXT_COLOR_NO_HL, FourthFlyout, NoFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 5, "@MENU_PLAYERCARD_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )
+
+} // operations_flyout
+
+#undef FLYOUT_BUTTON_COUNT
+#define FLYOUT_BUTTON_COUNT 3
+
+#undef FLYOUT_FIRST_CHOICE_Y 
+#define FLYOUT_FIRST_CHOICE_Y 3
+menuDef
+	{
+		name			theater_flyout
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop 		MENU_MUSIC
+		control			MENU_CONTROL_NO_GUESTS
+
+		onOpen
+		{
+			execNow ui_animate theater_flyout ButtonBackground Fly FLYOUT_TIME;
+			execNow ui_animate theater_flyout FirstFlyout FadeIn (FLYOUT_TIME/FLYOUT_BUTTON_COUNT);
+			execNow set ui_flownOut 0; 
+			setDvar ui_flyoutHasFocus FLYOUT_THEATER;
+		}
+		onESC 	{ close self; }
+		onClose
+		{
+			execNow ui_animate theater_flyout ButtonBackground	Default 0;
+			execNow ui_animate theater_flyout FirstFlyout		Default 0;
+			execNow ui_animate theater_flyout SecondFlyout		Default 0;
+			execNow ui_animate theater_flyout ThirdFlyout		Default 0;
+			execNow set ui_flownOut 0;
+			setDvar ui_flyoutHasFocus FLYOUT_NONE;
+		}
+
+		/* exit flyout button */
+		itemDef
+		{
+			name			"ExitFlyoutButton"
+			type			ITEM_TYPE_BUTTON
+			rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+			visible			1
+			action			{ close self; }
+		}
+				
+		/* button background */ 
+		itemDef 
+		{ 
+			name			"ButtonBackground"
+			style			WINDOW_STYLE_SHADER  
+			rect			FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH CHOICE_Y_SPACING CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP  
+			forecolor		FLYOUT_BG_COLOR  
+			background		"white"  
+			visible			1  
+			decoration  
+			
+			state
+			{
+				name	"Fly"
+				rect	FLYOUT_BG_X_START CHOICE_Y( FLYOUT_FIRST_CHOICE_Y ) FLYOUT_BG_WIDTH ( CHOICE_Y_SPACING * FLYOUT_BUTTON_COUNT ) CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_TOP
+			} 
+		}
+
+		HINT_TEXT_ALL( (FLYOUT_BUTTON_COUNT + FLYOUT_FIRST_CHOICE_Y), (FLYOUT_BG_X_START + 10), 5, (FLYOUT_BG_WIDTH - 20), (dvarString( ui_lobby_desc )), 1 1 1 1, ( dvarInt( ui_flownOut ) == 1 ), ; )
+
+		#define SETUP_ACTION_FILESHARE				\
+				setdvar ui_theater_shortcut_pc 1;	\
+				close self;							\
+				open menu_fileshare_myshare;
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( FLYOUT_FIRST_CHOICE_Y, BG_HL_COLOR, FLYOUT_BG_WIDTH, ( dvarInt( ui_flownOut ) == 1 ) )
+		TEMP_CHOICE_BUTTON_ALL( FLYOUT_FIRST_CHOICE_Y, "@MENU_FILESHARE_MYSHARE_CAPS", 
+								SETUP_ACTION_FILESHARE, 
+								setDvar ui_lobby_desc "@MPUI_FILE_SHARE_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0, 
+								1,
+								FLYOUT_ARGS( 0, theater_flyout, TEXT_COLOR_NO_HL, FirstFlyout, SecondFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( FLYOUT_FIRST_CHOICE_Y, "@MENU_FILESHARE_MYSHARE_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )
+
+
+		#define SETUP_ACTION_RECENTGAMES			\
+				setdvar ui_theater_shortcut_pc 1;	\
+				close self;							\
+				open menu_fileshare_myrecentgames;																								
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 4, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 4, "@MENU_FILESHARE_MYRECENTGAMES_CAPS", 
+								SETUP_ACTION_RECENTGAMES, 
+								exec set ui_lobby_desc "@MPUI_MY_RECENT_GAMES_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								1,
+								FLYOUT_ARGS( 0, theater_flyout, TEXT_COLOR_NO_HL, SecondFlyout, ThirdFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 4, "@MENU_FILESHARE_MYRECENTGAMES_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )
+
+		#define SETUP_ACTION_COMMUNITY					\
+				if ( canShowContentFromUser( 0 ) )		\
+				{										\
+					setdvar ui_theater_shortcut_pc 1;	\
+					close self;							\
+					open menu_fileshare_community;		\
+				}										\
+				else									\
+				{										\
+					open menu_community_viewwarning;	\
+				}
+
+		TEMP_CHOICE_HIGHLIGHT_SOLID_WIDTH( 5, BG_HL_COLOR, FLYOUT_BG_WIDTH, dvarInt( ui_flownOut ) == 1 )
+		TEMP_CHOICE_BUTTON_ALL( 5, "@MENU_FILESHARE_COMMUNITY_CAPS", 
+								SETUP_ACTION_COMMUNITY, 
+								exec set ui_lobby_desc "@MPUI_COMMUNITY_DESC";, 
+								CLEARUIHINT, 
+								1 1 1 0,
+								1,
+								FLYOUT_ARGS( 1, theater_flyout, TEXT_COLOR_NO_HL, ThirdFlyout, NoFlyout ) )
+		TEMP_CHOICE_BUTTON_HIGHLIGHT_TEXT( 5, "@MENU_FILESHARE_COMMUNITY_CAPS", TEXT_COLOR_HL, dvarInt( ui_flownOut ) == 1 )
+
+} // theater_flyout
+
+	#include "ui_mp/popupstyle.inc"	
+	#include "ui/choices_setup_popmenu.menu"
+	
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		1
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( customclassesreset, ;, ;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_NOTICE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_RESETCUSTOMCLASSES", 1 )
+
+		#define LOCAL_ACCEPT_RESET_CAC										\
+				execnow statWriteDDL cacloadouts resetWarningDislayed 1;	\
+				execnow uploadstats;										\
+				play CHOICE_FOCUS_SOUND;									\
+				close customclassesreset;									\
+				open live_flyout;
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_OK", LOCAL_ACCEPT_RESET_CAC, 1, ; )
+	}
+
+	// ====================== single player confirmation =========================
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		1
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( error_netconnect_popmenu, ;, ;, 1 )
+			
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_NOTICE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@XBOXLIVE_NETCONNECTION", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_EXIT", close self;, 1, ; )
+	}
+
+	#define SETUP_SINGLE_PLAYER					\
+		execnow "set ui_skipMainLockout 0";	\
+		setdvar ui_changed_exe 1;			\
+		exec "wait;wait;wait";				\
+		uiScript startSingleplayer;
+
+
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		2
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( single_popmenu, setFocus single_popmenu_2, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_SWITCH_TO_SOLO_COOP_MENU", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES",	SETUP_SINGLE_PLAYER, 1, ;						)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO",	close self,	1, name single_popmenu_2	)
+	}
+}

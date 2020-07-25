@@ -1,0 +1,3283 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui/frame.inc"
+
+/*  
+  Some Info regarding the combat record menu ( sometimes abbreviated as CR ) : 
+
+- The combat record menu basically displays the players stats in a graphical way and allows the player to compare some of 
+  his stats with other players. 
+
+- Whenever a player accesses someones combat record, either his own or his friend's, the stats are downloaded into a buffer
+  from which we fetch the stats and display them in the combat record.
+
+- The combat record menu is divided into different tabs which have different views in them ( all are different menudefs themselves ). 
+
+- There is a lot of item animation used in this menu for having different types of effects.
+  ( for eg. having a scrolling effect in the weapons view, even though we dont have any listbox in there. )
+  Obviously, there is some sort of hackery involved while trying to make these effects happen. 
+  There are a bunch of item animation states which trigger other states for acheiving these effects. 
+  There are some instances where we want to lock the controls for split second to ensure the animation gets over properly.
+
+- For displaying the histograms, menus are opened on top of each other. 
+
+*/
+
+#define COMBAT_RECORD_HEIGHT			NEW_FRAME_DEFAULT_HEIGHT
+#define COMBAT_RECORD_WIDTH				( COMBAT_RECORD_HEIGHT * FRAME_ASPECT_RATIO )
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/overlaybg.inc"
+#include "ui_mp/item_animate.inc"
+#include "ui_mp/cac_viewer.inc"
+#include "ui_mp/cac_player_model.inc"
+#include "ui_mp/item_listbox.inc"
+#include "ui_mp/tab_slider.inc"
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/popup_player_info.inc"
+#include "ui/choices_setup_popmenu.menu"
+#include "ui_mp/fileshare.inc"
+#include "ui_mp/popupstyle.inc"
+
+#undef CHOICE_TEXTSTYLE
+#define CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+
+#undef CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR				NEW_FRAME_COMMON_TEXT_COLOR
+
+#undef	CHOICE_HORIZONTAL_ALIGN 
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_CENTER 
+#undef  CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN			VERTICAL_ALIGN_CENTER
+
+#define COMBAT_RECORD_BODY_X_START		( -COMBAT_RECORD_WIDTH / 2 + 15 )
+#define	COMBAT_RECORD_BODY_Y_START		( -COMBAT_RECORD_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( COMBAT_RECORD_HEIGHT ) )
+	
+
+#define COMBAT_RECORD_LIST_X_START		(COMBAT_RECORD_BODY_X_START+20)
+#define COMBAT_RECORD_LIST_Y_START		(COMBAT_RECORD_BODY_Y_START+60)
+
+#define COMBAT_RECORD_COLOR_RED			NEW_FRAME_RED_RGB 1.0
+#define COMBAT_RECORD_COLOR_GREEN		NEW_FRAME_GREEN_RGB 1.0
+
+#define CR_LINE_GRAPH_X_START			(COMBAT_RECORD_BODY_X_START+60)
+#define CR_LINE_GRAPH_Y_START			(COMBAT_RECORD_BODY_Y_START+200)
+#define CR_LINE_GRAPH_WIDTH				450
+#define CR_LINE_GRAPH_HEIGHT			90
+#define CR_LINE_GRAPH_MARGIN			(CR_LINE_GRAPH_HEIGHT/2)
+#define CR_LINE_GRAPH_GRID_LINE_COLOR	0.4 0.4 0.4 0.4
+
+#ifdef CONSOLE
+#define HISTOGRAM_X_START				(COMBAT_RECORD_BODY_X_START+60)
+#define HISTOGRAM_Y_START				(COMBAT_RECORD_BODY_Y_START+50)
+#define HISTOGRAM_LABELS_X_START		(HISTOGRAM_X_START-50)
+#define HISTOGRAM_LABELS_Y_START		(HISTOGRAM_Y_START+5)
+#else // #ifdef CONSOLE
+#define HISTOGRAM_X_START				(COMBAT_RECORD_BODY_X_START+60)
+#define HISTOGRAM_Y_START				(COMBAT_RECORD_BODY_Y_START+50)
+#define HISTOGRAM_LABELS_X_START		(HISTOGRAM_X_START-50)
+#define HISTOGRAM_LABELS_Y_START		(HISTOGRAM_Y_START+5)
+#endif
+
+#define HISTOGRAM_WIDTH 500
+#define HISTOGRAM_HEIGHT 90
+
+#undef SELECT_ICON	
+#ifdef XENON
+	#define SELECT_ICON	"ui_button_xenon_3d_a_32x32"
+#endif
+#ifdef PS3
+	#define SELECT_ICON	"ui_button_ps3_x_32x32"
+#endif
+
+#undef NEW_FRAME_TRANSPARENCY 
+#define NEW_FRAME_TRANSPARENCY 0 0 0 0.1
+
+#define CHOICE_TAB_TEXTSIZE			TEXTSIZE_DEFAULT
+#define TAB_1_TEXT					( locString( "@MPUI_CAREER_CAPS" ) )
+#define TAB_2_TEXT					( locString( "@MPUI_WEAPONS_CAPS" ) )
+#define TAB_3_TEXT					( locString( "@MPUI_MATCHES_CAPS" ) )
+#define TAB_4_TEXT					( locString( "@MENU_KILLSTREAKS_CAPS" ) )
+#define TAB_5_TEXT					( locString( "@MENU_TAB_CONTRACTS_CAPS" ) )
+
+#define TAB_BG_PAD					5
+#define TAB_1_WIDTH					( getTextWidth( TAB_1_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_2_WIDTH					( getTextWidth( TAB_2_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_3_WIDTH					( getTextWidth( TAB_3_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_4_WIDTH					( getTextWidth( TAB_4_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_5_WIDTH					( getTextWidth( TAB_5_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_HEIGHT					15
+
+#define COMBAT_RECORD_TAB_1_X		NEW_FRAME_CHOICE_X_START
+#define COMBAT_RECORD_TAB_2_X		( COMBAT_RECORD_TAB_1_X + TAB_1_WIDTH )
+#define COMBAT_RECORD_TAB_3_X		( COMBAT_RECORD_TAB_2_X + TAB_2_WIDTH )
+#define COMBAT_RECORD_TAB_4_X		( COMBAT_RECORD_TAB_3_X + TAB_3_WIDTH )
+#define COMBAT_RECORD_TAB_5_X		( COMBAT_RECORD_TAB_4_X + TAB_4_WIDTH )
+
+#define COMBAT_RECORD_TAB_Y			( ( -COMBAT_RECORD_HEIGHT / 2 ) + NEW_FRAME_HEADER_HEIGHT - TAB_HEIGHT )
+
+#define CLOSE_EXTRA_MENUS \
+		if( dvarInt("ui_combatCurrViewNum") == CR_VIEW_CAREER_RECENT_PERFORMANCE ) \
+		{ \
+		  	close recent_performance_histogram; \
+		} \
+		elseif( dvarInt("ui_combatCurrViewNum") == CR_VIEW_MATCHES_PERFORMANCE ) \
+		{ \
+		  	close match_performance_gametypes_list; \
+		  	close match_performance_histogram; \
+		} 
+
+#undef PC_TAB_SWITCH_ACTIONS_PREV
+#define PC_TAB_SWITCH_ACTIONS_PREV CLOSE_EXTRA_MENUS
+#undef PC_TAB_SWITCH_ACTIONS_NEXT
+#define PC_TAB_SWITCH_ACTIONS_NEXT CLOSE_EXTRA_MENUS
+
+#define COMBAT_RECORD_TAB_1_ACTION	CLOSE_EXTRA_MENUS execNow closeMenuImmediate (dvarString("ui_combatCurrentViewMenuName")); execNow openMenuImmediate (dvarString("ui_combatCareerViewMenuName"));
+#define COMBAT_RECORD_TAB_2_ACTION	CLOSE_EXTRA_MENUS execNow closeMenuImmediate (dvarString("ui_combatCurrentViewMenuName")); execNow openMenuImmediate (dvarString("ui_combatWeaponsViewMenuName"));
+#define COMBAT_RECORD_TAB_3_ACTION	CLOSE_EXTRA_MENUS execNow closeMenuImmediate (dvarString("ui_combatCurrentViewMenuName")); execNow openMenuImmediate (dvarString("ui_combatMatchesViewMenuName"));
+#define COMBAT_RECORD_TAB_4_ACTION	CLOSE_EXTRA_MENUS execNow closeMenuImmediate (dvarString("ui_combatCurrentViewMenuName")); execNow openMenuImmediate (dvarString("ui_combatKillstreaksViewMenuName"));
+#define COMBAT_RECORD_TAB_5_ACTION	CLOSE_EXTRA_MENUS execNow closeMenuImmediate (dvarString("ui_combatCurrentViewMenuName")); execNow openMenuImmediate (dvarString("ui_combatContractsViewMenuName"));
+
+#define COMBAT_RECORD_TAB_HEADERS																								\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_1_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_1_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_GRAY_TEXT_COLOR,  when( dvarInt("ui_combatCurrTab") != CR_TAB_CAREER ), TAB_MOUSEOVER_HIGHLIGHT; )			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_1_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_1_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_ORANGE_RGB 1,  when( dvarInt("ui_combatCurrTab") == CR_TAB_CAREER ), ; )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_2_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_2_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_GRAY_TEXT_COLOR,  when( dvarInt("ui_combatCurrTab") != CR_TAB_WEAPONS ), TAB_MOUSEOVER_HIGHLIGHT; )			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_2_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_2_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_ORANGE_RGB 1,  when( dvarInt("ui_combatCurrTab") == CR_TAB_WEAPONS ), ; )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_3_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_3_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_3_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_GRAY_TEXT_COLOR,  when( dvarInt("ui_combatCurrTab") != CR_TAB_MATCHES ), TAB_MOUSEOVER_HIGHLIGHT; )			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_3_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_3_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_3_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_ORANGE_RGB 1,  when( dvarInt("ui_combatCurrTab") == CR_TAB_MATCHES ), ; )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_4_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_4_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_4_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_GRAY_TEXT_COLOR,  when( dvarInt("ui_combatCurrTab") != CR_TAB_KILLSTREAKS ), TAB_MOUSEOVER_HIGHLIGHT; )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_4_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_4_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_4_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_ORANGE_RGB 1,  when( dvarInt("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ), ; )	\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_5_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_5_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_5_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_GRAY_TEXT_COLOR,  when( dvarInt("ui_combatCurrTab") != CR_TAB_CONTRACTS ), TAB_MOUSEOVER_HIGHLIGHT; )			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	COMBAT_RECORD_TAB_5_X,																	\
+										COMBAT_RECORD_TAB_Y,																	\
+										TAB_5_WIDTH,																			\
+										TAB_HEIGHT,																				\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,											\
+										TAB_5_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,								\
+										NEW_FRAME_ORANGE_RGB 1,  when( dvarInt("ui_combatCurrTab") == CR_TAB_CONTRACTS ), ; )	
+
+#define COMBAT_RECORD_TAB_BUTTONS																\
+		/* Tab 1 */																				\
+		TAB_ACTION_BUTTON_ADV( 			COMBAT_RECORD_TAB_1_X,									\
+										COMBAT_RECORD_TAB_Y,									\
+										TAB_1_WIDTH,											\
+										TAB_HEIGHT,												\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,			\
+										COMBAT_RECORD_TAB_1_ACTION , 1, ; )						\
+		/* Tab 2 */																				\
+		TAB_ACTION_BUTTON_ADV( 			COMBAT_RECORD_TAB_2_X,									\
+										COMBAT_RECORD_TAB_Y,									\
+										TAB_2_WIDTH,											\
+										TAB_HEIGHT,												\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,			\
+										COMBAT_RECORD_TAB_2_ACTION , 1, ; )						\
+		/* Tab 3 */																				\
+		TAB_ACTION_BUTTON_ADV( 			COMBAT_RECORD_TAB_3_X,									\
+										COMBAT_RECORD_TAB_Y,									\
+										TAB_3_WIDTH,											\
+										TAB_HEIGHT,												\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,			\
+										COMBAT_RECORD_TAB_3_ACTION , 1, ; )						\
+		/* Tab 4 */																				\
+		TAB_ACTION_BUTTON_ADV( 			COMBAT_RECORD_TAB_4_X,									\
+										COMBAT_RECORD_TAB_Y,									\
+										TAB_4_WIDTH,											\
+										TAB_HEIGHT,												\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,			\
+										COMBAT_RECORD_TAB_4_ACTION , 1, ; )						\
+		/* Tab 5 */																				\
+		TAB_ACTION_BUTTON_ADV( 			COMBAT_RECORD_TAB_5_X,									\
+										COMBAT_RECORD_TAB_Y,									\
+										TAB_5_WIDTH,											\
+										TAB_HEIGHT,												\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,			\
+										COMBAT_RECORD_TAB_5_ACTION , 1, ; )
+
+#define COMBAT_RECORD_TAB_BG( px, pw, selected )																\
+		itemDef																									\
+		{																										\
+			style           WINDOW_STYLE_SHADER_FRAMED															\
+			frame           16 0.2 FRAME_OPEN_BOTTOM															\
+			rect            0 COMBAT_RECORD_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( px )																		\
+			exp				rect W(	pw )																		\
+			background      "menu_mp_tab_frame_inner"															\
+			forecolor       0.5 0.5 0.5 0.5																		\
+			visible         when( selected )																	\
+			decoration																							\
+		}																										\
+		itemDef																									\
+		{																										\
+			style           WINDOW_STYLE_SHADER_FRAMED															\
+			frame           16 0.2 FRAME_OPEN_BOTTOM															\
+			rect            0 COMBAT_RECORD_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( px )																		\
+			exp				rect W(	pw )																		\
+			background      "menu_mp_tab_frame_inner"															\
+			forecolor       1 1 1 1																				\
+			visible         when( !selected )																	\
+			decoration																							\
+		}
+
+#define COMBAT_RECORD_PLAYER_MODEL( right, top, size ) \
+		itemDef																						\
+		{																							\
+			visible			when( dvarint( uiViewer_loaded ) == 1 && dvarbool( uiViewer_show ) )	\
+			rect			right top size size CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN		\
+			forecolor		1 1 1 1																	\
+			style			WINDOW_STYLE_SHADER														\
+			background		"ui_viewer"																\
+			decoration																				\
+		}																							\
+		itemDef																						\
+		{																							\
+			visible			when( dvarint( uiViewer_showGrid ) == 1 )								\
+			rect			right top size size CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN		\
+			forecolor		1 1 1 1																	\
+			style			WINDOW_STYLE_SHADER														\
+			background		"viewer_grid"															\
+			decoration																				\
+		}																				
+
+#define COMBAT_RECORD_RANK_ICON( x_offset, y_offset, pshader ) \
+		PREPROC_SHADER_DRAW( x_offset y_offset 32 32 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, pshader, 1 1 1 1, )
+
+#define RANK_BACKGROUND_COLOR 0.32 0.36 0.29 0.0
+
+#define SUMMARY_RANK_ICON( x_offset, y_offset, pshader, visArg )														\
+		PREPROC_SHADER_DRAW_VIS_EX( (x_offset-45) (y_offset-44) 150 150 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	\
+									"hud_notification_rank_backing", RANK_BACKGROUND_COLOR,								\
+									visArg, ; )																			\
+		PREPROC_SHADER_DRAW_VIS_EX( x_offset y_offset 100 100 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,			\
+									((pshader) + "_128"), 1 1 1 1,														\
+									visArg, ; ) 
+
+#define SPEED 200
+
+#define RESET_ALL_BARS_AFTER_MOVING_UP( menuName ) \ 
+		execnow "set ui_slideUpDistance 0"; \
+		ITEM_ANIMATE( menuName, "dummy", changePivotAfterMovingUp, 0 ) \
+
+#define RESET_ALL_BARS_AFTER_MOVING_DOWN( menuName ) \ 
+		execnow "set ui_slideUpDistance 0"; \
+		ITEM_ANIMATE( menuName, "dummy", changePivotAfterMovingDown, 0 ) \
+	
+#define ADJUST_OTHER_PLAYER_INFO_BARS( menuName ) \
+		if( dvarBool( "ui_combatComparisonModeOn" ) ) \
+		{ \
+			ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeIn, 0 ); \
+			ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeIn, 0 ); \
+			ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeIn, 0 ); \
+			ITEM_ANIMATE( menuName, "otherPlayerName", fadeIn, 0 ); \
+		} \
+		else \
+		{ \
+			ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeOut, 0 ); \
+			ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeOut, 0 ); \
+			ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeOut, 0 ); \
+			ITEM_ANIMATE( menuName, "otherPlayerName", fadeOut, 0 ); \
+		}
+
+#define ANIM_STATES( forecolorArg ) \
+		ITEM_STATE( slideAndFadeOut, forecolor	forecolorArg 0; , changeState default 0; ) \
+		ITEM_STATE( slideAndFadeIn, forecolor forecolorArg 1;, changeState default 0; ) \
+		ITEM_STATE( slide, ;, changeState default 0; ) \
+		ITEM_STATE( fadeIn, forecolor forecolorArg 1;, ; ) \
+		ITEM_STATE( fadeOut, forecolor forecolorArg 0;, ;) \
+		ITEM_STATE( fadeOutThenFadeInFast, forecolor forecolorArg 0;, changeState fadeIn 0; ) \
+		ITEM_STATE( fadeOutThenFadeInSlow, forecolor forecolorArg 0;, changeState fadeIn SPEED; ) 
+
+#define ANIM_STATES_FOR_BG( forecolorArg, alpha ) \
+		ITEM_STATE( slideAndFadeOut, forecolor	forecolorArg 0; , changeState default 0; ) \
+		ITEM_STATE( slideAndFadeIn, forecolor forecolorArg alpha;, changeState default 0; ) \
+		ITEM_STATE( slide, ;, changeState default 0; ) \
+		ITEM_STATE( fadeIn, forecolor forecolorArg alpha;, ; ) \
+		ITEM_STATE( fadeOut, forecolor forecolorArg 0;, ;) \
+
+#define DUMMY_ITEM_FOR_ANIMATION( menuName, vis_condition ) \
+		itemDef  \
+		{  \
+			name			"dummy" \
+			style			WINDOW_STYLE_SHADER  \
+			rect			COMBAT_RECORD_BODY_X_START (COMBAT_RECORD_BODY_Y_START+250) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN \
+			forecolor		0 0 0 0 \
+			background		"white" \
+			visible			when( vis_condition ) \
+			decoration  \
+			ITEM_STATE( lockScrolling, ;, setDvar ui_combatLockScrolling "0"; ) \
+			ITEM_STATE( updateViewAfterDownloading, ;,	\
+							if( dvarBool("ui_combatOtherPlayerStatsAvailable") ) \
+							{ \
+								ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeIn, SPEED ); \
+								ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeIn, SPEED ); \
+								ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeIn, SPEED ); \
+								ITEM_ANIMATE( menuName, "otherPlayerName", fadeIn, SPEED ); \
+								ITEM_ANIMATE( menuName, "info_bar_1", default, SPEED ); \
+								ITEM_ANIMATE( menuName, "info_bar", default, SPEED ); \
+								ITEM_ANIMATE( menuName, "info_bar_5", default, SPEED ); \
+								execNow set ui_combatInfoBarWidth 0; \
+								execNow set ui_combatCurrScrollBarPos 0; \
+								execnow set ui_combatComparisonModeOn 1; \
+								execnow "UpdateCombatRecordView"; \
+							} \			
+					   ) \
+			ITEM_STATE( changePivotAfterMovingUp, ;, if( ChangeSortedStatsPivot( 1 ) ) { changeState lockScrolling 0; }  ) \
+			ITEM_STATE( moveUpAndChangePivot, ;, RESET_ALL_BARS_AFTER_MOVING_UP( menuName ) ) \
+			ITEM_STATE( changePivotAfterMovingDown, ;, if( ChangeSortedStatsPivot( -1 ) ) { changeState lockScrolling 0; } ) \
+			ITEM_STATE( moveDownAndChangePivot, ;, RESET_ALL_BARS_AFTER_MOVING_DOWN( menuName ) ) \
+		} 
+
+#define SCROLL_DOWN_ACTION( menuName ) \
+		ITEM_ANIMATE( menuName, "dummy", moveUpAndChangePivot, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_1", slideAndFadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar", slide, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5", slide, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "info_bar_6", slideAndFadeIn, SPEED ); \
+		ITEM_ANIMATE( menuName, "scroll_bar", slide, SPEED ); \
+		if( dvarbool( "ui_combatComparisonModeOn" ) )\
+		{ \
+			ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeOutThenFadeInFast, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeIn, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeIn, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_6_otherPlayer", slideAndFadeIn, SPEED ); \
+		} \
+		execnow set ui_slideUpDistance -INFO_BAR_SET_HEIGHT; \
+		execnow set ui_combatCurrScrollBarPos (dvarInt("ui_combatCurrScrollBarPos")+1); \
+		setDvar ui_combatLockScrolling "1";
+
+#define SCROLL_UP_ACTION( menuName ) \
+		ITEM_ANIMATE( menuName, "dummy", moveDownAndChangePivot, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_0", slideAndFadeIn, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_1", slide, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar", slide, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5", slideAndFadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "scroll_bar", slide, SPEED ); \
+		if( dvarbool( "ui_combatComparisonModeOn" ) ) \
+		{ \
+			ITEM_ANIMATE( menuName, "info_bar_0_otherPlayer", slideAndFadeIn, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeIn, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeIn, SPEED ); \
+			ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeOutThenFadeInFast, SPEED ); \
+		} \
+		execnow set ui_slideUpDistance INFO_BAR_SET_HEIGHT; \
+		execnow set ui_combatCurrScrollBarPos (dvarInt("ui_combatCurrScrollBarPos")-1); \
+		setDvar ui_combatLockScrolling "1";
+
+#define CHANGE_MENU_ACTION( currMenu, prevMenu, nextMenu ) \
+		execKeyInt DPAD_LEFT { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (prevMenu); \
+		} \
+		execKeyInt DPAD_RIGHT { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (nextMenu); \
+		} \
+		execKeyInt APAD_LEFT { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (prevMenu); \
+		} \
+		execKeyInt APAD_RIGHT { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (nextMenu); \
+		} 
+
+#define CAN_COMPARISON_MODE_BE_TURNED_ON \ 
+		( ( ( dvarInt("ui_combatCurrViewNum") >= CR_VIEW_WEAPONS_KDR && dvarInt("ui_combatCurrViewNum") <= CR_VIEW_WEAPONS_EQUIPMENT_USAGE ) ) || \ 
+		( ( dvarInt("ui_combatCurrViewNum") >= CR_VIEW_KILLSTREAKS_CALLED && dvarInt("ui_combatCurrViewNum") <= CR_VIEW_KILLSTREAKS_TIMES_KILLED_BY ) ) || \
+		( dvarString("ui_combatCurrTab") == CR_TAB_CONTRACTS ) || \
+		( dvarInt("ui_combatCurrViewNum") == CR_VIEW_CAREER_PERSONAL_BESTS ) ) 
+
+#define DOES_MENU_HAVE_SCROLLING_ENABLED \
+		( ( ( dvarInt("ui_combatCurrViewNum") >= CR_VIEW_WEAPONS_KDR && dvarInt("ui_combatCurrViewNum") <= CR_VIEW_WEAPONS_EQUIPMENT_USAGE ) ) || \ 
+		( ( dvarInt("ui_combatCurrViewNum") >= CR_VIEW_KILLSTREAKS_CALLED && dvarInt("ui_combatCurrViewNum") <= CR_VIEW_KILLSTREAKS_TIMES_KILLED_BY ) ) )
+
+
+// TYPES OF GRAPHS 
+#define RECENT_PERFORMANCE_HISTOGRAM 0
+#define MATCH_PERFORMANCE_HISTOGRAM 1
+#define RECENT_EARNINGS_BAR_GRAPH 2
+
+// TYPES OF PIE CHARTS 
+#define NON_WAGER_GAMETYPE_PIE_CHART 0
+#define WAGER_GAMETYPE_PIE_CHART 1
+#define FAVORITE_KILLSTREAKS_PIE_CHART 2
+
+#define RETURN_MIN_SCORE 1
+#define RETURN_MAX_SCORE 0
+
+// TABS IN COMBAT RECORD
+#define	CR_TAB_CAREER			1
+#define	CR_TAB_WEAPONS			2
+#define	CR_TAB_MATCHES			3
+#define	CR_TAB_CONTRACTS		4
+#define	CR_TAB_KILLSTREAKS		5
+
+// VIEW COUNT
+#define CR_CAREER_VIEW_COUNT 3
+#define CR_WEAPONS_VIEW_COUNT 11
+#define CR_MATCHES_VIEW_COUNT 3
+#define CR_KILLSTREAKS_VIEW_COUNT 3
+#define CR_CONTRACTS_VIEW_COUNT 1
+
+// VIEWS IN COMBAT RECORD
+#define	CR_VIEW_CAREER_SUMMARY						0
+#define CR_VIEW_CAREER_RECENT_PERFORMANCE			1
+#define	CR_VIEW_CAREER_PERSONAL_BESTS				2
+#define	CR_VIEW_WEAPONS_FAV_WEAPON					3
+#define	CR_VIEW_WEAPONS_HIT_LOCATION_HEATMAP		4
+#define	CR_VIEW_WEAPONS_KDR							5
+#define	CR_VIEW_WEAPONS_ACCURACY					6
+#define	CR_VIEW_WEAPONS_KILLS						7
+#define	CR_VIEW_WEAPONS_DEATHS						8
+#define	CR_VIEW_WEAPONS_HEADSHOTS					9
+#define	CR_VIEW_WEAPONS_TIMES_KILLED_BY				10
+#define	CR_VIEW_WEAPONS_EQUIPMENT_KILLS				11
+#define	CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY	12
+#define	CR_VIEW_WEAPONS_EQUIPMENT_USAGE				13
+#define	CR_VIEW_MATCHES_PERFORMANCE					14
+#define	CR_VIEW_MATCHES_HEAT_MAP					15
+#define	CR_VIEW_MATCHES_RECENT_EARNINGS				16
+#define	CR_VIEW_CONTRACTS_INFO						17
+#define	CR_VIEW_KILLSTREAKS_FAVORITES				18
+#define	CR_VIEW_KILLSTREAKS_CALLED					19
+#define	CR_VIEW_KILLSTREAKS_KILLS					20
+#define	CR_VIEW_KILLSTREAKS_TIMES_KILLED_BY			21
+
+#define CR_RECENT_PERFORMANCE_INFO -1
+
+#define RESET_SELECTED_PLAYER_XUID \
+		if( dvarString(lastSelectedPlayerXuid) != 0 ) \
+		{ \
+			execNow set selectedPlayerXuid (DvarString(lastSelectedPlayerXuid)); \
+			execNow set selectedFriendName (DvarString(lastSelectedPlayerName)); \
+		} \
+
+#define LSHLDR_ACTION \
+		if( dvarbool("ui_combatLockScrolling") == 0 ) \
+		{ \		
+			CLOSE_EXTRA_MENUS \
+			execNow "closeMenuImmediate (dvarString(ui_combatCurrentViewMenuName))"; \
+			if( dvarString("ui_combatCurrTab") == CR_TAB_CAREER ) \
+			{ \					
+				execNow set ui_combatCareerViewMenuName (dvarString(ui_combatPreviousViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) \
+			{ \
+				execNow set ui_combatWeaponsViewMenuName (dvarString(ui_combatPreviousViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_MATCHES ) \
+			{ \					
+				execNow set ui_combatMatchesViewMenuName (dvarString(ui_combatPreviousViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ) \
+			{ \
+				execNow set ui_combatKillstreaksViewMenuName (dvarString(ui_combatPreviousViewMenuName)); \
+			} \
+			execNow "openMenuImmediate (dvarString(ui_combatPreviousViewMenuName))"; \  
+		}
+
+#define RSHLDR_ACTION \
+		if( dvarbool("ui_combatLockScrolling") == 0 ) \
+		{ \
+			CLOSE_EXTRA_MENUS \
+			execNow "closeMenuImmediate (dvarString(ui_combatCurrentViewMenuName))"; \
+			if( dvarString("ui_combatCurrTab") == CR_TAB_CAREER ) \
+			{ \		
+				execNow set ui_combatCareerViewMenuName (dvarString(ui_combatNextViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) \
+			{ \
+				execNow set ui_combatWeaponsViewMenuName (dvarString(ui_combatNextViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_MATCHES ) \
+			{ \					
+				execNow set ui_combatMatchesViewMenuName (dvarString(ui_combatNextViewMenuName)); \
+			} \
+			elseif( dvarString("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ) \
+			{ \
+				execNow set ui_combatKillstreaksViewMenuName (dvarString(ui_combatNextViewMenuName)); \
+			} \
+			execNow "openMenuImmediate (dvarString(ui_combatNextViewMenuName))"; \  
+		} \
+		
+
+#define DOWN_ACTION( menuName ) \
+		if( dvarbool("ui_combatLockScrolling") == 0 ) \
+		{ \
+			if( canScrollUpOrDown( 0 ) && DOES_MENU_HAVE_SCROLLING_ENABLED ) \
+			{ \
+				SCROLL_DOWN_ACTION( menuName ) \
+			} \
+		} 
+
+#define UP_ACTION( menuName ) \
+		if( dvarbool("ui_combatLockScrolling") == 0 ) \
+		{ \
+			if( canScrollUpOrDown( 1 ) ) \
+			{ \
+				SCROLL_UP_ACTION( menuName ) \
+			} \
+		} 
+
+#define COMPARE_FRIENDS_ACTION \
+		if( CAN_COMPARISON_MODE_BE_TURNED_ON && dvarbool("ui_combatLockScrolling") == 0 ) \
+		{ \
+			if( !dvarbool( "ui_showFriendsCombatRecord" ) ) \
+			{ \
+				BUTTON_X_ACTION_FOR_SELF_COMBAT_RECORD( menuName ) \
+			} \
+			else \
+			{ \
+				if( !dvarbool( "ui_combatComparisonModeOn" ) ) \
+				{ \
+					BUTTON_X_ACTION_COMP_MODE_ON( menuName ) \
+				} \
+				else \
+				{ \
+					BUTTON_X_ACTION_COMP_MODE_OFF( menuName ) \
+				} \
+				execNow "toggle ui_combatComparisonModeOn 0 1"; \
+				ADJUST_OTHER_PLAYER_INFO_BARS( (dvarString("ui_combatCurrentViewMenuName")) ) \
+			} \
+		} \
+		
+#ifdef PC
+	#define PC_ACTIONS( currMenu, prevMenu, nextMenu ) \
+		execKeyInt K_LEFTARROW { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (prevMenu); \
+		} \
+		execKeyInt K_RIGHTARROW { \
+			CLOSE_EXTRA_MENUS \
+			execNow closeMenuImmediate (currMenu); \
+			execNow openMenuImmediate (nextMenu); \
+		}
+#else //#ifdef PC
+	#define PC_ACTIONS( currMenu, prevMenu, nextMenu )
+#endif //#ifdef PC
+		
+#define ACTION_HANDLER( menuName ) \
+		execKeyInt APAD_DOWN \
+		{ \
+			DOWN_ACTION( menuName ) \
+		} \
+		execKeyInt APAD_UP \
+		{ \
+			UP_ACTION( menuName ) \
+		} \
+		execKeyInt DPAD_DOWN \
+		{ \
+			DOWN_ACTION( menuName ) \
+		} \
+		execKeyInt DPAD_UP \
+		{ \
+			UP_ACTION( menuName ) \
+		} \  
+		execKeyInt K_MWHEELDOWN \
+		{ \
+			DOWN_ACTION( menuName ) \
+		} \
+		execKeyInt K_MWHEELUP \
+		{ \
+			UP_ACTION( menuName ) \
+		} \  
+		execKeyInt BUTTON_LSHLDR \
+		{ \
+			LSHLDR_ACTION \
+		} \
+		execKeyInt BUTTON_RSHLDR \
+		{ \
+			RSHLDR_ACTION \
+		} \
+		execKeyInt BUTTON_X \
+		{ \
+			COMPARE_FRIENDS_ACTION \
+		} \
+		PC_ACTIONS( dvarString("ui_combatCurrentViewMenuName"), (dvarString("ui_combatPrevTabMenuName")), (dvarString("ui_combatNextTabMenuName")) ) \
+		CHANGE_MENU_ACTION( dvarString("ui_combatCurrentViewMenuName"), (dvarString("ui_combatPrevTabMenuName")), (dvarString("ui_combatNextTabMenuName")) ) 
+
+#define BUTTON_X_ACTION_FOR_SELF_COMBAT_RECORD( menuName ) \
+		ITEM_ANIMATE( menuName, "info_bar_1", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5", default, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeOut, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "otherPlayerName", fadeOut, SPEED ); \
+		execNow set ui_combatInfoBarWidth -1; \
+		execNow set ui_combatComparisonModeOn 0; \
+		execNow set ui_combatOtherPlayerStatsAvailable 1; \
+		execNow "openMenu menu_cr_friends_selection"; 
+
+#define BUTTON_X_ACTION_COMP_MODE_ON( menuName ) \
+		ITEM_ANIMATE( menuName, "info_bar_1", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5", default, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeIn, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeIn, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeIn, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "otherPlayerName", fadeIn, SPEED ); 
+
+#define BUTTON_X_ACTION_COMP_MODE_OFF( menuName ) \ 
+		ITEM_ANIMATE( menuName, "info_bar_1", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar", default, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5", default, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "info_bar_1_otherPlayer", fadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_otherPlayer", fadeOut, SPEED ); \
+		ITEM_ANIMATE( menuName, "info_bar_5_otherPlayer", fadeOut, SPEED ); \ 
+		ITEM_ANIMATE( menuName, "otherPlayerName", fadeOut, SPEED ); 
+
+#define INFO_BAR_Y_START (COMBAT_RECORD_BODY_Y_START+5)
+
+#define GET_SORTED_STAT( sortedItemIndex, isAbsoluteIndex, param ) \
+		getSortedStatsForFriendOrSelf( dvarbool("ui_showFriendsCombatRecord"), sortedItemIndex, isAbsoluteIndex, param )
+
+#define GET_SORTED_ITEM_INDEX( sortedItemIndex, isAbsoluteIndex ) \
+		getSortedStatsForFriendOrSelf( dvarbool("ui_showFriendsCombatRecord"), sortedItemIndex, isAbsoluteIndex, 0 )
+
+#define GET_STAT( statName ) \
+		getStatForFriendOrSelf( dvarbool("ui_showFriendsCombatRecord"), "PlayerStatsList", statName )
+
+#define GET_STAT_FOR_OTHER_PLAYER( statName ) \
+		getStatForFriendOrSelf( !dvarbool("ui_showFriendsCombatRecord"), "PlayerStatsList", statName )
+
+#define GET_ITEM_STAT( itemIndex, statName ) \
+		getStatForFriendOrSelf( dvarbool("ui_showFriendsCombatRecord"), "ItemStats", itemIndex, "stats", statName, "statValue" )
+
+#define GET_HIGHEST_STAT( statName ) \
+		getStatForFriendOrSelf( dvarbool("ui_showFriendsCombatRecord"), "HighestStats", statName )
+
+#define COMPARE_BUTTON( vis_condition ) \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_TEXT \
+			rect			-200 ( COMBAT_RECORD_HEIGHT / 2 + 18 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  \
+			text			"@PLATFORM_COMPARE" \
+			textfont		UI_FONT_NORMAL \
+			textscale		TEXTSIZE_DEFAULT \ 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT \ 
+			visible			when( !dvarbool( xblive_basictraining ) && dvarbool( "ui_showFriendsCombatRecord" ) && !dvarbool( "ui_combatComparisonModeOn" ) && vis_condition ) \  
+			decoration \ 
+		} \
+
+#define COMPARE_FRIENDS_BUTTON( vis_condition ) \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_TEXT \
+			rect			-200 ( COMBAT_RECORD_HEIGHT / 2 + 18 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  \
+			text			"@PATCH_TOGGLE_COMPARE_FRIENDS" \
+			textfont		CHOICE_TEXTFONT \ 
+			textscale		TEXTSIZE_DEFAULT \ 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT \ 
+			visible			when( !dvarbool( xblive_basictraining ) && !dvarbool( "ui_showFriendsCombatRecord" ) && vis_condition ) \  
+			decoration \
+		} 
+
+#define HIDE_COMPARISON_BUTTON( vis_condition ) \
+	/*NEW_FRAME_BUTTON_PC_LEFT_OFFSET( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@PLATFORM_HIDE_COMPARISON", execNow set ui_combatComparisonModeOn 0;, dvarBool("ui_combatComparisonModeOn") && vis_condition  )*/
+
+#define INFO_BAR_COLOR NEW_FRAME_ORANGE_RGB		
+
+#define INFO_BAR_COLOR_FOR_FRIEND NEW_FRAME_LT_GREY_RGB
+
+#define INFO_BAR_SET_HEIGHT 46
+
+#define MAX_VARIABLEBAR_LENGTH			231
+#define VARIABLEBAR_TAGDISPLAY_LENGTH	150	
+
+#define INFO_BAR_STRUCTURE_X_START (COMBAT_RECORD_BODY_X_START+10)
+
+#ifdef CONSOLE
+	#define INFO_BAR_SCROLL_BUTTONS( vis_condition )
+#else
+	#define INFO_BAR_SCROLL_BUTTONS( vis_condition )																				\
+		/*Up Arrow*/																												\
+		itemDef																														\
+		{																															\
+			name		"scroll_bar_up_arrow"																						\
+			type		ITEM_TYPE_BUTTON_NO_TEXT																					\
+			rect		(COMBAT_RECORD_WIDTH/2-33) (INFO_BAR_Y_START+33) 12 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN		\
+			visible		when( vis_condition )																						\
+			mouseEnter	{ play CHOICE_FOCUS_SOUND ; }																				\
+			action		{ play CHOICE_FOCUS_SOUND ; execKeyHandler K_MWHEELUP }														\
+		}																															\
+		/*Down Arrow*/																												\
+		itemDef																														\
+		{																															\
+			name		"scroll_bar_down_arrow"																						\
+			type		ITEM_TYPE_BUTTON_NO_TEXT																					\
+			rect		(COMBAT_RECORD_WIDTH/2-33) (INFO_BAR_Y_START+33+240-10) 12 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN	\
+			visible		when( vis_condition )																						\
+			mouseEnter	{ play CHOICE_FOCUS_SOUND ; }																				\
+			action		{ play CHOICE_FOCUS_SOUND ; execKeyHandler K_MWHEELDOWN }													\
+		}
+#endif
+
+#ifdef CONSOLE
+	#define INFO_BAR_BOTTOM_BUTTON																												\
+		/* scroll bar bottom arrow */																											\
+		PREPROC_SHADER_DRAW_VIS_EX(	(COMBAT_RECORD_WIDTH/2-28) (INFO_BAR_Y_START+33+225) 14 14 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	\
+									"ui_arrow_right", NEW_FRAME_ORANGE_RGB 1,																	\
+									when( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS );, rotation 90; )		
+	
+	#define SHOW_COMPARE_TEXT_CONSOLE	COMPARE_BUTTON( vis_condition )
+#else // #ifdef CONSOLE
+	#define INFO_BAR_BOTTOM_BUTTON
+	#define SHOW_COMPARE_TEXT_CONSOLE
+#endif // #ifdef CONSOLE
+	
+#define INFO_BAR_STRUCTURE( vis_condition )																										\
+		INFO_BAR_TAGS( vis_condition )																											\
+		INFO_BARS( vis_condition )																												\
+		SHOW_COMPARE_TEXT_CONSOLE																											\
+		/*COMPARE_FRIENDS_BUTTON( vis_condition )*/																							\
+		NEW_FRAME_COMPARE_FRIEND_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@PATCH_TOGGLE_COMPARE_FRIENDS", COMPARE_FRIENDS_ACTION , vis_condition ) \
+		HIDE_COMPARISON_BUTTON( vis_condition )																									\
+		RANK_AND_GAMERTAG_OF_COMPARED_PLAYER( (-155), vis_condition )																					\
+		/* scroll bar line */																												\
+		PREPROC_SHADER_DRAW_VIS_EX(	(COMBAT_RECORD_WIDTH/2-33) (INFO_BAR_Y_START+33) 12 240 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	\
+									"menu_mp_lobby_scrollbar_main", 1 1 1 1,																\
+									when( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS );, ; )			\
+		INFO_BAR_BOTTOM_BUTTON																												\
+		/* scroll bar buttons */																											\
+		INFO_BAR_SCROLL_BUTTONS( vis_condition )																							\
+		/* scroll bar square */																												\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(COMBAT_RECORD_WIDTH/2-33),																			\
+										( (INFO_BAR_Y_START+53) + GetCurrentScrollBarPosition( 193 ) ),										\
+										12,																									\
+										15,																									\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 														\
+										"menu_mp_lobby_scrollbar_block",  1 1 1 1,																				\
+										when( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS );,			\
+										name "scroll_bar"; ITEM_STATE( slide, ;, ; ); )														
+
+#define INFO_BAR( itemName, rank, alpha, vis_condition )																													\
+		/* INFO BAR */																																						\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																			\
+										( INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*rank) + dvarInt( "ui_slideUpDistance" ) ),												\
+										(  GetCombatRecordInfoBarWidth( 0, MAX_VARIABLEBAR_LENGTH, rank ) ),																\
+										13,																																	\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																						\
+										"menu_mp_combatrecord_bar", INFO_BAR_COLOR alpha,																										\
+										when( vis_condition );,																												\
+										name itemName; ANIM_STATES( INFO_BAR_COLOR ) )																						\
+		/* VALUE TEXT */																																					\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+ 240 ),	\
+										( INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*rank) + dvarInt( "ui_slideUpDistance" ) ),												\
+										100,																																\
+										13,																																	\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																						\
+										GetCombatRecordInfoBarText( 0, rank ),																								\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, INFO_BAR_COLOR alpha,																	\
+										when( vis_condition );,																												\
+										name itemName; ANIM_STATES( INFO_BAR_COLOR ) )																						\
+		/* INFO BAR FOR FRIEND*/																																			\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																		\
+										( INFO_BAR_Y_START+22+(INFO_BAR_SET_HEIGHT*rank) + dvarInt( "ui_slideUpDistance" ) ),												\
+										( GetCombatRecordInfoBarWidth( 1, MAX_VARIABLEBAR_LENGTH, rank ) * ((dvarInt( "ui_combatInfoBarWidth" )+1)) ),						\
+										13,																																	\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																						\
+										"menu_mp_combatrecord_bar", INFO_BAR_COLOR_FOR_FRIEND 0,																								\
+										when( vis_condition );,																												\
+										name itemName##"_otherPlayer"; ANIM_STATES( INFO_BAR_COLOR_FOR_FRIEND ) )															\
+		/* VALUE TEXT FOR FRIEND */																																			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+ 240 ),	\
+										( INFO_BAR_Y_START+22+(INFO_BAR_SET_HEIGHT*rank) + dvarInt( "ui_slideUpDistance" ) ),																								\
+										100,																																												\
+										13,																																													\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																		\
+										GetCombatRecordInfoBarText( 1, rank ),																																				\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, INFO_BAR_COLOR_FOR_FRIEND 0,																											\
+										when( vis_condition );,																																								\
+										name itemName##"_otherPlayer"; ANIM_STATES( INFO_BAR_COLOR_FOR_FRIEND ) )																											\
+		/* RANK ICON FOR FRIEND TO THE LEFT OF THE INFO BAR */																																								\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH-19 ),																													\
+										( INFO_BAR_Y_START+18+(INFO_BAR_SET_HEIGHT*rank) + dvarInt( "ui_slideUpDistance" ) ),																								\
+										16,																																													\
+										16,																																													\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN;,																																		\
+										tablelookup( "mp/rankIconTable.csv", 0, GET_STAT_FOR_OTHER_PLAYER( "RANK" ), 1+GET_STAT_FOR_OTHER_PLAYER( "PLEVEL" ) ), 1 1 1 0,													\
+										when( vis_condition );,																																								\
+										name itemName##"_otherPlayer"; ANIM_STATES( 1 1 1 ) ) 
+
+#define INFO_BAR_TAG( tagName, tagNum, alpha, vis_condition )																																												\
+		/*BG FOR VARIABLE NAME*/																																																			\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	INFO_BAR_STRUCTURE_X_START,																														\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										VARIABLEBAR_TAGDISPLAY_LENGTH,																													\
+										38,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\														
+										"white", 1 1 1 (alpha/10),																														\
+										when( vis_condition );,																															\
+										name tagName; ANIM_STATES_FOR_BG( 1 1 1, 0.1 ) )																								\
+		/*BG FOR TEXT */																																																			\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+ 236 ),																														\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										VARIABLEBAR_TAGDISPLAY_LENGTH-32,																													\
+										38,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\														
+										"white", 0 0 0 (alpha*0.03),																														\
+										when( vis_condition );,																															\
+										name tagName; ANIM_STATES_FOR_BG( 0 0 0, 0.03 ) )																								\
+		/*BG FOR INFO BARS*/																																							\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																						\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										(COMBAT_RECORD_WIDTH-VARIABLEBAR_TAGDISPLAY_LENGTH-184),																							\
+										19,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										"white", 1 1 1 (alpha/10), 																														\
+										when( vis_condition ),													\
+										name tagName; ANIM_STATES_FOR_BG( 1 1 1, 0.1 ) )																								\
+		/*BG IMAGE FOR INFO BARS*/																																							\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																						\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										(COMBAT_RECORD_WIDTH-VARIABLEBAR_TAGDISPLAY_LENGTH-184),																							\
+										19,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										"menu_mp_bar_shadow", 0 0 0 (alpha*0.2), 																														\
+										when( vis_condition ),													\
+										name tagName; ANIM_STATES_FOR_BG( 0 0 0, 0.2 ) )																								\
+		/*BG FOR FRIEND INFO BARS*/																																							\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																						\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum))+ 19 + dvarInt( "ui_slideUpDistance" ) ),															\
+										(COMBAT_RECORD_WIDTH-VARIABLEBAR_TAGDISPLAY_LENGTH-184),																							\
+										19,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										"white", 0 0 0 (alpha/10), 																														\
+										when( vis_condition ),													\
+										name tagName; ANIM_STATES_FOR_BG( 0 0 0, 0.1 ) )																								\
+		/*BG IMAGE FOR FRIEND INFO BARS*/																																							\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(INFO_BAR_STRUCTURE_X_START+VARIABLEBAR_TAGDISPLAY_LENGTH+1),																						\
+										( (INFO_BAR_Y_START+(INFO_BAR_SET_HEIGHT*tagNum))+ 19 + dvarInt( "ui_slideUpDistance" ) ),															\
+										(COMBAT_RECORD_WIDTH-VARIABLEBAR_TAGDISPLAY_LENGTH-184),																							\
+										19,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										"menu_mp_bar_shadow", 0 0 0 (alpha*0.2), 																														\
+										when( vis_condition ),													\
+										name tagName; ANIM_STATES_FOR_BG( 0 0 0, 0.2 ) )																								\
+		/* ITEM NAME*/																																									\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	INFO_BAR_STRUCTURE_X_START,																												\
+										( (INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),														\
+										(VARIABLEBAR_TAGDISPLAY_LENGTH-5),																													\
+										14,																																				\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																									\
+										"@"+getCombatRecordInfoBarTagText( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ),																		\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT alpha,														\
+										when( vis_condition && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) ),																															\
+										name tagName; ANIM_STATES( CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT ) )																				\
+		/* ITEM NAME FOR PERSONAL BESTS */																																									\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	INFO_BAR_STRUCTURE_X_START,																												\
+										( (INFO_BAR_Y_START+10+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),														\
+										(VARIABLEBAR_TAGDISPLAY_LENGTH-5),																													\
+										14,																																				\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																									\
+										"@"+getCombatRecordInfoBarTagText( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ),																		\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT alpha,														\
+										when( vis_condition && ( dvarInt("ui_combatCurrViewNum") == CR_VIEW_CAREER_PERSONAL_BESTS ) ),																															\
+										name tagName; ANIM_STATES( CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT ) )																				\
+		/* WEAPON ICON */																																								\ 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( ( INFO_BAR_STRUCTURE_X_START+5 ),	\
+										( (INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										(-70 ),																\
+										32,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ), 1 1 1 alpha,																				\
+										when( GetImageWidth( getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ) ) > 128 && vis_condition && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) && ( ( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_KILLS ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_USAGE ) ) ),	\
+										name tagName; ANIM_STATES( 1 1 1 ); )																																																																			\
+		/* WEAPON ICON */																																								\ 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( ( INFO_BAR_STRUCTURE_X_START+5 ),	\
+										( (INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),															\
+										(-45 ),																\
+										32,																																				\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																									\
+										getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ), 1 1 1 alpha,																				\
+										when( GetImageWidth( getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ) ) <= 128 && vis_condition && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) && ( ( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_KILLS ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY ) && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_WEAPONS_EQUIPMENT_USAGE ) ) ),	\
+										name tagName; ANIM_STATES( 1 1 1 ); )																																																																			\
+		/* KILLSTREAK AND EQUPIMENT ICON */																																																																												\ 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+10 ),																																																												\
+										( (INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),																																																						\
+										32,																																																																												\
+										32,																																																																												\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																																																																	\
+										getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ), 1 1 1 alpha,																																																												\
+										when( GetImageWidth( getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ) ) <= 128 && vis_condition && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) && ( ( dvarString("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ) || ( ( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) && ( dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_KILLS || dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_USAGE || dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY ) ) ) ),	\
+										name tagName; ANIM_STATES( 1 1 1 ); ) \
+		/* KILLSTREAK AND EQUPIMENT ICON */																																																																												\ 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( INFO_BAR_STRUCTURE_X_START+10 ),																																																												\
+										( (INFO_BAR_Y_START+3+(INFO_BAR_SET_HEIGHT*tagNum)) + dvarInt( "ui_slideUpDistance" ) ),																																																						\
+										(-70 ),																																																																												\
+										32,																																																																												\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																																																																	\
+										getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ), 1 1 1 alpha,																																																												\
+										when( GetImageWidth( getItemImage( GET_SORTED_ITEM_INDEX( tagNum, 0 ) ) ) > 128 && vis_condition && ( dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) && ( ( dvarString("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ) || ( ( dvarString("ui_combatCurrTab") == CR_TAB_WEAPONS ) && ( dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_KILLS || dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_USAGE || dvarInt("ui_combatCurrViewNum") == CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY ) ) ) ),	\
+										name tagName; ANIM_STATES( 1 1 1 ); )
+
+	
+#define INFO_BAR_TAGS( vis_condition ) \
+		INFO_BAR_TAG( "info_bar_0", 0, 0, ( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) ) \
+		INFO_BAR_TAG( "info_bar_1", 1, 1, vis_condition ) \
+		INFO_BAR_TAG( "info_bar", 2, 1, vis_condition ) \
+		INFO_BAR_TAG( "info_bar", 3, 1, vis_condition ) \
+		INFO_BAR_TAG( "info_bar", 4, 1, vis_condition ) \
+		INFO_BAR_TAG( "info_bar_5", 5, 1, vis_condition ) \
+		INFO_BAR_TAG( "info_bar_6", 6, 0, ( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) )
+
+#define INFO_BARS( vis_condition ) \
+		INFO_BAR( "info_bar_0", 0, 0, ( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) ) \
+		INFO_BAR( "info_bar_1", 1, 1, vis_condition ) \
+		INFO_BAR( "info_bar", 2, 1, vis_condition ) \
+		INFO_BAR( "info_bar", 3, 1, vis_condition ) \
+		INFO_BAR( "info_bar", 4, 1, vis_condition ) \ 
+		INFO_BAR( "info_bar_5", 5, 1, vis_condition ) \
+		INFO_BAR( "info_bar_6", 6, 0, ( vis_condition && dvarInt("ui_combatCurrViewNum") != CR_VIEW_CAREER_PERSONAL_BESTS ) ) 
+		
+#define RANK_AND_GAMERTAG_OF_COMPARED_PLAYER( x_offset, vis_condition )																											\
+		/* Player name */																																				\
+		PREPROC_TEXT_DRAW_VIS_EX(	x_offset (COMBAT_RECORD_HEIGHT/2-20) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,											\
+									GetClanTagAndName(),																												\
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, INFO_BAR_COLOR_FOR_FRIEND 1,															\
+									when( dvarbool( "ui_showFriendsCombatRecord" ) && vis_condition );,																	\
+									name "otherPlayerName"; ANIM_STATES( INFO_BAR_COLOR_FOR_FRIEND ) )																	\
+		/* Label for Comparing with : */																																				\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	(x_offset-(getTextWidth( locString( "@MPUI_CR_COMPARING_WITH" ), UI_FONT_NORMAL, TEXTSIZE_DEFAULT ))-25), (COMBAT_RECORD_HEIGHT/2-20), 100, 10, CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,											\
+									"@MPUI_CR_COMPARING_WITH",																												\
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, INFO_BAR_COLOR_FOR_FRIEND 0,															\
+									when( vis_condition );,																	\
+									name "otherPlayerName"; ANIM_STATES( INFO_BAR_COLOR_FOR_FRIEND ) )																	\
+		/* Other Player name */																																			\
+		PREPROC_TEXT_DRAW_VIS_EX(	x_offset (COMBAT_RECORD_HEIGHT/2-20) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,											\
+									dvarString( "selectedFriendName" ),																									\
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, INFO_BAR_COLOR_FOR_FRIEND 0,															\
+									when( !dvarbool( "ui_showFriendsCombatRecord" )  && vis_condition );,																\
+									name "otherPlayerName"; ANIM_STATES( INFO_BAR_COLOR_FOR_FRIEND ) )																	\
+		/* Other Player rank icon */																																	\
+		PREPROC_SHADER_DRAW_VIS_EX( (x_offset-20) (COMBAT_RECORD_HEIGHT/2-25) 16 16 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN;,												\
+									tablelookup( "mp/rankIconTable.csv", 0, GET_STAT_FOR_OTHER_PLAYER( "RANK" ), 1+GET_STAT_FOR_OTHER_PLAYER( "PLEVEL" ) ), 1 1 1 0,	\
+									when( vis_condition );,																												\
+									name "otherPlayerName"; ANIM_STATES( 1 1 1 ) ) 
+		
+#define COMBAT_RECORD_BUTTON_PROMPTS( vis_condition ) \
+		itemDef { \
+			type			ITEM_TYPE_TEXT \
+			rect			(TAB_X_START-3) -10 0 0 CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_BOTTOM  \
+			text			"@PLATFORM_DONE" \
+			textfont		UI_FONT_NORMAL  \
+			textscale		TEXTSIZE_SMALL  \
+			textalign		ITEM_ALIGN_BOTTOM_LEFT  \
+			visible			vis_condition  \
+			decoration  \
+		} \
+
+#define CR_LINE_GRAPH																																																																	\
+		/* top line */																																																																	\
+		PREPROC_SHADER_DRAW( CR_LINE_GRAPH_X_START CR_LINE_GRAPH_Y_START CR_LINE_GRAPH_WIDTH 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", CR_LINE_GRAPH_GRID_LINE_COLOR )																									\
+		/* plus sign icon */																																																															\
+		PREPROC_SHADER_DRAW( (CR_LINE_GRAPH_X_START-CR_LINE_GRAPH_MARGIN/2-10) (CR_LINE_GRAPH_Y_START+1+CR_LINE_GRAPH_MARGIN/4) (CR_LINE_GRAPH_MARGIN/2) (CR_LINE_GRAPH_MARGIN/2) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "kd_chart_plus", 1 1 1 1 )								\
+		/* minus sign icon */																																																															\
+		PREPROC_SHADER_DRAW( (CR_LINE_GRAPH_X_START-CR_LINE_GRAPH_MARGIN/2-10) (CR_LINE_GRAPH_Y_START+CR_LINE_GRAPH_MARGIN+1+CR_LINE_GRAPH_MARGIN/4) (CR_LINE_GRAPH_MARGIN/2) ((CR_LINE_GRAPH_MARGIN/2)-1) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "kd_chart_minus", 1 1 1 1 )	\
+		/* middle line */																																																																\
+		PREPROC_SHADER_DRAW( CR_LINE_GRAPH_X_START (CR_LINE_GRAPH_Y_START+CR_LINE_GRAPH_HEIGHT/2) CR_LINE_GRAPH_WIDTH 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", CR_LINE_GRAPH_GRID_LINE_COLOR )																			\
+		/* bottom line */																																																																\
+		PREPROC_SHADER_DRAW( CR_LINE_GRAPH_X_START (CR_LINE_GRAPH_Y_START+CR_LINE_GRAPH_HEIGHT) CR_LINE_GRAPH_WIDTH 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", CR_LINE_GRAPH_GRID_LINE_COLOR )																			\
+		itemDef																																																																			\
+		{																																																																				\
+			type			ITEM_TYPE_OWNERDRAW																																																											\
+			rect			CR_LINE_GRAPH_X_START CR_LINE_GRAPH_Y_START CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN																															\
+			ownerdraw		UI_COMBAT_RECORD_LINE_GRAPH																																																									\  
+			dvar			ui_combatCurrViewNum																																																										\
+			visible			1																																																															\  
+			decoration																																																																	\ 
+		}  
+
+#define MAX_HISTOGRAM_COMPONENTS 10
+#define CR_MAX_RECENT_PERFORMANCE_GRAPH_VALUES 10
+#define CR_MAX_MATCH_PERFORMANCE_GRAPH_VALUES 10
+
+#define HISTOGRAM_COMPONENT( component_number, width, currGametype, isDefaultComponent )											\
+		itemDef																														\
+		{																															\ 
+			name			histogram_component																						\
+			type			ITEM_TYPE_OWNERDRAW																						\
+			rect			(HISTOGRAM_X_START + component_number * HISTOGRAM_WIDTH / MAX_HISTOGRAM_COMPONENTS) HISTOGRAM_Y_START HISTOGRAM_WIDTH HISTOGRAM_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN	\
+			/* Histogram samples are stored in 'ownerdata' and 'forecolor A' because those */										\
+			/* are the only expressions available while still using the rect for placement */										\
+			exp				ownerdata  ( GetCombatRecordHistogramHeight( component_number, currGametype ) )							\
+			exp				forecolor A( GetCombatRecordHistogramHeight( component_number+1, currGametype ) )						\
+			ownerdraw		UI_COMBAT_RECORD_HISTOGRAM																				\
+			visible			1																										\ 
+			ITEM_STATE( change, ;, ; )																								\
+			decoration																												\
+		}																															\
+		PREPROC_SHADER_DRAW( (-1+(HISTOGRAM_X_START + component_number*width/MAX_HISTOGRAM_COMPONENTS)) HISTOGRAM_Y_START 1 HISTOGRAM_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 ) 
+
+#define HISTOGRAM_HORIZONTAL_GRID_LINE( lineNum )	\
+		PREPROC_SHADER_DRAW( (-1+HISTOGRAM_X_START) (HISTOGRAM_Y_START+(lineNum*(HISTOGRAM_HEIGHT)/2)) (HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10+1) 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 ) 
+
+#define HISTOGRAM_MENU( menuName, parentMenuName, xPos, yPos, width, height, currGametype, visArg )								\
+		menuDef																													\
+		{																														\
+			name menuName																										\
+			rect xPos yPos width height CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN											\
+			priority MENU_PRI_ONTOP																								\
+			onOpen																												\
+			{																													\
+				setDvar ui_combatLockScrolling "1";																				\
+				ITEM_ANIMATE( menuName, "dummy", lockScrolling, 20 );															\
+			}																													\
+			onClose{ }																											\
+			onEsc																												\
+			{																													\
+				close self;																										\
+				if(dvarbool(ui_showFriendsCombatRecord))																		\
+				{																												\
+					open menu_playercard;																						\
+				}																												\
+				else																											\
+				{																												\	
+					if ( dvarInt( xblive_basictraining ) )																		\
+					{																											\
+						open menu_playercard_self_basictraining;																\
+					}																											\
+					else																										\
+					{																											\
+						open menu_playercard_self;																				\
+					}																											\
+				}																												\
+				close parentMenuName; setdvar ui_combatResetViewDvars "0"; RESET_SELECTED_PLAYER_XUID;							\
+			}																													\
+			visible visArg																										\
+			HISTOGRAM_COMPONENT( 0, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 1, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 2, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 3, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 4, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 5, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 6, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 7, width, currGametype, 0 )																	\
+			HISTOGRAM_COMPONENT( 8, width, currGametype, 0 )																	\
+			/* Vertical Axis */																									\ 	 		 
+			PREPROC_SHADER_DRAW( -1 0 1 (HISTOGRAM_HEIGHT) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+			/* Vertical Axis Right*/																							\ 	 		 
+			PREPROC_SHADER_DRAW( (HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10) 0 1 (HISTOGRAM_HEIGHT) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+			/* Horizontal Axis */																																	\		 		 
+			PREPROC_SHADER_DRAW( -1 HISTOGRAM_HEIGHT (HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10+1) 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+			HISTOGRAM_HORIZONTAL_GRID_LINE( 0 )																														\
+			HISTOGRAM_HORIZONTAL_GRID_LINE( 1 )																														\
+			ACTION_HANDLER( menuName )																																\
+			DUMMY_ITEM_FOR_ANIMATION( menuName, 1 )																													\
+		} 
+		
+		
+#define HISTOGRAM_INPLACE	\
+		HISTOGRAM_COMPONENT( 0, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 1, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 2, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 3, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 4, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 5, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 6, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 7, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		HISTOGRAM_COMPONENT( 8, HISTOGRAM_WIDTH, (dvarInt("ui_combatHistogramCurrGametype")), 0 )		\
+		/* Vertical Axis */																				\
+		PREPROC_SHADER_DRAW( (-1+HISTOGRAM_X_START) HISTOGRAM_Y_START 1 (HISTOGRAM_HEIGHT) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+		/* Vertical Axis Right*/																		\
+		PREPROC_SHADER_DRAW( (HISTOGRAM_X_START+HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10) HISTOGRAM_Y_START 1 (HISTOGRAM_HEIGHT) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+		/* Horizontal Axis */																			\
+		PREPROC_SHADER_DRAW( (-1+HISTOGRAM_X_START) (HISTOGRAM_Y_START+HISTOGRAM_HEIGHT) (HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10+1) 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.1 )	\
+		HISTOGRAM_HORIZONTAL_GRID_LINE( 0 )	\
+		HISTOGRAM_HORIZONTAL_GRID_LINE( 1 )
+
+#define TAB_OPEN( menuName )													\
+		execNow closemenuImmediate (dvarString("ui_combatCurrViewMenuName"));	\
+		execNow openMenuImmediate (menuName);									\
+		setdvar set ui_combatCurrScrollBarPos "0"; 
+
+HISTOGRAM_MENU( recent_performance_histogram, menu_cr_career_recent_performance, HISTOGRAM_X_START, HISTOGRAM_Y_START, HISTOGRAM_WIDTH, HISTOGRAM_HEIGHT, CR_RECENT_PERFORMANCE_INFO, 1 ) 
+
+#define CURRENT_VIEW_NUMBER \
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_RECORD_BODY_X_START+500) (COMBAT_RECORD_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  \
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", ( dvarInt("ui_combatCurrViewNum") - CR_VIEW_CAREER_SUMMARY ) + 1, CR_CAREER_VIEW_COUNT ),  \
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, when( dvarInt("ui_combatCurrTab") == CR_TAB_CAREER ) )  \
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_RECORD_BODY_X_START+500) (COMBAT_RECORD_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", ( dvarInt("ui_combatCurrViewNum") - CR_VIEW_WEAPONS_FAV_WEAPON ) + 1, CR_WEAPONS_VIEW_COUNT ), \
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, when( dvarInt("ui_combatCurrTab") == CR_TAB_WEAPONS ) ) \
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_RECORD_BODY_X_START+500) (COMBAT_RECORD_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", ( dvarInt("ui_combatCurrViewNum") - CR_VIEW_MATCHES_PERFORMANCE ) + 1, CR_MATCHES_VIEW_COUNT ), \
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, when( dvarInt("ui_combatCurrTab") == CR_TAB_MATCHES ) ) \
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_RECORD_BODY_X_START+500) (COMBAT_RECORD_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", ( dvarInt("ui_combatCurrViewNum") - CR_VIEW_KILLSTREAKS_CALLED ) + 1, CR_KILLSTREAKS_VIEW_COUNT ), \
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, when( dvarInt("ui_combatCurrTab") == CR_TAB_KILLSTREAKS ) )
+
+#define INIT_VIEW_DVARS \
+		if( dvarString( "ui_combatCareerViewMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatCareerViewMenuName menu_cr_career_summary; } \
+		if( dvarString( "ui_combatWeaponsViewMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatWeaponsViewMenuName menu_cr_weapons_favorite_weapon; } \
+		if( dvarString( "ui_combatMatchesViewMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatMatchesViewMenuName menu_cr_matches_performance; } \
+		if( dvarString( "ui_combatKillstreaksViewMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatKillstreaksViewMenuName menu_cr_killstreaks_called; } \
+		if( dvarString( "ui_combatContractsViewMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatContractsViewMenuName menu_cr_contracts_info; } \
+		if( dvarString( "ui_combatPrevTabMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatPrevTabMenuName menu_cr_contracts_info; } \
+		if( dvarString( "ui_combatNextTabMenuName" ) == "" || dvarBool( ui_combatResetViewDvars ) == 0 ){ setDvar ui_combatNextTabMenuName menu_cr_weapons_favorite_weapon; } \
+		setDvar ui_combatCurrTab CR_TAB_CAREER; \
+		setDvar ui_combatCurrView CR_VIEW_CAREER_SUMMARY; \
+		setDvar ui_combatCurrViewNum CR_VIEW_CAREER_SUMMARY; \
+		if( dvarBool( ui_combatResetViewDvars ) == 0 ) \
+			{	setDvar ui_combatComparisonModeOn "0"; setDvar ui_combatStatsMilestonesVis "0"; \
+				setdvar ui_combatFileshareTasksComplete "0"; \
+				setdvar ui_combatUserHasRecentGames "0"; \
+				setdvar ui_combatFileSummaryValid "0"; \
+				execnow set selectedRecentGameIndex 0; \
+				execnow fileShareClearResults; \
+				if( dvarbool("ui_showFriendsCombatRecord") ) \
+				{ \
+					execnow fileShareGetRecentGames ( dvarString( selectedPlayerXuid ) ); \
+				} \
+				else \
+				{ \
+					execnow fileShareGetRecentGames; \
+				} \
+			} \
+		setDvar ui_combatResetViewDvars "1"; 
+
+#ifdef XENON
+	#define CR_VIEW_TITLE_AND_VIEW_NUMBER \
+			/* Title */ \
+			PREPROC_TEXT_DRAW(	(-COMBAT_RECORD_WIDTH / 2) (COMBAT_RECORD_BODY_Y_START-5) COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  \
+								locString( "@PLATFORM_TABBED_MENU_TITLE", "@MPUI_" + dvarString( "ui_combatCurrView" ) ),  \
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR )  \
+			/* Current View Number */ \
+			CURRENT_VIEW_NUMBER 
+#endif //#ifdef XENON
+
+#ifdef PS3
+	#define CR_VIEW_TITLE_AND_VIEW_NUMBER \
+			/* Title */ \
+			PREPROC_TEXT_DRAW_ALL(	(-COMBAT_RECORD_WIDTH / 2) (COMBAT_RECORD_BODY_Y_START-5) COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  \
+									locString( "@PLATFORM_TABBED_MENU_TITLE", "@MPUI_" + dvarString( "ui_combatCurrView" ) ),  \
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, \
+									UI_FONT_SMALL, ITEM_TEXTSTYLE_NORMAL, 1, ; )  \
+			/* Current View Number */ \
+			CURRENT_VIEW_NUMBER 
+#endif //#ifdef PS3
+
+#ifdef PC
+	#define CR_VIEW_TITLE_AND_VIEW_NUMBER \
+			/* Current View Number */ \
+			CURRENT_VIEW_NUMBER \
+			/* Left and right bumper buttons */ \
+			SIMPLE_CHOICE_BUTTON_ARROWS_CENTERED( "combat_record_title", 0, COMBAT_RECORD_BODY_Y_START, 240, "@MPUI_" + dvarString( "ui_combatCurrView" ), \
+				1, execkeyhandler BUTTON_RSHLDR, execkeyhandler BUTTON_LSHLDR )
+#endif //#ifdef PC
+
+#define COMMON_INFO_BAR_ITEMS \
+		INFO_BAR_STRUCTURE( 1 ) 
+
+#define CR_CAREER_TAB_COMMON_ITEMS \ 
+		NEW_FRAME( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT ) \
+		NEW_FRAME_TITLE( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@MPUI_COMBAT_RECORD_CAPS", 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_1_X, TAB_1_WIDTH, 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_2_X, TAB_2_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_3_X, TAB_3_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_4_X, TAB_4_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_5_X, TAB_5_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_HEADERS \
+		COMBAT_RECORD_TAB_BUTTONS \
+		/* background */ \
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START-15) (COMBAT_RECORD_BODY_Y_START+20) (COMBAT_RECORD_WIDTH) 280 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_cr_bkg", 0 0 0 0.2 ) \
+		FRIEND_INFO_VIS( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (dvarBool("ui_showFriendsCombatRecord")) ) \
+		PLAYER_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (!dvarBool("ui_showFriendsCombatRecord")) ) \
+		ACTION_HANDLER( (dvarString("ui_combatCurrentViewMenuName")) ) 
+
+#define CR_WEAPONS_TAB_COMMMON_ITEMS \
+		NEW_FRAME( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT ) \
+		NEW_FRAME_TITLE( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@MPUI_COMBAT_RECORD_CAPS", 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_1_X, TAB_1_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_2_X, TAB_2_WIDTH, 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_3_X, TAB_3_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_4_X, TAB_4_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_5_X, TAB_5_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_HEADERS \
+		COMBAT_RECORD_TAB_BUTTONS \
+		/* background */ \
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START-15) (COMBAT_RECORD_BODY_Y_START+20) (COMBAT_RECORD_WIDTH) 280 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_cr_bkg", 0 0 0 0.2 ) \
+		FRIEND_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (dvarBool("ui_showFriendsCombatRecord")) ) \
+		PLAYER_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (!dvarBool("ui_showFriendsCombatRecord")) ) \		
+		ACTION_HANDLER( (dvarString("ui_combatCurrentViewMenuName")) ) 
+
+#define CR_MATCHES_TAB_COMMMON_ITEMS \
+		NEW_FRAME( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT ) \
+		NEW_FRAME_TITLE( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@MPUI_COMBAT_RECORD_CAPS", 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_1_X, TAB_1_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_2_X, TAB_2_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_3_X, TAB_3_WIDTH, 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_4_X, TAB_4_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_5_X, TAB_5_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_HEADERS \
+		COMBAT_RECORD_TAB_BUTTONS \
+		/* background */ \
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START-15) (COMBAT_RECORD_BODY_Y_START+20) (COMBAT_RECORD_WIDTH) 280 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_cr_bkg", 0 0 0 0.2 ) \
+		FRIEND_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (dvarBool("ui_showFriendsCombatRecord")) ) \
+		PLAYER_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (!dvarBool("ui_showFriendsCombatRecord")) ) \		
+		ACTION_HANDLER( (dvarString("ui_combatCurrentViewMenuName")) ) 
+
+#define CR_KILLSTREAKS_TAB_COMMMON_ITEMS \
+		NEW_FRAME( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT ) \
+		NEW_FRAME_TITLE( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@MPUI_COMBAT_RECORD_CAPS", 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_1_X, TAB_1_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_2_X, TAB_2_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_3_X, TAB_3_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_4_X, TAB_4_WIDTH, 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_5_X, TAB_5_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_HEADERS \
+		COMBAT_RECORD_TAB_BUTTONS \
+		/* background */ \
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START-15) (COMBAT_RECORD_BODY_Y_START+20) (COMBAT_RECORD_WIDTH) 280 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_cr_bkg", 0 0 0 0.2 ) \
+		FRIEND_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (dvarBool("ui_showFriendsCombatRecord")) ) \
+		PLAYER_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (!dvarBool("ui_showFriendsCombatRecord")) ) \
+		ACTION_HANDLER( (dvarString("ui_combatCurrentViewMenuName")) ) 
+
+#define CR_CONTRACTS_TAB_COMMMON_ITEMS \
+		NEW_FRAME( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT ) \
+		NEW_FRAME_TITLE( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@MPUI_COMBAT_RECORD_CAPS", 1 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_1_X, TAB_1_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_2_X, TAB_2_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_3_X, TAB_3_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_4_X, TAB_4_WIDTH, 0 ) \
+		COMBAT_RECORD_TAB_BG( COMBAT_RECORD_TAB_5_X, TAB_5_WIDTH, 1 ) \
+		COMBAT_RECORD_TAB_HEADERS \
+		COMBAT_RECORD_TAB_BUTTONS \
+		/* background */ \
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START-15) (COMBAT_RECORD_BODY_Y_START+20) (COMBAT_RECORD_WIDTH) 280 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_cr_bkg", 0 0 0 0.2 ) \
+		FRIEND_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (dvarBool("ui_showFriendsCombatRecord")) ) \
+		PLAYER_INFO_VIS(  COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, (!dvarBool("ui_showFriendsCombatRecord")) ) \	
+		ACTION_HANDLER( (dvarString("ui_combatCurrentViewMenuName")) ) 
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION															\
+		setdvar ui_combatResetViewDvars "0";									\
+		RESET_SELECTED_PLAYER_XUID;												\
+		close self;																\
+		close match_performance_histogram;										\
+		close menu_cr_matches_performance;										\
+		close match_performance_gametypes_list;									\
+		if(dvarbool(ui_showFriendsCombatRecord))								\
+		{																		\
+			open menu_playercard;												\
+		}else																	\
+		{																		\
+			if ( dvarInt( xblive_basictraining ) )																		\
+					{																											\
+						open menu_playercard_self_basictraining;																\
+					}																											\
+					else																										\
+					{																											\
+						open menu_playercard_self;																				\
+					}															\
+		}
+				
+#define CR_VIEW_MENU_TEMPLATE( menuName, currViewNum, previousViewMenuName, nextViewMenuName, currTabNum, prevTabMenuName, nextTabMenuName, onOpenArg, onCloseArg ) \
+		name					menuName											\
+		rect					SLIDER_RECT_ORIGIN 640 480							\
+		focuscolor				COLOR_FOCUSED										\
+		style					WINDOW_STYLE_FILLED									\
+		priority				MENU_PRI_ONTOP										\
+		control					MENU_CONTROL_OPENER									\
+		soundloop 				MENU_MUSIC											\
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED								\
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED								\
+		openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT					\
+		closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT					\
+		onFocus																		\
+		{																			\
+			activateBlur;															\
+		}																			\		
+		onOpen																		\
+		{																			\
+			execNow set ui_combatRecordOpen "1";									\
+			setDvar ui_combatLockScrolling "1";										\
+			ITEM_ANIMATE( menuName, "dummy", lockScrolling, 20 );					\
+			setdvar ui_combatCurrentViewMenuName menuName;							\
+			execNow set ui_combatPreviousViewMenuName previousViewMenuName;			\
+			execNow set ui_combatNextViewMenuName nextViewMenuName;					\
+			execNow set ui_combatCurrTab currTabNum;								\
+			execNow set ui_combatPrevTabMenuName prevTabMenuName;					\
+			execNow set ui_combatNextTabMenuName nextTabMenuName;					\
+			execNow set ui_combatCurrView currViewNum;								\
+			execNow "UpdateCombatRecordView";										\
+			setdvar ui_combatCurrScrollBarPos "0";									\
+			if( CAN_COMPARISON_MODE_BE_TURNED_ON )									\
+			{																		\
+				ADJUST_OTHER_PLAYER_INFO_BARS( menuName )							\
+			}																		\
+			onOpenArg;																\
+		}																			\
+		onClose																		\
+		{																			\
+			onCloseArg;																\
+			execNow set ui_combatRecordOpen "0";									\
+			deactivateBlur;															\
+		}																			\
+		onEsc																		\
+		{																			\
+			ON_ESC_ACTION															\
+		}																			\
+		/* dummy item for animation purposes */										\
+		DUMMY_ITEM_FOR_ANIMATION( (dvarString("ui_combatCurrentViewMenuName")), 1 )	\
+		NEW_FRAME_BACK_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, ON_ESC_ACTION )
+
+
+#define CONTAINER_BOX_WIDTH 250
+		
+{
+
+/* ----------------------------------Combat record tab "Career", view "Summary"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_career_summary, CR_VIEW_CAREER_SUMMARY, menu_cr_career_personal_bests, menu_cr_career_recent_performance, CR_TAB_CAREER, (dvarString("ui_combatContractsViewMenuName")), (dvarString("ui_combatWeaponsViewMenuName")), execnow assertDWConnection; INIT_VIEW_DVARS, ; )
+		
+	
+		CR_CAREER_TAB_COMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#define SUMMARY_X_START		(COMBAT_RECORD_BODY_X_START+10)
+#define SUMMARY_DESC_Y_START	(COMBAT_RECORD_BODY_Y_START+122)
+
+#define SUMMARY_DESC_TEXT_BG_COLOR	0 0 0 0.1
+		
+		/* Left container box 1 */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (COMBAT_RECORD_BODY_Y_START+25) CONTAINER_BOX_WIDTH 233 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Big rank icon */
+		SUMMARY_RANK_ICON( (SUMMARY_X_START+(CONTAINER_BOX_WIDTH/2)-50), (COMBAT_RECORD_BODY_Y_START+30), tablelookup( "mp/rankIconTable.csv", 0, GET_STAT( "RANK" ), 1+GET_STAT( "PLEVEL" ) ), 1 ) 
+		/* Rank name */
+		PREPROC_TEXT_DRAW_VIS(	SUMMARY_X_START (COMBAT_RECORD_BODY_Y_START+135) CONTAINER_BOX_WIDTH 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								"@"+tableLookup( "mp/rankTable.csv", 0, GET_STAT( "RANK" ), 5), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Time Played" */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+36) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Time Played" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+42) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_TIME_PLAYED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Time Played */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+183) (SUMMARY_DESC_Y_START+42) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								secondsAsTime( GET_STAT( "TIME_PLAYED_TOTAL" )) , 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Total Wins" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+62) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locstring( "MPUI_TOTAL_WINS_CAPS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Total Wins */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+183) (SUMMARY_DESC_Y_START+62) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "WINS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Losses" */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+76) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Losses" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+82) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locstring( "MPUI_TOTAL_LOSSES_CAPS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Losses */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+183) (SUMMARY_DESC_Y_START+82) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "LOSSES" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Ratio" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+102) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locstring( "MPUI_RATIO_CAPS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Ratio */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+183) (SUMMARY_DESC_Y_START+102) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getFloatAsFormattedString( ( GET_STAT( "WLRATIO" ) / 1000.0 ), 2 ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Best Streak" */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+116) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Best Streak" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+122) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locstring( "MPUI_BEST_STREAK_CAPS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Best Streak */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+183) (SUMMARY_DESC_Y_START+122) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_HIGHEST_STAT( "WIN_STREAK" ) , 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+#define SUMMARY_RIGHT_X_START (SUMMARY_X_START+CONTAINER_BOX_WIDTH+20)
+
+		/* Right container box  */	
+		PREPROC_SHADER_DRAW( (SUMMARY_RIGHT_X_START) (COMBAT_RECORD_BODY_Y_START+25) CONTAINER_BOX_WIDTH 233 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Image for Stack of chips */
+		PREPROC_SHADER_DRAW( (SUMMARY_RIGHT_X_START-3) (COMBAT_RECORD_BODY_Y_START+10) 256 256 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "playlist_wager_highroller_bw", 1 1 1 0.1 ) 
+		/* BG for "Career Earnings" */
+		PREPROC_SHADER_DRAW( (SUMMARY_RIGHT_X_START) (SUMMARY_DESC_Y_START+56) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Career Earnings" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+10) (SUMMARY_DESC_Y_START+62) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_LIFETIME_EARNINGS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Career Earnings */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+183) (SUMMARY_DESC_Y_START+62) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", ( GET_STAT( "CODPOINTS" ) + GET_STAT( "CURRENCYSPENT" ) ) ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN_RGB 1, 1 ) 
+		/* Label for "Wager Earnings" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+10) (SUMMARY_DESC_Y_START+82) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_WAGER_MATCH_EARNINGS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Wager Earnings */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+183) (SUMMARY_DESC_Y_START+82) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", GET_STAT( "LIFETIME_EARNINGS" ) ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN_RGB 1, 1 ) 
+		/* BG for "Single Events Played" */
+		PREPROC_SHADER_DRAW( (SUMMARY_RIGHT_X_START) (SUMMARY_DESC_Y_START+96) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Single Events Played" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+10) (SUMMARY_DESC_Y_START+102) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_SINGLE_EVENTS_PLAYED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Single Events Played */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+183) (SUMMARY_DESC_Y_START+102) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetNumWagerMatchesPlayed(), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Single Events Won" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+10) (SUMMARY_DESC_Y_START+122) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_SINGLE_EVENTS_WON_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Single Events Won */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+183) (SUMMARY_DESC_Y_START+122) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetNumWagerMatchesWon(), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+#undef PRESTIGE_AVAIL 
+#define PRESTIGE_AVAIL (GET_STAT("PLEVEL") < MAX_PRESTIGE && GET_STAT("RANKXP") == int(tableLookup("mp/rankTable.csv",0,MAX_RANK,7)))
+#undef PRESTIGE_NEXT 
+#define PRESTIGE_NEXT (GET_STAT("PLEVEL") < MAX_PRESTIGE && GET_STAT("RANK") == MAX_RANK)
+#undef PRESTIGE_FINISH 
+#define PRESTIGE_FINISH (GET_STAT("PLEVEL") == MAX_PRESTIGE)
+
+#undef CAN_RANK_UP	
+#define CAN_RANK_UP	(GET_STAT("RANK") < MAX_RANK || GET_STAT("PLEVEL") < MAX_PRESTIGE)
+
+#define RANKTABLE_COL_MINXP			2
+#define RANKTABLE_COL_XP_TO_NEXT	3
+#define RANKTABLE_COL_MAX_XP		7
+
+#define XP_BAR_X					( -COMBAT_RECORD_WIDTH / 2 + 80 )
+#define XP_BAR_Y					(FRAME_DEFAULT_HEIGHT/2-32)
+#define XP_BAR_BG_WIDTH				(FRAME_DEFAULT_WIDTH-135)
+#define XP_BAR_HEIGHT				20
+
+#define PLAYER_RANK					GET_STAT( "RANK" )
+#define PLAYER_PRESTIGE				GET_STAT( "PLEVEL" )
+#define PLAYER_RANKXP				GET_STAT( "RANKXP" )
+
+#define XP_TO_NEXT_RANK				int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_XP_TO_NEXT ) )
+#define MINXP_FOR_CURR_RANK			int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_MINXP ) )
+#define NEXT_LEVEL					( tablelookup( "mp/ranktable.csv", 0, GET_STAT( "RANK" ) + 1, 14 ) )
+
+#define XP_BAR_WIDTH				( ( ( PLAYER_RANKXP - MINXP_FOR_CURR_RANK ) / XP_TO_NEXT_RANK ) * XP_BAR_BG_WIDTH  )
+
+#define XP_NEEDED_TO_LEVEL_UP \
+		locString( "MPUI_AAR_XP_NEEDED_CAPS",int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_MAX_XP ) - PLAYER_RANKXP )  )
+
+		/* BACKGROUND FOR XP BAR */
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", BG_BACKCOLOR, 
+									when( CAN_RANK_UP ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"menu_mp_bar_shadow", 1 1 1 0.2, 
+									when( CAN_RANK_UP ), ; ) 
+		/* XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	XP_BAR_X,
+										XP_BAR_Y,
+										( XP_BAR_WIDTH ),
+										XP_BAR_HEIGHT,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"menu_mp_combatrecord_bar", BAR_COLOR, 
+										when( CAN_RANK_UP ), 
+										; ) 
+		/* Tiny arrow at xp bar end */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( XP_BAR_X + XP_BAR_WIDTH - 5 ),
+										(XP_BAR_Y+XP_BAR_HEIGHT),
+										10,
+										10,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"ui_arrow_right", BAR_COLOR,
+										when( CAN_RANK_UP ), 
+										rotation -90; )
+		/* Label for "NEXT LEVEL" */
+		PREPROC_TEXT_DRAW( (XP_BAR_X-55) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_NEXT_LEVEL_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR )
+		/* value for XP NEEDED to next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+5) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, XP_NEEDED_TO_LEVEL_UP, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP ) )
+		/* next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, int( NEXT_LEVEL ),	TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) )
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "1",					TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT ) )
+		/* next level rank icon */
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( NEXT_LEVEL, CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, PLAYER_RANK+1, PLAYER_PRESTIGE+1 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) ) 
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( "1", CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, 0, PLAYER_PRESTIGE+2 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT ) ) 
+
+		#include "ui/safearea.menu"
+	}
+
+/* ----------------------------------Combat record tab "Career", view "Recent Performance"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_career_recent_performance, CR_VIEW_CAREER_RECENT_PERFORMANCE, menu_cr_career_summary, menu_cr_career_personal_bests, 
+			CR_TAB_CAREER, (dvarString("ui_combatContractsViewMenuName")), (dvarString("ui_combatWeaponsViewMenuName")),  
+			setdvar ui_combatHistogramCurrGametype CR_RECENT_PERFORMANCE_INFO;, ; )
+
+		CR_CAREER_TAB_COMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+		/* Label for "SCORE" */
+		PREPROC_TEXT_DRAW(	(-COMBAT_RECORD_WIDTH / 2) (COMBAT_RECORD_BODY_Y_START+30) COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_SCORE_CAPS",  
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR ) 
+		
+		/* Maximum Score */
+		PREPROC_TEXT_DRAW_VIS(	(HISTOGRAM_LABELS_X_START-20) (HISTOGRAM_LABELS_Y_START) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordMinMaxScore( RECENT_PERFORMANCE_HISTOGRAM, RETURN_MAX_SCORE ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Minimum Score */
+		PREPROC_TEXT_DRAW_VIS(	(HISTOGRAM_LABELS_X_START-20) (HISTOGRAM_LABELS_Y_START+HISTOGRAM_HEIGHT) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordMinMaxScore( RECENT_PERFORMANCE_HISTOGRAM, RETURN_MIN_SCORE ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Label for "kd ratio" */
+		PREPROC_TEXT_DRAW(	(-COMBAT_RECORD_WIDTH / 2) (CR_LINE_GRAPH_Y_START-20) COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_KILL_DEATH_RATIO_CAPS",  
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR ) 
+	
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	(HISTOGRAM_X_START) (HISTOGRAM_Y_START+HISTOGRAM_HEIGHT+7) (HISTOGRAM_WIDTH-(HISTOGRAM_WIDTH/10)) HISTOGRAM_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( GET_SORTED_ITEM_INDEX( CR_MAX_RECENT_PERFORMANCE_GRAPH_VALUES, 1 ) < 2 ) , autowrapped; ) 
+
+
+		CR_LINE_GRAPH
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			(CR_LINE_GRAPH_X_START+5) (CR_LINE_GRAPH_Y_START-35) CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			textscale		TEXTSIZE_DEFAULT
+			textfont		CHOICE_TEXTFONT
+			forecolor		CHOICE_TEXTCOLOR
+			ownerdraw		UI_COMBAT_RECORD_LINE_GRAPH_GAMETYPES
+			visible			1
+			decoration
+		}
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			(CR_LINE_GRAPH_X_START+5) (CR_LINE_GRAPH_Y_START+CR_LINE_GRAPH_HEIGHT+20) CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			textscale		TEXTSIZE_DEFAULT
+			textfont		CHOICE_TEXTFONT
+			forecolor		CHOICE_TEXTCOLOR
+			ownerdraw		UI_COMBAT_RECORD_LINE_GRAPH_VALUES
+			visible			1
+			decoration
+		}
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	(CR_LINE_GRAPH_X_START) (CR_LINE_GRAPH_Y_START-10) CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( GET_SORTED_ITEM_INDEX( CR_MAX_RECENT_PERFORMANCE_GRAPH_VALUES, 1 ) < 2 ) , autowrapped; ) 
+		
+		HISTOGRAM_INPLACE
+
+		#include "ui/safearea.menu"
+	}
+
+#define LOADOUT_FONT_SMALL	0.28
+
+#define WEAPON_ALIGN			CHOICE_VERTICAL_ALIGN CHOICE_HORIZONTAL_ALIGN
+		#define WEAPON_WIDTH 			150
+		#define GRID_LOADOUT_MAX_ITEMS	5
+
+		#define WEAPON_X_START			-360
+		#define WEAPON_Y_START			60
+
+		#define GRID_OFFSET_X			20
+		#define GRID_OFFSET_Y			16
+
+		#define GRID_LOADOUT_HEIGHT		(24+(GRID_OFFSET_Y*GRID_LOADOUT_MAX_ITEMS))
+		#define DIAGONAL_LINE_H			32
+
+#define LOADOUTSLOT_PRIMARY_WEAPON		0
+#define LOADOUTSLOT_SECONDARY_WEAPON	1
+#define LOADOUTSLOT_PRIMARY_GRENADE		2
+#define LOADOUTSLOT_SPECIAL_GRENADE		3
+#define LOADOUTSLOT_EQUIPMENT			4
+#define LOADOUTSLOT_FACEPAINT_PATTERN	5
+#define LOADOUTSLOT_BODY				6
+#define LOADOUTSLOT_SPECIALTY1			7
+#define LOADOUTSLOT_SPECIALTY2			8
+
+#define CR_LOADOUT_GRID_VIS( visArg )																							\
+		/*weapons =============*/																								\
+		PREPROC_TEXT_DRAW_VIS(	WEAPON_X_START WEAPON_Y_START WEAPON_WIDTH 10 WEAPON_ALIGN, 0 0,								\
+								( locString("@MPUI_WEAPONS_CAPS") + " - " ),														\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, MEDIUM_GRAY,									\
+								when( visArg ); )																				\
+		/* primary weapon */																									\
+		PREPROC_TEXT_DRAW_VIS_EX(	(WEAPON_X_START+WEAPON_WIDTH+2) WEAPON_Y_START WEAPON_WIDTH 30 WEAPON_ALIGN, 0 0,			\
+									( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_PRIMARY_WEAPON, 1 ) ) ) ),		\
+									LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,										\
+									when( visArg );, autowrapped )																\
+		/* second weapon name */																								\
+		PREPROC_TEXT_DRAW_VIS(	(WEAPON_X_START+WEAPON_WIDTH+2) (WEAPON_Y_START+40) WEAPON_WIDTH 30 WEAPON_ALIGN, 0 0,			\
+									( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SECONDARY_WEAPON, 1 ) ) ) ),	\
+									LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,										\
+									when( visArg ); )																			\
+		/*grenades =============*/																								\
+		PREPROC_TEXT_DRAW_VIS(	WEAPON_X_START (WEAPON_Y_START+60) WEAPON_WIDTH 10 WEAPON_ALIGN, 0 0,							\
+								( locString("@MPUI_GRENADES_CAPS") + " - " ),													\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, MEDIUM_GRAY,									\
+								when( visArg ); )																				\
+		/* primary grenade name */																								\
+		PREPROC_TEXT_DRAW_VIS(	(WEAPON_X_START+WEAPON_WIDTH+2) (WEAPON_Y_START+60) WEAPON_WIDTH 30 WEAPON_ALIGN, 0 0,			\
+									( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_PRIMARY_GRENADE, 1 ) ) ) ),	\
+									LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,										\
+									when( visArg ); )										\
+		/* special grenade name */																								\
+		PREPROC_TEXT_DRAW_VIS(	(WEAPON_X_START+WEAPON_WIDTH+2) (WEAPON_Y_START+80) WEAPON_WIDTH 30 WEAPON_ALIGN, 0 0,			\
+									( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIAL_GRENADE, 1 ) ) ) ),	\
+									LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,										\
+									when( visArg ); )										\
+		/*equipment =============*/																								\
+		PREPROC_TEXT_DRAW_VIS(	WEAPON_X_START (WEAPON_Y_START+100) WEAPON_WIDTH 10 WEAPON_ALIGN, 0 0,							\
+								( locString("@MPUI_EQUIPMENT_CAPS") + " - " ),													\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, MEDIUM_GRAY,									\
+								when( visArg ); )																				\
+		/* equipment name */																									\
+		PREPROC_TEXT_DRAW_VIS(	(WEAPON_X_START+WEAPON_WIDTH+2) (WEAPON_Y_START+100) WEAPON_WIDTH 30 WEAPON_ALIGN, 0 0,			\
+									( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_EQUIPMENT, 1 ) ) ) ),			\
+									LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,										\
+									when( visArg ); )		
+
+
+#define APP_ALIGN			CHOICE_VERTICAL_ALIGN CHOICE_HORIZONTAL_ALIGN
+#define APP_WIDTH 			100
+
+#define APP_X_START			90
+#define APP_Y_START			-80
+
+#define CR_LOADOUT_APPEARANCE_VIS( visArg )																\
+		/*head type =============*/																		\
+		PREPROC_TEXT_DRAW_VIS(	APP_X_START APP_Y_START APP_WIDTH 10 APP_ALIGN, 0 0,					\
+								( locString("@MPUI_HEAD_TYPE_CAPS") + " - " ),							\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, MEDIUM_GRAY,			\
+								when( visArg ); )														\
+		/* facepaint pattern */																			\
+		PREPROC_TEXT_DRAW_VIS(	(APP_X_START+APP_WIDTH+2) APP_Y_START APP_WIDTH 30 APP_ALIGN, 0 0,		\
+								( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_FACEPAINT_PATTERN, 1 ) ) ) ),				\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,					\
+								when( visArg ); )														\
+		/*body type =============*/																		\
+		PREPROC_TEXT_DRAW_VIS(	APP_X_START (APP_Y_START+20) APP_WIDTH 10 APP_ALIGN, 0 0,				\
+								( locString("@MPUI_BODY_TYPE_CAPS") + " - " ),							\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, MEDIUM_GRAY,			\
+								when( visArg ); )														\
+		/* armor */																						\
+		PREPROC_TEXT_DRAW_VIS(	(APP_X_START+APP_WIDTH+2) (APP_Y_START+20) APP_WIDTH 30 APP_ALIGN, 0 0,	\
+								( locString( GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_BODY, 1 ) ) ) ),							\
+								LOADOUT_FONT_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,					\
+								when( visArg ); )
+
+
+#define SPECIALTY_LOADOUT_ALIGN		CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+#define SPECIALTY_LOADOUT_WIDTH 	100
+
+#define SPECIALTY_IMAGE_X		130
+#define SPECIALTY_IMAGE_Y		30
+#define SPECIALTY_IMAGE_WIDTH	37
+
+#define SPECIALTY_TITLE_X	(SPECIALTY_IMAGE_X+SPECIALTY_IMAGE_WIDTH+10)
+#define SPECIALTY_TITLE_Y	SPECIALTY_IMAGE_Y
+
+#define SPECIALTY_DESC_X	SPECIALTY_TITLE_X
+#define SPECIALTY_DESC_Y	(SPECIALTY_TITLE_Y+15)
+
+#define SPECIALTY_Y_OFFSET	80
+
+#define SPECIALTY_DESC_TEXTSIZE	0.24
+
+#define LOCAL_SPECIALTY( origin, ptext, visArg ) \
+		PREPROC_TEXT_DRAW_ALL( origin SPECIALTY_LOADOUT_WIDTH 18 SPECIALTY_LOADOUT_ALIGN, 0 0, \
+							   ptext, 0.3, 0, 0, \
+							   ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, UI_FONT_BOLD,\
+							   ITEM_TEXTSTYLE_NORMAL, when( visArg );, ; )
+
+#define CR_LOADOUT_SPECIALTIES_VIS( visArg )																														\
+		/* specialty 1 name ------------- */																														\
+		LOCAL_SPECIALTY( SPECIALTY_TITLE_X SPECIALTY_TITLE_Y, "@" + GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY1, 1 ) ), visArg )						\
+		/* specialty 1 icon */																																		\
+		PREPROC_SHADER_DRAW_VIS_EX( SPECIALTY_IMAGE_X SPECIALTY_IMAGE_Y SPECIALTY_IMAGE_WIDTH SPECIALTY_IMAGE_WIDTH SPECIALTY_LOADOUT_ALIGN,						\
+									GetItemImage( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY1, 1 ) ), 1 1 1 0.75,													\
+									when( visArg ), ; )																												\
+		/* specialty 1 desc */																																		\
+		PREPROC_TEXT_DRAW_ALL( SPECIALTY_DESC_X SPECIALTY_DESC_Y SPECIALTY_LOADOUT_WIDTH 16 SPECIALTY_LOADOUT_ALIGN, 0 0,											\
+							   "@"+GetItemDesc( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY1, 1 ) ),																\
+							   SPECIALTY_DESC_TEXTSIZE, 0, -2, ITEM_ALIGN_MIDDLE_LEFT, MEDIUM_GRAY, UI_FONT_NORMAL, ITEM_TEXTSTYLE_NORMAL,							\
+							   when( visArg ), autowrapped )																										\
+		/* specialty 2 name ------------- */																														\
+		LOCAL_SPECIALTY( SPECIALTY_TITLE_X (SPECIALTY_TITLE_Y+SPECIALTY_Y_OFFSET), "@"+GetItemName( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY2, 1 ) ), visArg )	\
+		/* specialty 2 icon */																																		\
+		PREPROC_SHADER_DRAW_VIS_EX( SPECIALTY_IMAGE_X (SPECIALTY_IMAGE_Y+SPECIALTY_Y_OFFSET) SPECIALTY_IMAGE_WIDTH SPECIALTY_IMAGE_WIDTH SPECIALTY_LOADOUT_ALIGN,	\
+									GetItemImage( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY2, 1 ) ), 1 1 1 0.75,													\
+									when( visArg ), ; )																												\
+		/* specialty 2 desc */																																		\
+		PREPROC_TEXT_DRAW_ALL( SPECIALTY_DESC_X (SPECIALTY_DESC_Y+SPECIALTY_Y_OFFSET) SPECIALTY_LOADOUT_WIDTH 16 SPECIALTY_LOADOUT_ALIGN, 0 0,						\
+							   "@"+GetItemDesc( GET_SORTED_ITEM_INDEX( LOADOUTSLOT_SPECIALTY2, 1 ) ),																\
+							   SPECIALTY_DESC_TEXTSIZE, 0, -2, ITEM_ALIGN_MIDDLE_LEFT, MEDIUM_GRAY, UI_FONT_NORMAL, ITEM_TEXTSTYLE_NORMAL,							\
+							   when( visArg ), autowrapped ) 
+
+/* ----------------------------------Combat record tab "Career", view "Class Preferences"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_career_class_preferences, CR_VIEW_CAREER_CLASS_PREFERENCES, menu_cr_career_recent_performance, menu_cr_career_personal_bests, 
+								  CR_TAB_CAREER, (dvarString("ui_combatContractsViewMenuName")), (dvarString("ui_combatWeaponsViewMenuName")),
+								  if ( dvarString( ui_faction ) == "" ) 
+								  { setdvar ui_faction FIRST_FACTION; }
+								  SET_VIEWER_MODE_COMBAT_RECORD;
+								  VIEWER_SET_PLAYER( customclass3 );
+								  VIEWER_SET_EQUIP_WEAPON( primary ); 
+								  setDvar ui_cr_loadout_slot primary; 
+								  VIEWER_SET_PLAYER_CAMERA( player );
+								  execNow set uiViewer_show 1;, execNow set uiViewer_show 0; )
+		
+		CR_CAREER_TAB_COMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+		// Circles, loudout titles and lines
+		#define CIRCLE_COLOR	1 1 1 0.2
+		#define CIRCLE_SIZE		12
+		#define TEXT_COLOR		1 1 1 0.1
+		#define LINE_COLOR		1 1 1 0.05
+		#define LINE_WIDTH		1.5
+
+		#define LOADOUT_CIRCLE_X -85
+		#define LOADOUT_CIRCLE_Y 10
+		PREPROC_DRAW_LINE( LOADOUT_CIRCLE_X, LOADOUT_CIRCLE_Y, -185, 50, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, LINE_WIDTH, LINE_COLOR )
+		PREPROC_SHADER_DRAW( (LOADOUT_CIRCLE_X-CIRCLE_SIZE/2) (LOADOUT_CIRCLE_Y-CIRCLE_SIZE/2) CIRCLE_SIZE CIRCLE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, menu_mp_lobby_circle, CIRCLE_COLOR ) 
+		PREPROC_TEXT_DRAW(	(LOADOUT_CIRCLE_X+CIRCLE_SIZE/2-15) (LOADOUT_CIRCLE_Y-2) 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,				
+							"@MPUI_LOADOUT_CAPS", 0.28, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, TEXT_COLOR )
+			
+		#define APPEARANCE_CIRCLE_X 65
+		#define APPEARANCE_CIRCLE_Y -30
+		PREPROC_DRAW_LINE( APPEARANCE_CIRCLE_X, APPEARANCE_CIRCLE_Y, 120, -60, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, LINE_WIDTH, LINE_COLOR )
+		PREPROC_SHADER_DRAW( (APPEARANCE_CIRCLE_X-CIRCLE_SIZE/2) (APPEARANCE_CIRCLE_Y-CIRCLE_SIZE/2) CIRCLE_SIZE CIRCLE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, menu_mp_lobby_circle, CIRCLE_COLOR )
+		PREPROC_TEXT_DRAW(	(APPEARANCE_CIRCLE_X-CIRCLE_SIZE/2+15) (APPEARANCE_CIRCLE_Y+2) 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,				
+							"@MPUI_APPEARANCE_CAPS", 0.28, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, TEXT_COLOR )
+
+		#define PERKS_CIRCLE_X	65
+		#define PERKS_CIRCLE_Y	40
+		PREPROC_DRAW_LINE( PERKS_CIRCLE_X, PERKS_CIRCLE_Y, 120, 85, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, LINE_WIDTH, LINE_COLOR )
+		PREPROC_SHADER_DRAW( (PERKS_CIRCLE_X-CIRCLE_SIZE/2) (PERKS_CIRCLE_Y-CIRCLE_SIZE/2) CIRCLE_SIZE CIRCLE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, menu_mp_lobby_circle, CIRCLE_COLOR )
+		PREPROC_TEXT_DRAW( (PERKS_CIRCLE_X-CIRCLE_SIZE/2+15) (PERKS_CIRCLE_Y-2) 0 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,				
+							"@MPUI_PERKS_CAPS", 0.28, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, TEXT_COLOR )
+
+		CR_LOADOUT_GRID_VIS( 1 )	
+		CR_LOADOUT_APPEARANCE_VIS( 1 )
+		CR_LOADOUT_SPECIALTIES_VIS( 1 )
+
+#define PLAYER_MODEL_SIZE 340
+		COMBAT_RECORD_PLAYER_MODEL( (-PLAYER_MODEL_SIZE/2), (COMBAT_RECORD_BODY_Y_START-40), PLAYER_MODEL_SIZE )
+
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Career", view "Personal Best"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_career_personal_bests, CR_VIEW_CAREER_PERSONAL_BESTS, menu_cr_career_recent_performance, menu_cr_career_summary, CR_TAB_CAREER, (dvarString("ui_combatContractsViewMenuName")), (dvarString("ui_combatWeaponsViewMenuName")), ;, ; )
+
+		CR_CAREER_TAB_COMMON_ITEMS
+
+		/* personal bests bg image  */		 		 
+		PREPROC_SHADER_DRAW( (-128) (COMBAT_RECORD_BODY_Y_START+25) 256 256 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_lobby_aar_award_best", 1 1 1 0.05 ) 
+
+		COMMON_INFO_BAR_ITEMS
+
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* ----------------------------------Combat record tab "Weapons", view "Combat Summary"-----------------------------------------------------------------------------*/
+	menuDef
+	{
+
+#define COMBAT_SUMMARY_X_START		(COMBAT_RECORD_BODY_X_START+10)
+#define COMBAT_SUMMARY_Y_START		(COMBAT_RECORD_BODY_Y_START-10)
+
+#undef CONTAINER_BOX_WIDTH
+#define CONTAINER_BOX_WIDTH 250
+
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_favorite_weapon, CR_VIEW_WEAPONS_FAV_WEAPON, menu_cr_weapons_equipment_usage, menu_cr_weapons_hitlocHeatmap, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		/* Left container box */
+		PREPROC_SHADER_DRAW( COMBAT_SUMMARY_X_START (COMBAT_SUMMARY_Y_START+35) CONTAINER_BOX_WIDTH 140 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* BG for "Kills" */
+		PREPROC_SHADER_DRAW( (COMBAT_SUMMARY_X_START) (COMBAT_SUMMARY_Y_START+34) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Kills" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+40) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILLS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Kills */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+40) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "KILLS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Deaths" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+60) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_DEATHS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Deaths */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+60) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "DEATHS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Kills to deaths Ratio" */
+		PREPROC_SHADER_DRAW( (COMBAT_SUMMARY_X_START) (COMBAT_SUMMARY_Y_START+74) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Kills to deaths Ratio" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+80) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILL_DEATH_RATIO_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Kills to deaths Ratio */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+80) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getFloatAsFormattedString( (int(GET_STAT( "KDRATIO" ))/1000), 2 ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Assists" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+100) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_ASSISTS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Assists */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+100) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "ASSISTS" ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Accuracy" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+120) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_ACCURACY_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Accuracy" */
+		PREPROC_SHADER_DRAW( (COMBAT_SUMMARY_X_START) (COMBAT_SUMMARY_Y_START+114) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Accuracy */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+120) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getFloatAsFormattedString( (int(GET_STAT( "ACCURACY" ))/100), 2 ) + " %", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Headshots" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+140) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_HEADSHOTS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Headshots */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+140) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "HEADSHOTS" ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Best Killstreak" */
+		PREPROC_SHADER_DRAW( (COMBAT_SUMMARY_X_START) (COMBAT_SUMMARY_Y_START+154) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Best Killstreak" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+160) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_BEST_KILLSTREAK_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Best Killstreak */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_X_START+10) (COMBAT_SUMMARY_Y_START+160) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_HIGHEST_STAT( "KILL_STREAK" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+#define COMBAT_SUMMARY_RIGHT_X_START (COMBAT_SUMMARY_X_START+CONTAINER_BOX_WIDTH+20) 
+
+		/* Right container box  */		 		 
+		PREPROC_SHADER_DRAW( COMBAT_SUMMARY_RIGHT_X_START (COMBAT_SUMMARY_Y_START+35) CONTAINER_BOX_WIDTH 140 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "Favorite Weapon" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+40) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_FAVORITE_WEAPON_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		/* Favorite weapon icon */ 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( (COMBAT_SUMMARY_X_START+CONTAINER_BOX_WIDTH+10+CONTAINER_BOX_WIDTH/2-75/2),
+										(COMBAT_SUMMARY_Y_START+70), 
+										75,
+										32, 
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+										getItemImage( GET_SORTED_ITEM_INDEX( 0, 1 ) ), 1 1 1 1, 1, ; )
+		/* Favorite Weapon Name */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+110) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@"+getItemName( GET_SORTED_ITEM_INDEX( 0, 1 ) ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Kills" */
+		PREPROC_SHADER_DRAW( (COMBAT_SUMMARY_RIGHT_X_START) (COMBAT_SUMMARY_Y_START+134) CONTAINER_BOX_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Kills" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+140) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILLS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Favorite weapon kills */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+140) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_ITEM_STAT( GET_SORTED_ITEM_INDEX( 0, 1 ), "kills" ) + " " + locString( "MPUI_KILLS_PRE_CAPS" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Label for "Accuracy" */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+160) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_ACCURACY_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Favorite weapon Accuracy */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_SUMMARY_RIGHT_X_START+10) (COMBAT_SUMMARY_Y_START+160) (CONTAINER_BOX_WIDTH-20) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								getFloatAsFormattedString( float( GET_ITEM_STAT( GET_SORTED_ITEM_INDEX( 0, 1 ), "hits" ) * 10000 )/float( GET_ITEM_STAT( GET_SORTED_ITEM_INDEX( 0, 1 ), "shots" ) )/(100.0), 2 ) + " % ", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+#undef	CR_LINE_GRAPH_X_START
+#define CR_LINE_GRAPH_X_START (COMBAT_SUMMARY_X_START+10)
+#undef	CR_LINE_GRAPH_Y_START
+#define CR_LINE_GRAPH_Y_START (COMBAT_RECORD_BODY_Y_START+210)
+#undef	CR_LINE_GRAPH_WIDTH
+#define CR_LINE_GRAPH_WIDTH (CONTAINER_BOX_WIDTH*2+10)
+#undef	CR_LINE_GRAPH_HEIGHT
+#define CR_LINE_GRAPH_HEIGHT 70
+
+		/* Label for "K/D chart last 5 games" */
+		PREPROC_TEXT_DRAW_VIS_EX( COMBAT_SUMMARY_X_START (CR_LINE_GRAPH_Y_START-20) CR_LINE_GRAPH_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KD_LAST_FIVE_GAMES_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1, autowrapped ) 
+
+		CR_LINE_GRAPH
+
+		itemDef
+		{
+			type			ITEM_TYPE_OWNERDRAW_TEXT
+			rect			CR_LINE_GRAPH_X_START (CR_LINE_GRAPH_Y_START+CR_LINE_GRAPH_HEIGHT+20) CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			textscale		TEXTSIZE_DEFAULT
+			textfont		CHOICE_TEXTFONT
+			forecolor		CHOICE_TEXTCOLOR
+			ownerdraw		UI_COMBAT_RECORD_LINE_GRAPH_VALUES
+			visible			1
+			decoration
+		}
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	(CR_LINE_GRAPH_X_START) (CR_LINE_GRAPH_Y_START-10) CR_LINE_GRAPH_WIDTH CR_LINE_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( GET_SORTED_ITEM_INDEX( CR_MAX_RECENT_PERFORMANCE_GRAPH_VALUES, 1 ) < 2 ) , autowrapped; ) 
+
+
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "Hit Location Heatmap" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_hitlocHeatmap, CR_VIEW_WEAPONS_HIT_LOCATION_HEATMAP, menu_cr_weapons_favorite_weapon, menu_cr_weapons_kdr, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+#define CR_HITLOC_HEATMAP_WIDTH 200
+#define CR_HITLOC_HEATMAP_HEIGHT 256
+#define CR_HITLOC_HEATMAP_X_START (-CR_HITLOC_HEATMAP_WIDTH/2)
+#define CR_HITLOC_HEATMAP_Y_START ( COMBAT_RECORD_BODY_Y_START+30 )
+
+		/* Background for the hitloc heatmap */
+		PREPROC_SHADER_DRAW( CR_HITLOC_HEATMAP_X_START CR_HITLOC_HEATMAP_Y_START CR_HITLOC_HEATMAP_WIDTH CR_HITLOC_HEATMAP_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_heatmap_figure", 1 1 1 1 ) 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			CR_HITLOC_HEATMAP_X_START CR_HITLOC_HEATMAP_Y_START CR_HITLOC_HEATMAP_WIDTH CR_HITLOC_HEATMAP_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_HITLOC_HEATMAP  
+			visible			1
+			decoration  
+		}  
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	CR_HITLOC_HEATMAP_X_START (CR_HITLOC_HEATMAP_Y_START+CR_HITLOC_HEATMAP_HEIGHT+2) CR_HITLOC_HEATMAP_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CR_HITLOC_HEATMAP_DESC", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 , ; ) 
+
+
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+
+/* --------------------Combat record tab "Weapons", view "kdr" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_kdr, CR_VIEW_WEAPONS_KDR, menu_cr_weapons_hitlocHeatmap, menu_cr_weapons_accuracy, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "accuracy" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_accuracy, CR_VIEW_WEAPONS_ACCURACY, menu_cr_weapons_kdr, menu_cr_weapons_kills, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "kills" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_kills, CR_VIEW_WEAPONS_KILLS, menu_cr_weapons_accuracy, menu_cr_weapons_deaths, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+// Disabling the stats milestones button for now
+#if 0
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON 
+			rect			-50 ( COMBAT_RECORD_HEIGHT / 2 + 16.5 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  
+			text			"@PLATFORM_STATS_MILESTONES" 
+			textfont		UI_FONT_NORMAL 
+			textscale		TEXTSIZE_SMALL 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT 
+			visible			when( !dvarbool( "ui_combatStatsMilestonesVis" ) ) 
+			execKeyInt		BUTTON_BACK{ execNow "toggle ui_combatStatsMilestonesVis 0 1" }
+			decoration 
+		} 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON 
+			rect			-50 ( COMBAT_RECORD_HEIGHT / 2 + 16.5 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  
+			text			"@PLATFORM_HIDE_STATS_MILESTONES" 
+			textfont		UI_FONT_NORMAL 
+			textscale		TEXTSIZE_SMALL 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT 
+			visible			when( dvarbool( "ui_combatStatsMilestonesVis" ) ) 
+			execKeyInt		BUTTON_BACK{ execNow "toggle ui_combatStatsMilestonesVis 0 1" }
+			decoration 
+		} 
+#endif 
+
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "deaths" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_deaths, CR_VIEW_WEAPONS_DEATHS, menu_cr_weapons_kills, menu_cr_weapons_headshots, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "headshots" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_headshots, CR_VIEW_WEAPONS_HEADSHOTS, menu_cr_weapons_deaths, menu_cr_weapons_times_killed_by, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+
+// Disabling the stats milestones button for now
+#if 0
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON 
+			rect			-50 ( COMBAT_RECORD_HEIGHT / 2 + 16.5 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  
+			text			"@PLATFORM_STATS_MILESTONES" 
+			textfont		UI_FONT_NORMAL 
+			textscale		TEXTSIZE_SMALL 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT 
+			visible			when( !dvarbool( "ui_combatStatsMilestonesVis" ) ) 
+			execKeyInt		BUTTON_BACK{ execNow "toggle ui_combatStatsMilestonesVis 0 1" }
+			decoration 
+		} 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON 
+			rect			-50 ( COMBAT_RECORD_HEIGHT / 2 + 16.5 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  
+			text			"@PLATFORM_HIDE_STATS_MILESTONES" 
+			textfont		UI_FONT_NORMAL 
+			textscale		TEXTSIZE_SMALL 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT 
+			visible			when( dvarbool( "ui_combatStatsMilestonesVis" ) ) 
+			execKeyInt		BUTTON_BACK{ execNow "toggle ui_combatStatsMilestonesVis 0 1" }
+			decoration 
+		} 
+#endif 
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "times killed by" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_times_killed_by, CR_VIEW_WEAPONS_TIMES_KILLED_BY, menu_cr_weapons_headshots, menu_cr_weapons_equipment_kills, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+		
+/* --------------------Combat record tab "Weapons", view "equipment kills" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_equipment_kills, CR_VIEW_WEAPONS_EQUIPMENT_KILLS, menu_cr_weapons_times_killed_by, menu_cr_weapons_equipment_times_killed_by, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "equipment killed by" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_equipment_times_killed_by, CR_VIEW_WEAPONS_EQUIPMENT_TIMES_KILLED_BY, menu_cr_weapons_equipment_kills, menu_cr_weapons_equipment_usage, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Weapons", view "equipment usage" ------------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_weapons_equipment_usage, CR_VIEW_WEAPONS_EQUIPMENT_USAGE, menu_cr_weapons_equipment_times_killed_by, menu_cr_weapons_favorite_weapon, CR_TAB_WEAPONS, (dvarString("ui_combatCareerViewMenuName")), (dvarString("ui_combatMatchesViewMenuName")), ;, ; )
+
+		CR_WEAPONS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* ----------------------------------Combat record tab "Matches", view "Preferred Match Types"-----------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_matches_types, CR_VIEW_MATCHES_TYPES, menu_cr_matches_recent_earnings, menu_cr_matches_performance, CR_TAB_MATCHES, (dvarString("ui_combatWeaponsViewMenuName")), (dvarString("ui_combatKillstreaksViewMenuName")), 
+					execNow set ui_combatXboxLivePieChart NON_WAGER_GAMETYPE_PIE_CHART;
+					execNow set ui_combatWagerPieChart WAGER_GAMETYPE_PIE_CHART;, ; )
+
+		CR_MATCHES_TAB_COMMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#undef CONTAINER_BOX_WIDTH
+#define CONTAINER_BOX_WIDTH 260
+
+#define PREFERRED_MATCH_TYPES_BODY_X_START (COMBAT_RECORD_BODY_X_START+10)
+
+		/* Left Dark Gray container box */
+		PREPROC_SHADER_DRAW( PREFERRED_MATCH_TYPES_BODY_X_START (COMBAT_RECORD_BODY_Y_START+30) CONTAINER_BOX_WIDTH 260 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		
+		/* Right dark gray container box  */		 		 
+		PREPROC_SHADER_DRAW( (PREFERRED_MATCH_TYPES_BODY_X_START+CONTAINER_BOX_WIDTH+5) (COMBAT_RECORD_BODY_Y_START+30) CONTAINER_BOX_WIDTH 260 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+
+		/* Label for "Xbox Live ( "Top 3" ) */
+		PREPROC_TEXT_DRAW_VIS(	PREFERRED_MATCH_TYPES_BODY_X_START (COMBAT_RECORD_BODY_Y_START+40) CONTAINER_BOX_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@XBOXLIVE_TOP_MATCHES_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Label for "Wagers ( "Top 3" ) */
+		PREPROC_TEXT_DRAW_VIS(	(PREFERRED_MATCH_TYPES_BODY_X_START+CONTAINER_BOX_WIDTH+5) (COMBAT_RECORD_BODY_Y_START+40) CONTAINER_BOX_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_TOP_WAGERS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+
+#define CR_PIE_CHART_X_START (COMBAT_RECORD_BODY_X_START+75) 
+#define CR_PIE_CHART_Y_START (COMBAT_RECORD_BODY_Y_START+60) 
+#define CR_PIE_CHART_WIDTH 128 
+#define CR_PIE_CHART_HEIGHT 128 
+
+#define NON_WAGER_GAMETYPE 0
+#define WAGER_GAMETYPE 1
+#define TOP 0
+#define MIDDLE 1
+#define BOTTOM 2
+
+#define PIE_CHART_TOP_TEXT_COLOR		0.58 0.58 0.58 1    // GRAY
+#define PIE_CHART_MIDDLE_TEXT_COLOR		0.78 0.78 0.78 1	// LIGHT GRAY
+#define PIE_CHART_BOTTOM_TEXT_COLOR		0.38 0.72 0.72 1	// BLUE
+
+#define PIE_CHART_TEXT( x, x_offset, gameType, visArg ) \
+		PREPROC_TEXT_DRAW_VIS(	(x+x_offset) (CR_PIE_CHART_Y_START+CR_PIE_CHART_HEIGHT+20) CONTAINER_BOX_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								GetCombatRecordPieChartText( gameType, TOP ),  \
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, PIE_CHART_TOP_TEXT_COLOR, visArg ) \
+		PREPROC_TEXT_DRAW_VIS(	(x+x_offset) (CR_PIE_CHART_Y_START+CR_PIE_CHART_HEIGHT+35) CONTAINER_BOX_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								GetCombatRecordPieChartText( gameType, MIDDLE ) , \
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, PIE_CHART_MIDDLE_TEXT_COLOR, visArg ) \
+		PREPROC_TEXT_DRAW_VIS(	(x+x_offset) (CR_PIE_CHART_Y_START+CR_PIE_CHART_HEIGHT+50) CONTAINER_BOX_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								GetCombatRecordPieChartText( gameType, BOTTOM ) , \
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, PIE_CHART_BOTTOM_TEXT_COLOR, visArg ) \
+		
+#define SEPARATION_BETWEEN_PIE_CHARTS CONTAINER_BOX_WIDTH
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			CR_PIE_CHART_X_START CR_PIE_CHART_Y_START CR_PIE_CHART_WIDTH CR_PIE_CHART_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_PIE_CHART  
+			dvar			ui_combatXboxLivePieChart
+			visible			when( getTotalMatchesPlayed() > 1 )  
+			decoration  
+		}  
+
+		PIE_CHART_TEXT( PREFERRED_MATCH_TYPES_BODY_X_START, 0, NON_WAGER_GAMETYPE_PIE_CHART, when( getTotalMatchesPlayed() > 1 ) )
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX( PREFERRED_MATCH_TYPES_BODY_X_START (COMBAT_RECORD_BODY_Y_START+30) CONTAINER_BOX_WIDTH 260 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( getTotalMatchesPlayed() < 2 ) , autowrapped; ) 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			(CR_PIE_CHART_X_START+SEPARATION_BETWEEN_PIE_CHARTS) CR_PIE_CHART_Y_START CR_PIE_CHART_WIDTH CR_PIE_CHART_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_PIE_CHART  
+			dvar			ui_combatWagerPieChart
+			visible			when( GetNumWagerMatchesPlayed() > 1 )
+			decoration  
+		}  
+		
+		PIE_CHART_TEXT( PREFERRED_MATCH_TYPES_BODY_X_START, SEPARATION_BETWEEN_PIE_CHARTS, WAGER_GAMETYPE_PIE_CHART, when( GetNumWagerMatchesPlayed() > 1 ) )
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	(PREFERRED_MATCH_TYPES_BODY_X_START+CONTAINER_BOX_WIDTH+5) (COMBAT_RECORD_BODY_Y_START+30) CONTAINER_BOX_WIDTH 260  CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( GetNumWagerMatchesPlayed() < 2 ) , autowrapped; ) 
+
+		#include "ui/safearea.menu"
+	}
+
+/* ----------------------------------Combat record tab "Matches", view "Match Performance"-----------------------------------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_matches_performance, CR_VIEW_MATCHES_PERFORMANCE, menu_cr_matches_recent_earnings, menu_cr_matches_heat_map, CR_TAB_MATCHES, (dvarString("ui_combatWeaponsViewMenuName")), (dvarString("ui_combatKillstreaksViewMenuName")), ;, ; )
+
+		CR_MATCHES_TAB_COMMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#undef HISTOGRAM_X_START
+#undef HISTOGRAM_Y_START
+#undef HISTOGRAM_WIDTH
+#define HISTOGRAM_WIDTH 300
+#undef HISTOGRAM_HEIGHT
+#define HISTOGRAM_HEIGHT 145
+
+#undef HISTOGRAM_LABELS_X_START
+#undef HISTOGRAM_LABELS_Y_START
+
+#ifdef CONSOLE
+#define HISTOGRAM_X_START (COMBAT_RECORD_BODY_X_START+263)
+#define HISTOGRAM_Y_START (COMBAT_RECORD_BODY_Y_START+80)
+#define HISTOGRAM_LABELS_X_START (HISTOGRAM_X_START-50)
+#define HISTOGRAM_LABELS_Y_START (HISTOGRAM_Y_START+5)
+#else // #ifdef CONSOLE
+#define HISTOGRAM_X_START (COMBAT_RECORD_BODY_X_START+250)
+#define HISTOGRAM_Y_START (COMBAT_RECORD_BODY_Y_START+125)
+#define HISTOGRAM_LABELS_X_START (HISTOGRAM_X_START-50)
+#define HISTOGRAM_LABELS_Y_START (HISTOGRAM_Y_START+5)
+#endif
+		
+#undef CONTAINER_BOX_WIDTH 
+#define CONTAINER_BOX_WIDTH 330
+
+		/* Right container box  */		 		 
+		//PREPROC_SHADER_DRAW( (HISTOGRAM_X_START-40) (COMBAT_RECORD_BODY_Y_START+63) CONTAINER_BOX_WIDTH 197 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+
+		/* Label for "Score" */
+		PREPROC_TEXT_DRAW_VIS(	HISTOGRAM_X_START (HISTOGRAM_Y_START-15) (HISTOGRAM_WIDTH-HISTOGRAM_WIDTH/10) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MPUI_CR_MATCH_PERFORMANCE_HISTOGRAM_TITLE", (tablelookup( "mp/gametypesTable.csv", 0, int(getFeederData( "menu_cr_matches_performance", "cr_listbox_matches", "selection")), 3 )) ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		/* Maximum Score */
+		PREPROC_TEXT_DRAW_VIS(	(HISTOGRAM_LABELS_X_START) (HISTOGRAM_LABELS_Y_START) 40 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordMinMaxScore( MATCH_PERFORMANCE_HISTOGRAM, RETURN_MAX_SCORE ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Minimum Score */
+		PREPROC_TEXT_DRAW_VIS(	(HISTOGRAM_LABELS_X_START) (HISTOGRAM_LABELS_Y_START+HISTOGRAM_HEIGHT) 40 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordMinMaxScore( MATCH_PERFORMANCE_HISTOGRAM, RETURN_MIN_SCORE ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Display "Not Enough data" if user has not played atleast 2 matches */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	(HISTOGRAM_X_START) (HISTOGRAM_Y_START+HISTOGRAM_HEIGHT+7) (HISTOGRAM_WIDTH-(HISTOGRAM_WIDTH/10)) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NOT_ENOUGH_DATA", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR_NO_ALPHA_COMPONENT 0.5, when( GET_SORTED_ITEM_INDEX( (dvarInt("ui_combatHistogramCurrGametype")) * CR_MAX_MATCH_PERFORMANCE_GRAPH_VALUES, 1 ) < 2 ) , autowrapped; ) 
+
+		HISTOGRAM_INPLACE
+
+#undef COMBAT_RECORD_LIST_X_START
+#define COMBAT_RECORD_LIST_X_START (COMBAT_RECORD_BODY_X_START)
+#undef COMBAT_RECORD_LIST_Y_START
+#define COMBAT_RECORD_LIST_Y_START (COMBAT_RECORD_BODY_Y_START+60)
+#undef LIST_WIDTH
+#define LIST_WIDTH 200
+#undef LIST_HEIGHT
+#define LIST_HEIGHT 200
+
+		COMBAT_RECORD_LISTBOX_EX( cr_listbox_matches, FEEDER_COMBAT_RECORD_GAMETYPES, ;, 1, ; ) 
+
+		#include "ui/safearea.menu"
+	}
+
+	menuDef
+	{
+		name match_performance_gametypes_list
+		rect 0 150 640 230	// shrinking height so it doesn't interfere with clicking on the tabs or the back button or the tab bumpers
+		priority				MENU_PRI_ONTOP
+		visible 1 
+		onOpen { setDvar ui_combatLockScrolling "1"; 
+				ITEM_ANIMATE( menuName, "dummy", lockScrolling, 20 ); 
+				setfocus cr_listbox_matches; }
+		onClose { }
+
+		onESC {
+				close self; 
+				close match_performance_histogram; 
+				close menu_cr_matches_performance;
+				setdvar ui_combatResetViewDvars "0";
+				if(dvarbool(ui_showFriendsCombatRecord)) 
+				{ 
+					open menu_playercard; 
+				}
+				else 
+				{ 
+					if ( dvarInt( xblive_basictraining ) )																		
+					{																											
+						open menu_playercard_self_basictraining;																
+					}																											
+					else																										
+					{																											
+						open menu_playercard_self;																				
+					}
+				} 
+				RESET_SELECTED_PLAYER_XUID; 
+			  }
+			
+#undef COMBAT_RECORD_LIST_X_START
+#define COMBAT_RECORD_LIST_X_START (COMBAT_RECORD_BODY_X_START+7)
+#undef COMBAT_RECORD_LIST_Y_START
+#define COMBAT_RECORD_LIST_Y_START (COMBAT_RECORD_BODY_Y_START+72-160)
+#undef LIST_WIDTH
+#define LIST_WIDTH 200
+#undef LIST_HEIGHT
+#define LIST_HEIGHT 200
+
+		COMBAT_RECORD_LISTBOX_EX( cr_listbox_matches, FEEDER_COMBAT_RECORD_GAMETYPES, ;, 1, ; ) 
+
+		ACTION_HANDLER( "match_performance_gametypes_list" ) 
+		DUMMY_ITEM_FOR_ANIMATION( match_performance_gametypes_list, 1 ) 
+	}
+
+	HISTOGRAM_MENU( match_performance_histogram, CR_TAB_MATCHES, HISTOGRAM_X_START, HISTOGRAM_Y_START, HISTOGRAM_WIDTH, HISTOGRAM_HEIGHT, (dvarInt("ui_combatHistogramCurrGametype")), when( dvarInt( "ui_combatCurrViewNum" ) == CR_VIEW_MATCHES_PERFORMANCE ); ) 
+
+/* ----------------------------------Combat record tab "Matches", view "Heat Map"-----------------------------------------------------------------------------*/
+
+#define FILESHARE_TASKS_COMPLETE \
+		isTaskInProgress( "LiveFileShareSearch" ) != 1 && isTaskInProgress( "LiveFileGetShareSummary" ) != 1
+
+#define FILESHARE_GET_RECENT_GAMES \
+		if(dvarbool(ui_showFriendsCombatRecord)) \
+		{	\
+			execnow fileShareGetRecentGames ( dvarString( selectedPlayerXuid ) );\
+		}	\
+		else	\
+		{	\
+			execnow fileShareGetRecentGames;	\
+		}
+
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_matches_heat_map, CR_VIEW_MATCHES_HEAT_MAP, menu_cr_matches_performance, menu_cr_matches_recent_earnings, CR_TAB_MATCHES, (dvarString("ui_combatWeaponsViewMenuName")), (dvarString("ui_combatKillstreaksViewMenuName")), FILESHARE_GET_RECENT_GAMES;, ; )
+
+		CR_MATCHES_TAB_COMMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#define HEAT_MAP_X_START (COMBAT_RECORD_BODY_X_START+270)
+
+#define HEAT_MAP_Y_START (COMBAT_RECORD_BODY_Y_START+30)
+
+#define HEAT_MAP_WIDTH	250
+#define HEAT_MAP_HEIGHT	250
+		
+		itemDef
+		{ 
+			name						fileShareRecentGames
+			type						ITEM_TYPE_LISTBOX 
+			feeder						FEEDER_FILESHARE_SEARCHRESULTS
+			rect						-265 -90 250 230 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			origin						0 0 
+			elementwidth				30 
+			elementheight				16
+			elementtype					LISTBOX_TEXT 
+			textstyle					ITEM_TEXTSTYLE_NORMAL 
+			textfont					UI_FONT_NORMAL 
+			textscale					CHOICE_TEXTSIZE 
+			textalign					HORIZONTAL_ALIGN_LEFT
+			textalignx					12 
+			forecolor					CHOICE_TEXTCOLOR 
+			focusColor					CHOICE_TEXTCOLOR
+			disableColor				CHOICE_TEXTCOLOR 
+			#ifdef XENON 
+				selectIcon				"ui_button_xenon_3d_a_32x32"
+			#endif
+			#ifdef PS3
+				selectIcon				"ui_button_ps3_x_32x32"
+			#endif
+			outlinecolor				1 1 1 1
+			elementHighlightColor		0 0 0 1
+			elementBackgroundColor		NEW_FRAME_TRANSPARENCY
+			noBlinkingHighlight 
+			modal
+			usePaging
+			/*					x	y	w	h	len	horzAlign		vertAlign*/			
+			userarea	1		10	-1	200	18	50	ITEM_ALIGN_LEFT	ITEM_ALIGN_TOP		
+			visible		1 
+			
+			onListboxSelectionChange 
+			{ 
+				if( getFeederData( "count" ) > 1 )
+				{
+					play CHOICE_FOCUS_SOUND; 
+				}
+			} 
+			doubleclick		
+			{	
+				if( FILESHARE_SEARCHPOPULATED( fileShareRecentGames ) && getFeederData( fileID ) != 0 )
+				{
+					execNow set selectedRecentGameIndex (getFeederData("selection") );
+					execNow set fsSelectedRecentGameID ( getFeederData( fileID ) );
+					execnow set fsSelectedFileName ( getFeederData( name ) );
+					execnow set fsIsSelectedFileNameModified ( getFeederData( isModifiedName ) );
+					execnow set fsSelectedFileDescription ( getFeederData( description ) );
+					execnow set fsIsSelectedFileDescriptionModified ( getFeederData( isModifiedDescription ) );
+					open menu_fileshare_myrecentgames_choose;
+				}
+			}	
+		}
+
+		itemDef
+		{  
+			type			ITEM_TYPE_OWNERDRAW     
+			rect			HEAT_MAP_X_START HEAT_MAP_Y_START HEAT_MAP_WIDTH HEAT_MAP_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAWHEATMAP      
+			visible 		when( int( getFeederData( "fileShareRecentGames", "isSummaryLoaded" ) ) == 1 )
+			decoration      
+		}
+
+		FILESHARE_PROGRESS_INDICATOR_SIZE( 130, 20, 64, 64, 0, ( int( getFeederData( "fileShareRecentGames", "isSummaryLoaded" ) ) == 0 ) )
+
+		FILESHARE_DETAILS_COMBATRECORD( 0, -50, HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER, "menu_cr_matches_heat_map", "fileShareRecentGames", 1 )
+	
+
+#define GAME_INFO_X_START (COMBAT_RECORD_BODY_X_START+10)
+
+#define GAME_INFO_VIS_CONDITION \
+		int( getFeederData( "fileShareRecentGames", "isSummaryLoaded" ) ) == 1
+
+		/* Legend for the heatmap */
+
+		/* Red box for general deaths */		 		 
+		PREPROC_SHADER_DRAW_VIS_EX(	(GAME_INFO_X_START+15) (COMBAT_RECORD_BODY_Y_START+273) 5 5 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", 1 0 0 1,  
+									when( GAME_INFO_VIS_CONDITION ),
+									name heatmap_info; ITEM_STATE( fadeIn, foreColor 1 0 0 1, ; ) ; ) 
+
+		/* Label for "DEATHS" */
+		PREPROC_TEXT_DRAW_VIS(	(GAME_INFO_X_START+30) (COMBAT_RECORD_BODY_Y_START+270) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MENU_DEATHS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+								when( GAME_INFO_VIS_CONDITION ); 
+								name heatmap_info; ITEM_STATE( fadeIn, foreColor CHOICE_TEXTCOLOR, ; ) ) 
+
+		/* Yellow box for player deaths only  */		 		 
+		PREPROC_SHADER_DRAW_VIS_EX(	(GAME_INFO_X_START+15) (COMBAT_RECORD_BODY_Y_START+293) 5 5 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", 1 1 0 1,
+									when( GAME_INFO_VIS_CONDITION ),
+									name heatmap_info; ITEM_STATE( fadeIn, foreColor 1 1 0 1, ; ) ; ) 
+
+		/* Label for "YOUR DEATHS ONLY" */
+		PREPROC_TEXT_DRAW_VIS(	(GAME_INFO_X_START+30) (COMBAT_RECORD_BODY_Y_START+290) 190 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString("MPUI_CR_HEATMAPS_YOUR_DEATHS_ONLY"), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+								when( GAME_INFO_VIS_CONDITION && !dvarBool("ui_showFriendsCombatRecord") ); autoWrapped;
+								name heatmap_info; ITEM_STATE( fadeIn, foreColor CHOICE_TEXTCOLOR, ; ) ) 
+
+		/* Label for "FRIENDS DEATHS ONLY" */
+		PREPROC_TEXT_DRAW_VIS(	(GAME_INFO_X_START+30) (COMBAT_RECORD_BODY_Y_START+290) 190 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								dvarString("selectedFriendName") + locString("MENU_APOSTROPHE_S")+" "+locString("MPUI_CR_HEATMAPS_DEATHS_ONLY"), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+								when( GAME_INFO_VIS_CONDITION && dvarBool("ui_showFriendsCombatRecord") ); autoWrapped;
+								name heatmap_info; ITEM_STATE( fadeIn, foreColor CHOICE_TEXTCOLOR, ; ) ) 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_TEXT 
+			rect			-175 ( COMBAT_RECORD_HEIGHT / 2 + 18 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  
+			text			"@PLATFORM_FILE_OPTIONS" 
+			textfont		UI_FONT_NORMAL 
+			textscale		TEXTSIZE_DEFAULT 
+			textalign		ITEM_ALIGN_BOTTOM_LEFT 
+			visible			when( dvarbool("ui_combatFileSummaryValid") ) 
+			decoration 
+		} 
+
+		#define OPEN_FILE_OPTIONS \
+			execnow set fsSelectedFileName (getFileshareGameMapName(dvarInt("selectedRecentGameIndex"))); \
+			execNow set fsSelectedRecentGameID ( getFeederData( fileID ) ); \
+			execnow set fsIsSelectedFileNameModified 0; \
+			execnow set fsSelectedFileDescription (getFileshareGameTypeName(dvarInt("selectedRecentGameIndex"))); \
+			execnow set fsIsSelectedFileDescriptionModified 0; \
+			open menu_fileshare_myrecentgames_choose;
+
+
+		NEW_FRAME_PREVIOUS_MATCH_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@PLATFORM_SELECT_A_PREVIOUS_MATCH", open menu_cr_matches_heat_map_recent_games; , when( dvarbool( "ui_combatUserHasRecentGames" ) ) )
+		NEW_FRAME_FILE_OPTIONS_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@PLATFORM_FILE_OPTIONS", OPEN_FILE_OPTIONS, when( dvarbool("ui_combatFileSummaryValid") ) )
+
+		PREPROC_TEXT_DRAW_VIS(	(-COMBAT_RECORD_WIDTH / 2) 0 COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_CR_HEATMAPS_NO_RECENT_MATCHES", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 
+							CHOICE_TEXTCOLOR, when( dvarbool("ui_combatFileshareTasksComplete") && !dvarbool("ui_combatUserHasRecentGames") ) )  
+
+		PREPROC_TEXT_DRAW_VIS(	(-COMBAT_RECORD_WIDTH / 2) 0 COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_CR_HEATMAPS_NO_HEATMAP_DATA", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 
+							CHOICE_TEXTCOLOR, when( dvarbool("ui_combatFileshareTasksComplete") && !dvarbool("ui_combatFileSummaryValid") && dvarbool("ui_combatUserHasRecentGames") ) ) 
+	
+		execKeyInt	BUTTON_A
+		{
+			if( dvarbool("ui_combatFileSummaryValid") )
+			{
+				OPEN_FILE_OPTIONS
+			}
+		}
+
+		#include "ui/safearea.menu"
+	}
+
+	// recent games list for heatmap menu ( in matches tab )
+#define SELECTION_LIST_MENU_X_START		16.5
+#define SELECTION_LIST_MENU_Y_START		0
+#define SELECTION_LIST_MENU_WIDTH		(SMALL_CENTER_POPUP_WIDTH - 32)
+#define SELECTION_LIST_MENU_HEIGHT		SMALL_CENTER_POPUP_HEIGHT
+
+#undef ON_ESC_ACTION_POPUP
+#define ON_ESC_ACTION_POPUP				\
+	deactivateBlur;						\
+	setLocalVarBool	ui_centerPopup 0;	\
+	play uin_navigation_sys_close;		\
+	close self; 
+
+	menuDef
+	{
+		name			menu_cr_matches_heat_map_recent_games
+		visible			1 
+		fullscreen		0 
+		rect			(-SMALL_CENTER_POPUP_WIDTH/2) (-SMALL_CENTER_POPUP_HEIGHT/2) SMALL_CENTER_POPUP_WIDTH SMALL_CENTER_POPUP_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		backcolor		0.2 0.2 0.2 0.8 
+		style           WINDOW_STYLE_FRAMED
+		frame           16 0.5 FRAME_SIDE_ALL
+		background      "menu_mp_lobby_frame_circle"
+		focusColor		COLOR_FOCUSED 
+		priority		MENU_PRI_POPUP 
+		popup 
+		onOpen 
+		{ 
+			activateBlur; 
+			setLocalVarBool	ui_centerPopup 1;
+			play uin_navigation_sys_open;
+		} 
+		onClose 
+		{ 
+			deactivateBlur; 
+			CENTER_POPUP_ON_CLOSE 
+			setLocalVarBool	ui_centerPopup 0; 
+		} 
+		onESC 
+		{ 
+			ON_ESC_ACTION_POPUP
+		}
+
+		/* title text for "SELECT A RECENTLY PLAYED MATCH" */
+		PREPROC_TEXT_DRAW(	16.5 (SELECTION_LIST_MENU_Y_START+16.5) SMALL_CENTER_POPUP_WIDTH 10 HORIZONTAL_ALIGN_CENTER CHOICE_VERTICAL_ALIGN, 0 0, 
+							"@MPUI_CR_SELECT_RECENT_MATCH", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR ) 
+
+		PREPROC_SHADER_DRAW_VIS_EX(	0 0 SMALL_CENTER_POPUP_WIDTH (SMALL_CENTER_POPUP_HEIGHT-POPUP_INNER_BG_PAD), "menu_mp_lobby_frame_fade", POPUP_GLOW_WHITE, 1, ; )	
+		
+		/* column title "Map" */
+		PREPROC_TEXT_DRAW(	40 (SELECTION_LIST_MENU_Y_START+47) SMALL_CENTER_POPUP_WIDTH 10 HORIZONTAL_ALIGN_CENTER CHOICE_VERTICAL_ALIGN, 0 0, 
+							"@MENU_MAP", 
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR ) 
+
+		/* column title "Game Mode" */
+		PREPROC_TEXT_DRAW(	130 (SELECTION_LIST_MENU_Y_START+47) SMALL_CENTER_POPUP_WIDTH 10 HORIZONTAL_ALIGN_CENTER CHOICE_VERTICAL_ALIGN, 0 0, 
+							"@MENU_GAME_MODE_PRE", 
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR ) 
+		
+		/* column title "Date" */
+		PREPROC_TEXT_DRAW(	300 (SELECTION_LIST_MENU_Y_START+47) SMALL_CENTER_POPUP_WIDTH 10 HORIZONTAL_ALIGN_CENTER CHOICE_VERTICAL_ALIGN, 0 0, 
+							"@MENU_DATE", 
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR ) 
+							
+#ifdef PC
+	#define RECENT_GAMES_LIST_RECT_AND_SCROLL \
+		rect	SELECTION_LIST_MENU_X_START (SELECTION_LIST_MENU_Y_START+60) (SELECTION_LIST_MENU_WIDTH+16) (SELECTION_LIST_MENU_HEIGHT-75) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN \
+		usePaging \
+		modal
+#else // #ifdef PC
+	#define RECENT_GAMES_LIST_RECT_AND_SCROLL \
+		rect	SELECTION_LIST_MENU_X_START (SELECTION_LIST_MENU_Y_START+60) SELECTION_LIST_MENU_WIDTH (SELECTION_LIST_MENU_HEIGHT-75) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN \
+		noscrollbars
+#endif // #else #ifdef PC
+
+		// List
+		itemDef
+		{
+			name						recent_games_list
+			type						ITEM_TYPE_LISTBOX
+			feeder						FEEDER_COMBAT_RECORD_RECENT_GAMES
+			RECENT_GAMES_LIST_RECT_AND_SCROLL
+			origin						0 0 
+			elementwidth				30
+			elementheight				16
+			elementtype					LISTBOX_TEXT	
+			textstyle					ITEM_TEXTSTYLE_NORMAL
+			textfont					UI_FONT_NORMAL
+			textscale					TEXTSIZE_SMALL
+			textalignx					12
+			forecolor					CHOICE_TEXTCOLOR
+			focusColor					CHOICE_TEXTCOLOR
+			disableColor				CHOICE_TEXTCOLOR
+#ifdef XENON
+			selectIcon					"ui_button_xenon_3d_a_32x32"
+#endif 
+#ifdef PS3
+			selectIcon					"ui_button_ps3_x_32x32"
+#endif 
+			selectBorder				0.8 0.95 1 0
+			outlinecolor				1 1 1 1  
+			elementBackgroundColor		NEW_FRAME_LT_GREY_RGB 0.2
+			elementHighlightColor		0 0 0 1  
+			noBlinkingHighlight
+			/*				x		y		len		Align */ 
+			columns	3		10		30		32		ITEM_ALIGN_LEFT			// MAP
+							100		16		32		ITEM_ALIGN_LEFT			// GAME MODE
+							260		20		20		ITEM_ALIGN_RIGHT		// DATE				
+			
+			visible			1
+			onfocus 
+			{
+				play CHOICE_FOCUS_SOUND;
+			}			
+			onListboxSelectionChange	
+			{
+				play CHOICE_FOCUS_SOUND; 
+			}
+			doubleclick
+			{
+				if ( !( FILESHARE_TASKSINPROGRESS ) )
+				{
+					execNow set selectedRecentGameIndex (getFeederData("selection"));
+					play CHOICE_FOCUS_SOUND;
+					setdvar ui_combatFileshareTasksComplete "0"; 
+					setdvar ui_combatUserHasRecentGames "0"; 
+					setdvar ui_combatFileSummaryValid "0"; 
+					close self;					
+				}
+			}
+		}
+		
+		/* button prompts */
+#ifdef PC
+		SIMPLE_CHOICE_BUTTON_SOUND( NEW_FRAME_DEFAULT_TITLE_X_OFFSET (SMALL_CENTER_POPUP_HEIGHT+4) 70 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+			"@PLATFORM_BACK", ITEM_ALIGN_MIDDLE_CENTER, ON_ESC_ACTION_POPUP )
+#else // #ifdef PC
+		PREPROC_TEXT_DRAW_VIS( 0 (SELECTION_LIST_MENU_HEIGHT+16.5) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@PLATFORM_BACK", TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, 1 ) 
+#endif // #else #ifdef PC
+	}
+
+/* ----------------------------------Combat record tab "Matches", view "Recent Earnings"-----------------------------------------------------------------------------*/
+
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_matches_recent_earnings, CR_VIEW_MATCHES_RECENT_EARNINGS, menu_cr_matches_heat_map, menu_cr_matches_performance, CR_TAB_MATCHES, (dvarString("ui_combatWeaponsViewMenuName")), (dvarString("ui_combatKillstreaksViewMenuName")), ;, ; )
+
+		CR_MATCHES_TAB_COMMMON_ITEMS
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#define CR_BAR_GRAPH_MAX_ITEMS 10
+#define CR_BAR_GRAPH_X_START (COMBAT_RECORD_BODY_X_START+80)
+#define CR_BAR_GRAPH_Y_START (COMBAT_RECORD_BODY_Y_START+68)
+#define CR_BAR_GRAPH_HEIGHT 180
+#define CR_BAR_GRAPH_WIDTH 320
+
+#define CAREER_EARNINGS_GRAPH_WIDTH 53
+#define CAREER_EARNINGS_GRAPH_X_START (COMBAT_RECORD_BODY_X_START+420+5)
+
+		/* bg image  */		 		 
+		PREPROC_SHADER_DRAW( (-128) (COMBAT_RECORD_BODY_Y_START+10) 256 256 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "playlist_wager_highroller_bw", 1 1 1 0.1 ) 
+
+		/* left container box for the bar graph */		 		 
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START+10) (CR_BAR_GRAPH_Y_START-30) 410 (CR_BAR_GRAPH_HEIGHT+60) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		
+		/* right container box for the bar graph */		 		 
+		PREPROC_SHADER_DRAW( CAREER_EARNINGS_GRAPH_X_START (CR_BAR_GRAPH_Y_START-30) (CAREER_EARNINGS_GRAPH_WIDTH*2) (CR_BAR_GRAPH_HEIGHT+60) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		
+		/* bar graph */
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			CR_BAR_GRAPH_X_START CR_BAR_GRAPH_Y_START CR_BAR_GRAPH_WIDTH CR_BAR_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_BAR_GRAPH  
+			visible			1 
+			decoration  
+		}  
+
+		/* Label for "Winnings" */
+		PREPROC_TEXT_DRAW_VIS( (COMBAT_RECORD_BODY_X_START+20) (CR_BAR_GRAPH_Y_START+CR_BAR_GRAPH_HEIGHT/2-3) 80 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_WINNINGS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, COMBAT_RECORD_COLOR_GREEN, 1 ) 
+		
+		/* Label for "Buyins" */
+		PREPROC_TEXT_DRAW_VIS( (COMBAT_RECORD_BODY_X_START+20) (CR_BAR_GRAPH_Y_START+CR_BAR_GRAPH_HEIGHT/2+20) 80 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_BUYINS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, COMBAT_RECORD_COLOR_RED, 1 ) 
+
+		/* horizontal axis line */		 		 
+		PREPROC_SHADER_DRAW( (COMBAT_RECORD_BODY_X_START+10) (CR_BAR_GRAPH_Y_START+CR_BAR_GRAPH_HEIGHT/2) (CR_BAR_GRAPH_WIDTH+100) 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.8 ) 
+
+		/* Label for "last 10 matches" */
+		PREPROC_TEXT_DRAW_VIS( (COMBAT_RECORD_BODY_X_START+10) (CR_BAR_GRAPH_Y_START-30) 80 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_LAST_TEN_MATCHES_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Label for "Career" */
+		PREPROC_TEXT_DRAW_VIS( CAREER_EARNINGS_GRAPH_X_START (CR_BAR_GRAPH_Y_START-30) 95 (CR_BAR_GRAPH_HEIGHT+60) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CAREER_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		
+#define CAREER_WINNINGS_BAR_HEIGHT ( ( GET_STAT( "LIFETIME_EARNINGS" ) / max( GET_STAT( "LIFETIME_EARNINGS" ), GET_STAT( "LIFETIME_BUYIN" ) ) ) *  (CR_BAR_GRAPH_HEIGHT/2) )  
+#define CAREER_BUYINS_BAR_HEIGHT ( ( GET_STAT( "LIFETIME_BUYIN" ) / max( GET_STAT( "LIFETIME_EARNINGS" ), GET_STAT( "LIFETIME_BUYIN" ) ) ) *  (CR_BAR_GRAPH_HEIGHT/2) )  
+
+		/* bar for lifetime winnings */		 		 
+		PREPROC_SHADER_DRAW_ADV(	(CAREER_EARNINGS_GRAPH_X_START+CAREER_EARNINGS_GRAPH_WIDTH/2),
+									((CR_BAR_GRAPH_Y_START+((CR_BAR_GRAPH_HEIGHT/2)-CAREER_WINNINGS_BAR_HEIGHT))),
+									CAREER_EARNINGS_GRAPH_WIDTH,
+									(CAREER_WINNINGS_BAR_HEIGHT),
+									CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									"white", COMBAT_RECORD_COLOR_GREEN ) 
+
+		/* bar for lifetime buyins */		 		 
+		PREPROC_SHADER_DRAW_ADV(	(CAREER_EARNINGS_GRAPH_X_START+CAREER_EARNINGS_GRAPH_WIDTH/2),
+									((CR_BAR_GRAPH_Y_START+(CR_BAR_GRAPH_HEIGHT/2))+1),
+									(CAREER_EARNINGS_GRAPH_WIDTH+1),
+									(CAREER_BUYINS_BAR_HEIGHT),
+									CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									"white", COMBAT_RECORD_COLOR_RED )
+
+		/* horizontal axis line on the right */		 		 
+		PREPROC_SHADER_DRAW( CAREER_EARNINGS_GRAPH_X_START (CR_BAR_GRAPH_Y_START+CR_BAR_GRAPH_HEIGHT/2) (CAREER_EARNINGS_GRAPH_WIDTH*2) 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 1 1 1 0.8 ) 
+
+		/* Lifetime Winnings */
+		PREPROC_TEXT_DRAW_VIS_EX( (CAREER_EARNINGS_GRAPH_X_START+CAREER_EARNINGS_GRAPH_WIDTH/2) (CR_BAR_GRAPH_Y_START) CAREER_EARNINGS_GRAPH_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									0 0, locString( "@MENU_POINTS", GET_STAT("LIFETIME_EARNINGS") ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1, exp rect Y((CR_BAR_GRAPH_Y_START+((CR_BAR_GRAPH_HEIGHT/2)-CAREER_WINNINGS_BAR_HEIGHT))-15); ) 
+		
+		/* Lifetime buyins */
+		PREPROC_TEXT_DRAW_VIS_EX( (CAREER_EARNINGS_GRAPH_X_START+CAREER_EARNINGS_GRAPH_WIDTH/2) (CR_BAR_GRAPH_Y_START) CAREER_EARNINGS_GRAPH_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									0 0, locString( "@MENU_POINTS", GET_STAT("LIFETIME_BUYIN") ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1, exp rect Y((CR_BAR_GRAPH_Y_START+(CR_BAR_GRAPH_HEIGHT/2))+8+CAREER_BUYINS_BAR_HEIGHT); ) 
+
+		/* Max Losses */
+		PREPROC_TEXT_DRAW_VIS(	(COMBAT_RECORD_BODY_X_START+15) (CR_BAR_GRAPH_Y_START+80) 95 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordMinMaxScore( RECENT_EARNINGS_BAR_GRAPH, RETURN_MIN_SCORE ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		
+		#include "ui/safearea.menu"
+	}
+
+
+/* --------------------Combat record tab "Killstreaks", view "favorites"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_killstreaks_favorites, CR_VIEW_KILLSTREAKS_FAVORITES, menu_cr_killstreaks_kills, menu_cr_killstreaks_called, CR_TAB_KILLSTREAKS, (dvarString("ui_combatMatchesViewMenuName")), (dvarString("ui_combatContractsViewMenuName")), 
+			execNow set ui_combatKillStreaksPieChart FAVORITE_KILLSTREAKS_PIE_CHART;, ; )
+
+		CR_KILLSTREAKS_TAB_COMMMON_ITEMS
+
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+
+#undef CONTAINER_BOX_WIDTH
+#define CONTAINER_BOX_WIDTH 260
+#define FAVORITE_KILLSTREAKS_BODY_X_START (-CONTAINER_BOX_WIDTH/2)
+
+		/* favorite killstreak bg image  */		 		 
+		PREPROC_SHADER_DRAW_VIS_EX( (FAVORITE_KILLSTREAKS_BODY_X_START+155) (COMBAT_RECORD_BODY_Y_START+25) 256 256 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, GetItemRef( GET_SORTED_ITEM_INDEX( 0, 1 ) )+"_lobby", 1 1 1 0.1, when( GET_SORTED_STAT( 0, 1, 1 ) != 0 ), ; ) 
+
+		PREPROC_TEXT_DRAW_VIS(	(-COMBAT_RECORD_WIDTH / 2) 0 COMBAT_RECORD_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_CR_KILLSTREAKS_NO_DATA", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 
+							CHOICE_TEXTCOLOR, when( GET_SORTED_STAT( 0, 1, 1 ) == 0 ) )
+
+		PIE_CHART_TEXT( FAVORITE_KILLSTREAKS_BODY_X_START, 0, FAVORITE_KILLSTREAKS_PIE_CHART, 1 )
+
+#undef CR_PIE_CHART_X_START 
+#define CR_PIE_CHART_X_START (FAVORITE_KILLSTREAKS_BODY_X_START+CR_PIE_CHART_WIDTH/2) 
+
+#define IMAGE_OFFSET 17
+
+		PREPROC_SHADER_DRAW_VIS_EX( (CR_PIE_CHART_X_START-IMAGE_OFFSET) (CR_PIE_CHART_Y_START-IMAGE_OFFSET) (CR_PIE_CHART_WIDTH+IMAGE_OFFSET*2) (CR_PIE_CHART_HEIGHT+IMAGE_OFFSET*2) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_circle_shadow", 0 0 0 0.1, when( GET_SORTED_STAT( 0, 1, 1 ) != 0 ), ; ) 
+
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			CR_PIE_CHART_X_START CR_PIE_CHART_Y_START CR_PIE_CHART_WIDTH CR_PIE_CHART_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_PIE_CHART  
+			dvar			ui_combatKillStreaksPieChart
+			visible			when( GET_SORTED_STAT( 0, 1, 1 ) != 0 ) 
+			decoration  
+		}  
+
+		#include "ui/safearea.menu"
+	}
+
+	/* --------------------Combat record tab "Killstreaks", view "killstreaks-called"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_killstreaks_called, CR_VIEW_KILLSTREAKS_CALLED, menu_cr_killstreaks_times_killed_by, menu_cr_killstreaks_kills, CR_TAB_KILLSTREAKS, (dvarString("ui_combatMatchesViewMenuName")), (dvarString("ui_combatContractsViewMenuName")), ;, ; )
+
+		CR_KILLSTREAKS_TAB_COMMMON_ITEMS
+		
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+	/* --------------------Combat record tab "Killstreaks", view "killstreaks-kills"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_killstreaks_kills, CR_VIEW_KILLSTREAKS_KILLS, menu_cr_killstreaks_called, menu_cr_killstreaks_times_killed_by, CR_TAB_KILLSTREAKS, (dvarString("ui_combatMatchesViewMenuName")), (dvarString("ui_combatContractsViewMenuName")), ;, ; )
+
+		CR_KILLSTREAKS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+	/* --------------------Combat record tab "Killstreaks", view "killstreaks-times killed by"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_killstreaks_times_killed_by, CR_VIEW_KILLSTREAKS_TIMES_KILLED_BY, menu_cr_killstreaks_kills, menu_cr_killstreaks_called, CR_TAB_KILLSTREAKS, (dvarString("ui_combatMatchesViewMenuName")), (dvarString("ui_combatContractsViewMenuName")), ;, ; )
+
+		CR_KILLSTREAKS_TAB_COMMMON_ITEMS
+
+		COMMON_INFO_BAR_ITEMS
+		
+		CR_VIEW_TITLE_AND_VIEW_NUMBER
+		#include "ui/safearea.menu"
+	}
+
+/* --------------------Combat record tab "Contracts"------------------------------------------------*/
+	menuDef
+	{
+		CR_VIEW_MENU_TEMPLATE( menu_cr_contracts_info, CR_VIEW_CONTRACTS_INFO, menu_cr_contracts_info, menu_cr_contracts_info, CR_TAB_CONTRACTS, (dvarString("ui_combatKillstreaksViewMenuName")), (dvarString("ui_combatCareerViewMenuName")), ;, ; )
+
+		CR_CONTRACTS_TAB_COMMMON_ITEMS
+
+#define CONTRACTS_SUMMARY_BODY_Y_START (COMBAT_RECORD_BODY_Y_START+184)
+#define CONTRACTS_SUMMARY_BODY_WIDTH (COMBAT_RECORD_WIDTH-170)
+#define CONTRACTS_SUMMARY_BODY_X_START (-COMBAT_RECORD_WIDTH/2+85)
+		
+		/* container box  */		 		 
+		PREPROC_SHADER_DRAW( (CONTRACTS_SUMMARY_BODY_X_START-10) (COMBAT_RECORD_BODY_Y_START+25) (CONTRACTS_SUMMARY_BODY_WIDTH+20) 253 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", 0 0 0 0.1 ) 
+
+		/* contracts bg image  */		 		 
+		PREPROC_SHADER_DRAW( (-128) (COMBAT_RECORD_BODY_Y_START+10) 256 256 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_lobby_aar_award_ccontract", 1 1 1 0.1 ) 
+
+#define CONTRACT_PAID_IMAGE_X		(CONTRACTS_SUMMARY_BODY_X_START+25)
+#define CONTRACT_PAID_IMAGE_Y		(COMBAT_RECORD_BODY_Y_START+55)
+
+#define CONTRACT_EXPIRED_IMAGE_X	(CONTRACTS_SUMMARY_BODY_WIDTH/2-180)	
+#define CONTRACT_EXPIRED_IMAGE_Y	(COMBAT_RECORD_BODY_Y_START+50)		
+
+		/* image for "paid" */		 		 
+		PREPROC_SHADER_DRAW( CONTRACT_PAID_IMAGE_X CONTRACT_PAID_IMAGE_Y 120 70 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "contract_completed", 1 1 1 0.4; rotation -15  ) 
+		/* image for "expired" */		 		 
+		PREPROC_SHADER_DRAW( CONTRACT_EXPIRED_IMAGE_X CONTRACT_EXPIRED_IMAGE_Y 160 93 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "contract_expired", 1 1 1 0.4; rotation -15 ) 
+		
+		/* Paid contracts */
+		PREPROC_TEXT_DRAW_VIS(	(CONTRACT_PAID_IMAGE_X+5) (CONTRACT_PAID_IMAGE_Y-20) 110 110 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "CONTRACTS_COMPLETED" ), 
+								TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		/* Failed contracts */
+		PREPROC_TEXT_DRAW_VIS(	(CONTRACT_EXPIRED_IMAGE_X+10) (CONTRACT_EXPIRED_IMAGE_Y-15) 140  110 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetCombatRecordFailedContracts() , 
+								TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 1 )
+
+		/* BG for "Return on Investment" */
+		PREPROC_SHADER_DRAW( (CONTRACTS_SUMMARY_BODY_X_START-10) (CONTRACTS_SUMMARY_BODY_Y_START-6) (CONTRACTS_SUMMARY_BODY_WIDTH+20) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Return on Investment" */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START CONTRACTS_SUMMARY_BODY_Y_START CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_RETURN_ON_INVESTMENT_CAPS" ) + ":",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		
+		/* CP Return on Investment if greater than 0 */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START CONTRACTS_SUMMARY_BODY_Y_START CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								int( int( GET_STAT( "CONTRACTS_CP_EARNED" ) ) / int( GET_STAT( "CONTRACTS_CP_SPENT" ) ) * 100 )+ " %",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, when(  ( int( GET_STAT( "CONTRACTS_CP_SPENT" ) ) != 0 ) ) ) 
+
+		/* CP Return on Investment if 0 */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START CONTRACTS_SUMMARY_BODY_Y_START CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"0 %",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, when(  ( int( GET_STAT( "CONTRACTS_CP_SPENT" ) ) == 0 ) ) ) 
+
+		/* Label for "Contracts Purchased" */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+20) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_CONTRACTS_PURCHASED_CAPS" ) + ":",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Contracts Purchased */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+20) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT("CONTRACTS_PURCHASED"),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG for "Amount Spent" */
+		PREPROC_SHADER_DRAW( (CONTRACTS_SUMMARY_BODY_X_START-10) (CONTRACTS_SUMMARY_BODY_Y_START+34) (CONTRACTS_SUMMARY_BODY_WIDTH+20) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "Amount Spent" */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+40) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_AMOUNT_SPENT_CAPS" ) + ":",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* Amount Spent */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+40) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MENU_POINTS", GET_STAT("CONTRACTS_CP_SPENT") ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 )
+
+ 		/* Label for "Amount Earned" */
+ 		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+60) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+ 								locString( "MPUI_AMOUNT_EARNED_CAPS" ) + ":",
+ 								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+ 		/* CP Earned */
+ 		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+60) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+ 								locString( "@MENU_POINTS", GET_STAT("CONTRACTS_CP_EARNED") ),
+ 								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 )
+		/* BG for "XP Earned" */
+		PREPROC_SHADER_DRAW( (CONTRACTS_SUMMARY_BODY_X_START-10) (CONTRACTS_SUMMARY_BODY_Y_START+74) (CONTRACTS_SUMMARY_BODY_WIDTH+20) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", SUMMARY_DESC_TEXT_BG_COLOR ) 
+		/* Label for "XP Award" */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+80) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_XP_AWARD_CAPS" ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* XP Earned */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_BODY_X_START (CONTRACTS_SUMMARY_BODY_Y_START+80) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_CONTRACT_REWARD_XP", GET_STAT("CONTRACTS_XP_EARNED") ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 )
+		
+
+
+#if 0
+
+#undef CR_HORIZONTAL_BAR_GRAPH_HEIGHT
+#define CR_HORIZONTAL_BAR_GRAPH_HEIGHT 60
+#undef CR_HORIZONTAL_BAR_GRAPH_WIDTH
+#define CR_HORIZONTAL_BAR_GRAPH_WIDTH (COMBAT_RECORD_WIDTH-70)
+#undef CR_HORIZONTAL_BAR_GRAPH_X_START
+#define CR_HORIZONTAL_BAR_GRAPH_X_START (COMBAT_RECORD_BODY_X_START+20)
+#undef CR_HORIZONTAL_BAR_GRAPH_Y_START
+#define CR_HORIZONTAL_BAR_GRAPH_Y_START (COMBAT_RECORD_BODY_Y_START+175)
+
+		/* horizontal bar graph */
+		itemDef 
+		{ 
+			type			ITEM_TYPE_OWNERDRAW 
+			rect			CR_HORIZONTAL_BAR_GRAPH_X_START CR_HORIZONTAL_BAR_GRAPH_Y_START CR_HORIZONTAL_BAR_GRAPH_WIDTH CR_HORIZONTAL_BAR_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			ownerdraw		UI_COMBAT_RECORD_HORIZONTAL_BAR_GRAPH  
+			dvar			ui_combatCurrViewNum
+			visible			when( !dvarBool("ui_combatComparisonModeOn") ) 
+			decoration  
+		}  
+		/* vertical axis line */		 		 
+		PREPROC_SHADER_DRAW_VIS_EX(	(CR_HORIZONTAL_BAR_GRAPH_X_START+CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) CR_HORIZONTAL_BAR_GRAPH_Y_START 1 CR_HORIZONTAL_BAR_GRAPH_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", 1 1 1 1, 
+									when(  !dvarBool("ui_combatComparisonModeOn") ), ; ) 
+
+		/* Label for "Failed" */
+		PREPROC_TEXT_DRAW_VIS(	(CR_HORIZONTAL_BAR_GRAPH_X_START) (CR_HORIZONTAL_BAR_GRAPH_Y_START+CR_HORIZONTAL_BAR_GRAPH_HEIGHT-10) (CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_FAILED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( !dvarBool("ui_combatComparisonModeOn") ) ) 
+
+
+		/* Label for "Completed"  */
+		PREPROC_TEXT_DRAW_VIS(	(CR_HORIZONTAL_BAR_GRAPH_X_START+CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) (CR_HORIZONTAL_BAR_GRAPH_Y_START+CR_HORIZONTAL_BAR_GRAPH_HEIGHT-10) (CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CONTRACT_COMPLETED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( !dvarBool("ui_combatComparisonModeOn") ) ) 
+
+		/* Total Winnings */
+		PREPROC_TEXT_DRAW_VIS(	(CR_HORIZONTAL_BAR_GRAPH_X_START+CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) (CR_HORIZONTAL_BAR_GRAPH_Y_START) (CR_HORIZONTAL_BAR_GRAPH_WIDTH/2) 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT( "CONTRACTS_COMPLETED" ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( !dvarBool("ui_combatComparisonModeOn") ) ) 
+#endif 
+
+#define OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET 20
+
+#define CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_X_START-120)
+
+		/* CP Return on Investment for Other Player if greater than 0 */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET-20) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								int( int( GET_STAT_FOR_OTHER_PLAYER( "CONTRACTS_CP_EARNED" ) ) / int( GET_STAT_FOR_OTHER_PLAYER( "CONTRACTS_CP_SPENT" ) ) * 100 )+ " %",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when( dvarBool("ui_combatComparisonModeOn") && ( int( GET_STAT_FOR_OTHER_PLAYER( "CONTRACTS_CP_SPENT" ) ) != 0 ) ) ) 
+
+		/* CP Return on Investment for Other Player if 0 */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET-20) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"0 %",
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when(  dvarBool("ui_combatComparisonModeOn") && ( int( GET_STAT_FOR_OTHER_PLAYER( "CONTRACTS_CP_SPENT" ) ) == 0 ) ) ) 
+		/* Contracts Purchased for Other Player */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_STAT_FOR_OTHER_PLAYER("CONTRACTS_PURCHASED"),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when( dvarBool("ui_combatComparisonModeOn") ) ) 
+		/* Amount Spent for Other Player */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+20+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MENU_POINTS", GET_STAT_FOR_OTHER_PLAYER("CONTRACTS_CP_SPENT") ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when( dvarBool("ui_combatComparisonModeOn") ) )
+		/* CP Earned for Other Player */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+40+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MENU_POINTS", GET_STAT_FOR_OTHER_PLAYER("CONTRACTS_CP_EARNED") ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when( dvarBool("ui_combatComparisonModeOn") ) )
+		/* XP Earned for Other Player */
+		PREPROC_TEXT_DRAW_VIS(	CONTRACTS_SUMMARY_FRIEND_INFO_X (CONTRACTS_SUMMARY_BODY_Y_START+60+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET) CONTRACTS_SUMMARY_BODY_WIDTH 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "MPUI_CONTRACT_REWARD_XP", GET_STAT_FOR_OTHER_PLAYER("CONTRACTS_XP_EARNED") ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, INFO_BAR_COLOR_FOR_FRIEND 1, when( dvarBool("ui_combatComparisonModeOn") ) )
+
+		RANK_AND_GAMERTAG_OF_COMPARED_PLAYER( (-160), ( dvarBool("ui_combatComparisonModeOn") ) )
+#ifdef CONSOLE
+		COMPARE_BUTTON( 1 ) 
+#endif //#ifdef CONSOLE
+	//	COMPARE_FRIENDS_BUTTON( 1 ) 
+		NEW_FRAME_COMPARE_FRIEND_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, "@PATCH_TOGGLE_COMPARE_FRIENDS", COMPARE_FRIENDS_ACTION , when( !dvarbool( "ui_showFriendsCombatRecord" ) ) )
+		HIDE_COMPARISON_BUTTON( 1 )
+
+
+NEW_FRAME_BACK_BUTTON_ACTION( COMBAT_RECORD_WIDTH, COMBAT_RECORD_HEIGHT, ON_ESC_ACTION )
+		/* Other Player rank icon */ 
+		PREPROC_SHADER_DRAW_VIS_EX( (CONTRACTS_SUMMARY_BODY_X_START+265) (CONTRACTS_SUMMARY_BODY_Y_START+OTHER_PLAYER_CONTRACT_INFO_Y_OFFSET-45) 16 16 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN;, 
+									tablelookup( "mp/rankIconTable.csv", 0, GET_STAT_FOR_OTHER_PLAYER( "RANK" ), 1+GET_STAT_FOR_OTHER_PLAYER( "PLEVEL" ) ), 1 1 1 0,
+									when( dvarBool("ui_combatComparisonModeOn") );,
+									name "otherPlayerName"; ANIM_STATES( 1 1 1 ) )
+
+		#include "ui/safearea.menu"
+	}
+
+#define DELAY_AFTER_DOWNLOADING 400
+
+#undef SELECTION_LIST_MENU_X_START		
+#define SELECTION_LIST_MENU_X_START		(SMALL_CENTER_POPUP_WIDTH/4)
+#undef SELECTION_LIST_MENU_Y_START		
+#define SELECTION_LIST_MENU_Y_START		(0)
+#undef SELECTION_LIST_MENU_WIDTH		
+#define SELECTION_LIST_MENU_WIDTH		(SMALL_CENTER_POPUP_WIDTH/2 + 10)
+#undef SELECTION_LIST_MENU_HEIGHT		
+#define SELECTION_LIST_MENU_HEIGHT		SMALL_CENTER_POPUP_HEIGHT
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION							\
+	deactivateBlur;								\
+	execNow "set ui_combatComparisonModeOn 0";	\
+	setLocalVarBool	ui_centerPopup 0;			\
+	play uin_navigation_sys_close;				\
+	close self;									\
+	ADJUST_OTHER_PLAYER_INFO_BARS( (dvarString("ui_combatCurrentViewMenuName")) )
+	
+	menuDef
+	{
+		name			menu_cr_friends_selection 
+		visible			1 
+		fullscreen		0 
+		rect			(-SMALL_CENTER_POPUP_WIDTH/2) (-SMALL_CENTER_POPUP_HEIGHT/2) SMALL_CENTER_POPUP_WIDTH SMALL_CENTER_POPUP_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER 
+		backcolor		0.2 0.2 0.2 0.8 
+		style           WINDOW_STYLE_FRAMED
+		frame           16 0.5 FRAME_SIDE_ALL
+		background      "menu_mp_lobby_frame_circle"
+		focusColor		COLOR_FOCUSED 
+		priority		MENU_PRI_POPUP 
+		popup 
+		onOpen 
+		{ 
+			activateBlur; 
+			setLocalVarBool	ui_centerPopup 1; 
+			setDvar ui_friendsSelectionBoxOpen "1";
+			play uin_navigation_sys_open;
+		} 
+		onClose 
+		{ 
+			deactivateBlur; 
+			setDvar ui_friendsSelectionBoxOpen "0";
+			CENTER_POPUP_ON_CLOSE 
+			setLocalVarBool	ui_centerPopup 0; 
+		} 
+		onESC 
+		{ 
+			ON_ESC_ACTION
+		}
+
+		PREPROC_SHADER_DRAW_VIS_EX(	0 0 SMALL_CENTER_POPUP_WIDTH (SMALL_CENTER_POPUP_HEIGHT-POPUP_INNER_BG_PAD), "menu_mp_lobby_frame_fade", POPUP_GLOW_WHITE, 1, ; )	
+		/* title text for "Select friend to compare" */
+		PREPROC_TEXT_DRAW(	16.5 (SELECTION_LIST_MENU_Y_START+16.5) SMALL_CENTER_POPUP_WIDTH 10 HORIZONTAL_ALIGN_CENTER CHOICE_VERTICAL_ALIGN, 0 0, 
+							"@MPUI_CR_SELECT_FRIEND_TO_COMPARE", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR ) 
+
+		/* button prompts */
+#ifdef CONSOLE
+		itemDef 
+		{ 
+			type			ITEM_TYPE_TEXT 
+			rect			0 (SELECTION_LIST_MENU_HEIGHT+16.5) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			text			"@PLATFORM_CANCEL_COMPARE"
+			textfont		UI_FONT_NORMAL  
+			textscale		TEXTSIZE_SMALL  
+			textalign		ITEM_ALIGN_BOTTOM_LEFT  
+			visible			1  
+			decoration  
+		} 
+		
+#else //#ifdef CONSOLE
+		SIMPLE_CHOICE_BUTTON_SOUND( NEW_FRAME_DEFAULT_TITLE_X_OFFSET (SELECTION_LIST_MENU_HEIGHT+4) 70 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "@PLATFORM_CANCEL_COMPARE", ITEM_ALIGN_MIDDLE_CENTER, ON_ESC_ACTION )
+#endif //#ifdef CONSOLE
+
+#ifdef CONSOLE
+#endif // #ifdef CONSOLE
+		
+		// List
+		itemDef
+		{
+			name						combat_record_friends_list
+			type						ITEM_TYPE_LISTBOX
+			feeder						FEEDER_FRIENDS_STATS_COMPARE
+			rect						(SELECTION_LIST_MENU_X_START+5) (SELECTION_LIST_MENU_Y_START+40) (SELECTION_LIST_MENU_WIDTH-10) (SELECTION_LIST_MENU_HEIGHT-65) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			origin						0 0 
+			elementwidth				30
+			elementheight				20
+			elementtype					LISTBOX_TEXT	
+			textstyle					ITEM_TEXTSTYLE_NORMAL
+			textfont					UI_FONT_NORMAL
+			textscale					TEXTSIZE_SMALL
+			textalignx					12
+			forecolor					1 1 1 1
+			focusColor					CHOICE_TEXTCOLOR
+			disableColor				CHOICE_TEXTCOLOR
+			selectBorder				0.8 0.95 1 0
+			outlinecolor				1 1 1 1  
+			elementBackgroundColor		NEW_FRAME_LT_GREY_RGB 0.2 
+			selectIcon					SELECT_ICON 
+			elementHighlightColor		0 0 0 1  
+			noBlinkingHighlight
+			/*					x		y	w			h	len		horzAlign			vertAlign*/ 
+			userarea	2		23		2	16			16	32		ITEM_ALIGN_LEFT		ITEM_ALIGN_TOP  	/* Rank Icon */
+								31		-1	50			20	24		ITEM_ALIGN_LEFT		ITEM_ALIGN_TOP 		/* GamerTag */
+			
+			visible			1
+			onfocus 
+			{
+				play CHOICE_FOCUS_SOUND;
+				exec "updateListboxPos menu_cr_friends_selection";
+			}			
+			onListboxSelectionChange	
+			{
+				play CHOICE_FOCUS_SOUND; 
+			}
+			doubleclick
+			{
+				play CHOICE_FOCUS_SOUND;
+				execNow set selectedPlayerXuid ( getfeederdata( "xuid" ) );
+				execNow set selectedFriendName ( getfeederdata( "name" ) );
+				if( dvarString( "selectedPlayerXuid" ) != 0 )
+				{
+					execnow getServiceRecord ( dvarString( "selectedPlayerXuid" ) );						
+					close self;
+					ITEM_ANIMATE( (dvarString( "ui_combatCurrentViewMenuName" )), "dummy", updateViewAfterDownloading, DELAY_AFTER_DOWNLOADING );
+				}
+				else
+				{
+					close self;
+				}
+			}
+			execKeyInt BUTTON_X
+			{
+			}
+		}		
+	}
+}

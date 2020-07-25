@@ -1,0 +1,907 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+
+#define CHOICE_X_START			0
+#define CHOICE_Y_START			34
+
+#define CHOICE_GROUP			"errors"
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+
+#include "ui_mp/popupstyle.inc"
+#include "ui/choices_setup_popmenu.menu"
+
+#undef CHOICE_FOCUS_SOUND
+#define CHOICE_FOCUS_SOUND		"uin_navigation_over"
+
+#define OPEN_WAGER_FAIL_IF_NEEDED \
+	if ( getDStat( "AfterActionReportStats", "wagerMatchFailed" ) == 1 ) \
+	{ \
+		open error_wagerfail; \
+	}
+
+#define ERROR_ONESC				\
+		uiScript clearError;	\
+		close self;				\
+		OPEN_WAGER_FAIL_IF_NEEDED \
+		execNow if( !menuisopen( main ) ) openmenu main;
+		
+#define ERROR_ACTION				\
+		play CHOICE_FOCUS_SOUND;	\
+		uiScript clearError;		\
+		ERROR_ONESC
+		
+#define ERROR_CONTINUE				\
+		play CHOICE_FOCUS_SOUND;	\
+		uiScript clearError;		\
+		close self;					\
+		uiScript loadSaveGameMap;
+		
+
+{
+	menuDef 
+	{
+		name			fullscreen_error
+		fullscreen		1
+		rect			0 0 640 480				// Size and position of the menu
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( error_popmenu, setfocus error_popmenu_2, ERROR_ONESC, 1 )
+		
+		onOpen
+		{
+			if( IN_MP_FRONTEND )
+			{
+				activateBlur;
+			}
+			
+			if( dvarString("com_errorMessage") != "" )
+			{
+				execnow setLocalVarString error_popmenuTitle (dvarString("com_errorTitle"));
+				execnow setLocalVarString error_popmenuMessage (dvarString("com_errorMessage"));
+			}
+			
+			if( IN_MP_FRONTEND )
+			{
+				uiScript clearError;
+			}
+		}	
+		
+		SYSTEM_POPUP_TITLE_VIS( localVarString( error_popmenuTitle ), 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( localVarString( error_popmenuMessage ), 1 )
+		
+		//FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_CONTINUE",	ERROR_CONTINUE, ( dvarString( "error_menu_info" ) == "MENU_SCRIPTS_OUT_OF_DATE" ), ;						)
+		//FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_EXIT",		ERROR_ACTION,	1, name error_popmenu_2	)
+
+		SIMPLE_CHOICE_BUTTON_SOUND_VIS_EX( 0 (SYSTEM_POPUP_HEIGHT+4) 70 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			;, 
+			"@MENU_CONTINUE", ITEM_ALIGN_MIDDLE_CENTER, ERROR_CONTINUE, when( dvarString( "error_menu_info" ) == "MENU_SCRIPTS_OUT_OF_DATE" ), ; )
+		SIMPLE_CHOICE_BUTTON_SOUND_VIS_EX( 0 (SYSTEM_POPUP_HEIGHT+4) 70 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			exp rect X( SYSTEM_POPUP_WIDTH - getTextWidth( locString( "@MENU_EXIT" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) - 8 ), 
+			"@MENU_EXIT", ITEM_ALIGN_MIDDLE_CENTER, ERROR_ACTION, 1, name error_popmenu_2; )
+	}
+		
+#define SYSTEM_ERROR_POPUP( popupname )																		\
+	menuDef																									\
+	{																										\
+		SYSTEM_POPUP_SETUP_VIS( popupname, ;, focusFirst; uiScript clearError; close self;, 1 )				\
+		onOpen																								\
+		{																									\
+			if( IN_MP_FRONTEND )																			\
+			{																								\
+				activateBlur;																				\
+			}																								\
+			execnow setLocalVarString (popupname + "Title") (dvarString("com_errorTitle"));					\
+			execnow setLocalVarString (popupname + "Message") (dvarString("com_errorMessage"));				\
+		}																									\
+																											\
+		SYSTEM_POPUP_TITLE_VIS( localVarString( (popupname + "Title") ), 1 )								\
+		SYSTEM_POPUP_SUBTITLE_VIS( localVarString( (popupname + "Message") ), 1 )							\
+																											\
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", uiScript clearError; close self; OPEN_WAGER_FAIL_IF_NEEDED, 1, ; )					\
+	}
+	
+	menuDef
+	{
+		#define WAGERFAIL_ONFOCUS \
+				execnow statwriteddl AfterActionReportStats wagerMatchFailed 0; 
+		
+		#define WAGERFAIL_ONESC \
+				close self;
+				
+		#define WAGERFAIL_ACTION \
+				play CHOICE_FOCUS_SOUND; \
+				WAGERFAIL_ONESC
+				
+		SYSTEM_POPUP_SETUP_VIS( error_wagerfail, WAGERFAIL_ONFOCUS, WAGERFAIL_ONESC, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_WAGER_FAIL_TITLE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_WAGER_FAIL_DESC", 1 )
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_EXIT", WAGERFAIL_ACTION, 1, ; )
+	}
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( autojoinfriend_popmenu, setfocus autojoinfriend_popmenu_2, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( dvarString( "com_errorMessage" ), 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_AUTOJOIN_FRIEND", 1 )
+		
+		#define FRIEND_AUTO_JOIN_ON					\
+				exec "party_autojoindevfriend 1";	\
+				close autojoinfriend_popmenu;		\
+				setdvar com_errorMessage "";		\
+				setdvar	com_errorTitle "";
+				
+		#define FRIEND_AUTO_JOIN_OFF				\
+				exec "party_autojoindevfriend 0";	\
+				close autojoinfriend_popmenu;		\
+				setdvar com_errorMessage "";		\
+				setdvar	com_errorTitle "";			
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES_CAPS",	FRIEND_AUTO_JOIN_ON,	1, ; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO_CAPS",		FRIEND_AUTO_JOIN_OFF,	1, name autojoinfriend_popmenu_2 )				
+	}
+	
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		1
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( consolestatsalert_popmenu, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( "@EXE_CONSOLE_STATS_CHECK_ALERT_TITLE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@EXE_CONSOLE_STATS_CHECK_ALERT_MESSAGE", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_OK", close consolestatsalert_popmenu;, 1, ; )	
+	}	
+	
+#ifdef PS3
+	// PS3 controller removed warning
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( controllerremoved_popmenu, ;, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( locString("@PLATFORM_CONTROLLER_DISCONNECTED") + (dvarString( "disconnected_ctrls" )), 1 )
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON_NO_TEXT 
+			rect			0 0 0 0 0 0 
+			visible			1
+		}
+	}
+	// I know, not an error, handy here
+	// profile lookup dialog
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( profile_lookup_popmenu, ;, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@PLATFORM_PROFILE_LOOKUP", 1 )
+		itemDef 
+		{ 
+			type			ITEM_TYPE_BUTTON_NO_TEXT 
+			rect			0 0 0 0 0 0 
+			visible			1
+		}
+
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+#endif
+
+	// save game data corrupted warning
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_connectingtodw, ;, ;, 1 )
+
+		onESC 
+		{ 
+			if( IN_MP_FRONTEND )
+			{
+				deactivateBlur;
+			}
+			CENTER_POPUP_ON_CLOSE
+			execNow ui_animate popup_connectingtodwhandler notification default 0;
+			close popup_connectingtodwhandler;
+			close self;
+		}
+		onClose 
+		{ 
+			if( IN_MP_FRONTEND )
+			{
+				deactivateBlur;
+			}
+			execNow ui_animate popup_connectingtodwhandler notification default 0;
+			close popup_connectingtodwhandler;	
+		}
+		
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_CONNECTING_TO_DW" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+
+	menuDef
+	{
+		name		popup_connectingtodwhandler
+		rect		0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		visible		1
+		backcolor	0 0 0 0
+		style       WINDOW_STYLE_FILLED
+
+		onOpen
+		{
+			exec "initiateDemonWareConnect";
+			if( dvarBool( live_banned ) )
+			{
+				execNow ui_animate popup_connectingtodwhandler notification show 2000;
+			}
+			else
+			{
+				execNow ui_animate popup_connectingtodwhandler notification show 30000;
+			}
+			open popup_connectingtodw;
+		}
+		
+		itemDef 
+		{ 
+			name			"notification"
+			visible			0 
+						
+			state
+			{
+				name	"show"
+				onEnter
+				{	
+					if( dvarBool( live_banned ) )
+					{
+						setdvar com_errorTitle "@MENU_NOTICE_CAPS";
+						setdvar com_errorMessage "@PLATFORM_BANNED";
+						open error_popmenu;
+					}
+					elseif( isDemonwareFetchingDone() == 0 ) 
+					{
+						setdvar	com_errorTitle "@MENU_NOTICE_CAPS";
+						setdvar com_errorMessage "@EXE_DEMONWARE_DISCONNECT";						
+						open error_popmenu;
+					}
+					close popup_connectingtodw;
+					close popup_inliveconnectingtodw;
+				}
+			}
+		}
+	}
+
+
+	// Shown while connecting to DemonWare & getting all needed items for playing on 
+	// LIVE while in the online (dvar) sections of the game, happens when another user
+	// signs in on another controller
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_inliveconnectingtodw, ;, ;, 1 )
+
+		onESC 
+		{ 
+			if( IN_MP_FRONTEND )
+			{
+				deactivateBlur;
+			}
+			CENTER_POPUP_ON_CLOSE
+			close self;
+		}
+		onClose 
+		{ 
+			if( IN_MP_FRONTEND )
+			{
+				deactivateBlur;
+			}
+		}
+		execKeyInt BUTTON_BACK {}
+		execKeyInt BUTTON_B {}	
+		
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_CONNECTING_TO_DW" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_gettingdata, ;, ;, 1 )
+		onESC 
+		{ 
+			if( IN_MP_FRONTEND )																	
+			{																						
+				deactivateBlur;																		
+			}
+			close menu_xboxlive;
+			close findgame_category;
+			close popup_gettingdata;
+			close live_cac_popup;
+			close popup_gamesetup_private;
+			close private_cac_popup;
+			exec "onlinegame 0";
+			exec "xstopprivateparty";
+			exec "xstopparty";
+		}
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_DOWNLOADING_GAME_SETTINGS_CAPS" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_downloadingfile, ;, execnow fileShareAbortOperation;, 1 )		
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_DOWNLOAD_FILE" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_downloadinginfo, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_DOWNLOADING" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_downloadingCompressedStats, ;, ;, 1 )		
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_DOWNLOAD_OTHER_PLAYER_STATS" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_fetchstats, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_FETCH_STATS" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_uploadingfile, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_UPLOAD_FILE" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )		
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_gettingPlayercardInfo, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_GETTING_PLAYERCARD" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )		
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_getlclaninfofromxuid, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_GETTING_CLAN_INFO" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_gettingoffers, ;, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_GETTING_STORE_DATA" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_connectingtolobby, ;, focusFirst;, 1 )
+		onESC 
+		{ 
+			if( IN_MP_FRONTEND )																	
+			{																						
+				deactivateBlur;																		
+			}
+			close menu_xboxlive;
+			close popup_gettingdata;
+			close live_cac_popup;
+			close popup_gamesetup_private;
+			close private_cac_popup;
+			exec "onlinegame 0";
+			exec "xstopprivateparty";
+			exec "xstopparty";
+		}
+		
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_CONNECTING_TO_LOBBY" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_connecting_dw, ;, focusFirst;, 1 )
+		onESC 
+		{ 
+			if( IN_MP_FRONTEND )																	
+			{																						
+				deactivateBlur;																		
+			}
+			close menu_xboxlive;
+			close popup_gettingdata;
+			close live_cac_popup;
+			close popup_gamesetup_private;
+			close private_cac_popup;
+			close main_online
+			exec "onlinegame 0";
+			close self;
+		}
+		
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_CONNECTING_DW" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_creating_account, ;, focusFirst;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_CREATING_PROFILE" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_deleting_account, ;, focusFirst;, 1 )
+				
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_DELETING_PROFILE" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_error_deleting_account, ;, focusFirst;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_ERROR_DELETING_PROFILE", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+	}
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_error_creating_account, ;, focusFirst;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_ERROR_CREATING_PROFILE", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_account_not_available, ;, focusFirst;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_ACCOUNT_NOT_AVAILABLE", 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_reconnectingtoparty, ;, close menu_xboxlive; close popup_gettingdata;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_RECONNECTING_TO_SQUAD" ), 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_error_contentserver_down, ;, focusFirst; uiScript clearError; close self;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_ERROR_CAPS", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_CONTENT_SERVER_DOWN", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", uiScript clearError; close self;, 1, ; )
+	}
+}
+
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( stats_notfound_error_popup, ;, ;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_STATERROR_TITLE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_STATS_ERROR", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+	}
+	
+	SYSTEM_ERROR_POPUP( "error_dw_fetch_file" )
+	
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( save_corrupted, ;, close self; close blackout_3d_tv, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_SAVE_CORRUPTED", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_SAVEDATA_CORRUPTED", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self; close blackout_3d_tv, 1, ; )
+	}
+	
+	SYSTEM_ERROR_POPUP( "error_popmenu_party" )
+		
+	SYSTEM_ERROR_POPUP( "error_popmenu_lobby" )
+	
+	SYSTEM_ERROR_POPUP( "error_popmenu_keyboard" )
+	
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( startmatch_popup, ;, ;, 1 )
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_ERROR_CAPS", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@PLATFORM_MIN_ONE_REMOTE", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self, 1, ; )
+	}
+
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		2
+	menuDef 
+	{
+		SYSTEM_POPUP_SETUP_VIS( acceptinvite_warning, setFocus acceptinvite_warning_2, close self;, 1 )
+		onOpen	
+		{
+			close menu_joinsession;
+		}		
+		
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_ACCEPTINVITETITLE", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_LEAVEMPGAMEWARNINGSQUADHOST",	when( privatepartyhost() && !aloneinparty() );	)
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_LEAVESQUADWARNING",			when( !privatepartyhost() && !inlobby() );		)
+		SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_LEAVEMPGAMEWARNING",			when( !privatepartyhost() && inlobby() );		)
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_RESUMEGAME",		close menu_joinsession; close self;,	1, ; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_ACCEPTINVITE",	close self; exec "acceptInvite";,			1, name acceptinvite_warning_2 )
+	}		
+	
+	
+#undef CHOICE_SIZE_X
+#define CHOICE_SIZE_X			180
+#undef CHOICE_Y_START
+#define CHOICE_Y_START			230
+
+#define TOAST_POPUP_Y_OFFSET		-55
+#define	TOAST_POPUP_HEIGHT						36
+#define TOAST_POPUP_ICON_HEIGHT					26
+#define TOAST_POPUP_ICON_WIDTH					26
+#define TOAST_BIG_DESC_WIDTH					( GetTextWidth( getToastPopupDescription(), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) )
+#define TOAST_SIDE_PAD_SIZE						10
+#define TOAST_MIDDLE_PAD_SIZE					5
+
+#define TOAST_POPUP_BG_WIDTH( textWidth )		( TOAST_SIDE_PAD_SIZE + TOAST_POPUP_ICON_WIDTH + TOAST_MIDDLE_PAD_SIZE + textWidth + TOAST_SIDE_PAD_SIZE )
+#define TOAST_POPUP_BG_X_START( textWidth )		( -1 * ( TOAST_POPUP_BG_WIDTH( textWidth ) / 2 ) )
+#define TOAST_POPUP_ICON_X_START( textWidth )	( TOAST_POPUP_BG_X_START( textWidth ) + TOAST_SIDE_PAD_SIZE )
+#define TOAST_POPUP_TEXT_X_START( textWidth )	( TOAST_POPUP_ICON_X_START( textWidth ) + TOAST_POPUP_ICON_WIDTH + TOAST_MIDDLE_PAD_SIZE )
+
+#define SHOW_NORMAL_TOAST_POPUP					( getToastPopupTitle() != "" )	
+
+	menuDef
+	{
+		name					menu_toast_popup
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_POPUP		
+		openSlideSpeed			150
+		closeSlideSpeed			700
+		openSlideDirection		MENU_SLIDE_DIRECTION_BOTTOM_TO_TOP
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+		// Title and description version
+		itemDef											
+		{												
+			rect            0 TOAST_POPUP_Y_OFFSET 0 TOAST_POPUP_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_BOTTOM	
+			exp				rect X( TOAST_POPUP_BG_X_START( getToastPopupWidth() ) )
+			exp				rect W( TOAST_POPUP_BG_WIDTH( getToastPopupWidth() ) )
+			style           WINDOW_STYLE_SHADER_FRAMED	
+			frame           16 0.5 FRAME_SIDE_ALL		
+			background      "menu_mp_lobby_frame_circle"
+			forecolor       0 0 0 0.5				
+			visible         when( SHOW_NORMAL_TOAST_POPUP );				
+			decoration									
+		}
+
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	TOAST_POPUP_ICON_X_START( getToastPopupWidth() ), 
+										(TOAST_POPUP_Y_OFFSET+5), 
+										TOAST_POPUP_ICON_WIDTH, 
+										TOAST_POPUP_ICON_HEIGHT, 
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_BOTTOM,
+										getToastPopupIcon(), 1 1 1 0.8, 
+										when( SHOW_NORMAL_TOAST_POPUP );, ; )
+		
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	TOAST_POPUP_TEXT_X_START( getToastPopupWidth() ), 
+										(TOAST_POPUP_Y_OFFSET+2), 
+										( getToastPopupWidth() ), 
+										15, 
+										HORIZONTAL_ALIGN_CENTER, 
+										VERTICAL_ALIGN_BOTTOM, 
+										getToastPopupTitle(), 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, 
+										when( SHOW_NORMAL_TOAST_POPUP );, ; )
+
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	TOAST_POPUP_TEXT_X_START( getToastPopupWidth() ), 
+										(TOAST_POPUP_Y_OFFSET+18), 
+										( getToastPopupWidth() ), 
+										15, 
+										HORIZONTAL_ALIGN_CENTER, 
+										VERTICAL_ALIGN_BOTTOM, 
+										getToastPopupDescription(), 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, 
+										when( SHOW_NORMAL_TOAST_POPUP );, ; )
+
+		// Description only version
+		itemDef											
+		{												
+			rect            0 TOAST_POPUP_Y_OFFSET 0 TOAST_POPUP_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_BOTTOM	
+			exp				rect X( TOAST_POPUP_BG_X_START( TOAST_BIG_DESC_WIDTH ) )
+			exp				rect W( TOAST_POPUP_BG_WIDTH( TOAST_BIG_DESC_WIDTH ) )
+			style           WINDOW_STYLE_SHADER_FRAMED	
+			frame           16 0.5 FRAME_SIDE_ALL		
+			background      "menu_mp_lobby_frame_circle"
+			forecolor       0 0 0 0.5				
+			visible         when( !SHOW_NORMAL_TOAST_POPUP );				
+			decoration									
+		}
+
+										
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	TOAST_POPUP_ICON_X_START( TOAST_BIG_DESC_WIDTH ), 
+										(TOAST_POPUP_Y_OFFSET+5), 
+										TOAST_POPUP_ICON_WIDTH, 
+										TOAST_POPUP_ICON_HEIGHT, 
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_BOTTOM,
+										getToastPopupIcon(), 1 1 1 0.8, 
+										when( !SHOW_NORMAL_TOAST_POPUP );, ; )
+		
+		
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	TOAST_POPUP_TEXT_X_START( TOAST_BIG_DESC_WIDTH ), 
+										(TOAST_POPUP_Y_OFFSET+5), 
+										TOAST_BIG_DESC_WIDTH, 
+										TOAST_POPUP_ICON_HEIGHT, 
+										HORIZONTAL_ALIGN_CENTER, 
+										VERTICAL_ALIGN_BOTTOM, 
+										getToastPopupDescription(), 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, 
+										when( !SHOW_NORMAL_TOAST_POPUP );, ; )
+	}
+	
+	#define VIS_PRESS_START 1
+		
+	menuDef
+	{
+		name			"pregame_loaderror"
+		rect			0 0 640 480
+		fullScreen		1
+		focusColor		COLOR_FOCUSED
+		backcolor		1 1 1 0
+		style			WINDOW_STYLE_FILLED
+		onClose
+		{
+			uiScript clearError
+		}
+		onOpen
+		{
+			setdvar ui_SaveLoadVisible "0";
+		}
+		onEsc
+		{
+			uiScript playerstart
+		}
+
+		// background
+		itemDef 
+		{
+			style			WINDOW_STYLE_FILLED
+			type			ITEM_TYPE_OWNERDRAW
+			rect			FULLSCREEN_WIDE
+			backcolor		1 1 1 1
+			visible			1
+			background		cinematic
+			decoration
+		}
+
+		itemDef
+		{
+			name			"profile"
+			type			ITEM_TYPE_OWNERDRAW
+			visible			1
+			rect			40 40 560 400
+			ownerdraw		UI_LOADPROFILING
+			decoration
+		}
+
+		itemDef
+		{
+			name			errorinfo
+			type			ITEM_TYPE_TEXT
+			rect			120 142 400 255
+			style			WINDOW_STYLE_FILLED
+			textalign		ITEM_ALIGN_TOP_CENTER
+			autowrapped
+			dvar			"com_errorMessage"
+			textscale		.8
+			forecolor		1 .2 .2 1
+			visible			1
+			decoration
+		}
+
+#ifdef PS3
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			text			"@PLATFORM_UI_PRESS_BUTTONSELECTCHOICE"
+			style			WINDOW_STYLE_FILLED
+			textscale		TEXTSIZE_SMALL
+			border			0
+			bordercolor		1 1 1 1
+			rect			0 388 640 45
+			textalign		ITEM_ALIGN_TOP_CENTER
+			textaligny		4
+			forecolor		1 1 1 0.4
+			backcolor		0 0 0 0
+			visible			when ( !dvarbool( ui_isSaving ) && VIS_PRESS_START );
+			decoration
+		}
+#endif
+
+#ifdef XENON
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			text			"@MENU_PRESS_START_TO_SKIP"
+			style			WINDOW_STYLE_FILLED
+			textscale		TEXTSIZE_SMALL
+			border			0
+			bordercolor		1 1 1 1
+			rect			0 388 640 45
+			textalign		ITEM_ALIGN_TOP_CENTER
+			textaligny		4
+			forecolor		1 1 1 0.4
+			backcolor		0 0 0 0
+			visible			when ( !dvarbool( ui_isSaving ) && VIS_PRESS_START );
+			decoration
+		}
+#endif
+
+#ifdef PC
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			text			"@MENU_CLICK_TO_START_THE_MISSION"
+			style			WINDOW_STYLE_FILLED
+			textscale		TEXTSIZE_SMALL
+			border			0
+			bordercolor		1 1 1 1
+			rect			0 388 640 45
+			textalign		ITEM_ALIGN_TOP_CENTER
+			textaligny		4
+			forecolor		1 1 1 0.4
+			backcolor		0 0 0 0
+			visible			when ( !dvarbool( ui_isSaving ) && VIS_PRESS_START );
+			decoration
+		}
+#endif // #ifdef PC
+
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			-128 0 896 480
+			style			WINDOW_STYLE_EMPTY
+			visible			1
+			forecolor		0 0 0 0
+			backcolor		0 0 0 0
+			action
+			{
+				uiScript playerstart
+			}
+		}
+
+		#include "ui/safearea.menu"
+	}
+
+	menuDef
+	{
+		name			"pregame_loaderror_mp"
+		rect			0 0 640 480
+		fullScreen		1
+		focusColor		COLOR_FOCUSED
+		backcolor		1 1 1 0
+		style			WINDOW_STYLE_FILLED
+		blurWorld		6.0
+		onClose
+		{
+			uiScript clearError
+		}
+		onOpen
+		{
+			setdvar ui_SaveLoadVisible "0";
+		}
+
+		// background
+		itemDef
+		{
+			style			WINDOW_STYLE_FILLED
+			rect			FULLSCREEN_WIDE
+			backcolor		0.2 0.2 0.2 .5
+			visible			1
+			decoration
+		}
+
+		
+
+		itemDef
+		{
+			name			"profile"
+			type			ITEM_TYPE_OWNERDRAW
+			visible			1
+			rect			40 40 560 400
+			ownerdraw		UI_LOADPROFILING
+			decoration
+		}
+
+		itemDef
+		{
+			name			errorinfo
+			type			ITEM_TYPE_TEXT
+			rect			120 142 400 255
+			style			WINDOW_STYLE_FILLED
+			textalign		ITEM_ALIGN_TOP_CENTER
+			autowrapped
+			dvar			"com_errorMessage"
+			textscale		.8
+			forecolor		1 .2 .2 1
+			visible			1
+			decoration
+		}
+
+		// the button
+		// Text message saying you should click to continue
+#ifdef CONSOLE
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			text			"@MENU_PRESS_START"
+			style			WINDOW_STYLE_FILLED
+			textscale		TEXTSIZE_TITLE
+			rect			0 388 640 45
+			textalign		ITEM_ALIGN_TOP_CENTER
+			textaligny		4
+			forecolor		1 1 1 1
+			visible			1
+			decoration
+		}
+#endif // #ifdef CONSOLE
+
+#ifdef PC
+		itemDef
+		{
+			type			ITEM_TYPE_TEXT
+			text			"@MENU_CLICK_TO_START_THE_MISSION"
+			style			WINDOW_STYLE_FILLED
+			textscale		TEXTSIZE_TITLE
+			rect			0 388 640 45
+			textalign		ITEM_ALIGN_TOP_CENTER
+			textaligny		4
+			forecolor		1 1 1 1
+			visible			1
+			decoration
+		}
+#endif // #ifdef PC
+
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			-128 0 896 480
+			style			WINDOW_STYLE_EMPTY
+			visible			1
+			forecolor		0 0 0 0
+			backcolor		0 0 0 0
+			action
+			{
+				uiScript clearLoadErrorsSummary
+			}
+		}				
+
+		#include "ui/safearea.menu"
+	}
+
+}

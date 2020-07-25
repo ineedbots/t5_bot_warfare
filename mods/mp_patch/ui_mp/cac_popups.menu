@@ -1,0 +1,813 @@
+
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/popup_player_info.inc"
+
+#include "ui/framestyle.inc"
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/popupstyle.inc"	
+#include "ui_mp/cac_stats.inc"	
+#include "ui/choices_setup_popmenu.menu"
+
+#define IS_ONLINE_GAME				( dvarInt( splitscreen ) == 0 && dvarInt( systemlink ) == 0 )
+#define IS_BASICTRAINING_GAME		( dvarInt( xblive_basictraining ) > 0 )
+
+	// saving popup for CAC ONLY - for a lack of better place
+	#define LOCAL_SAVING \
+			"wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait;"
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( saving_popup, exec LOCAL_SAVING" "LOCAL_SAVING" closemenu saving_popup";, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_SAVING", 1 )
+		SYSTEM_POPUP_SPINNER( 1 )
+	}
+
+
+	#define LOCAL_ACCEPT_ACTION( pclass, pclass_s )												\
+			if ( IS_ONLINE_GAME && !IS_BASICTRAINING_GAME )										\
+			{																					\
+				setDvarFromLocString( dvarString( ui_custom_name ), pclass );					\
+			}																					\
+			execNow "equipDefaultClass ( dvarString( ui_custom_name ) ) class_custom"pclass_s;	\
+			execNow "updategamerprofile";														\
+			play CHOICE_FOCUS_SOUND;															\
+			close "popup_cac_defaultclasswarning"pclass_s;										\
+			close "popup_cac_template"; 																			
+			
+	#define LOCAL_CANCEL_ACTION( pclass_s )					\
+			play CHOICE_FOCUS_SOUND; 						\
+			close "popup_cac_defaultclasswarning"pclass_s; 	
+
+
+	// reset to default class confirmation popup menu
+	#define RESET_WARNING_POPUP( pclass, pclass_s ) 																											\
+			menuDef																																				\
+			{																																					\
+				SYSTEM_POPUP_SETUP_VIS( "popup_cac_defaultclasswarning"pclass_s, setfocus "popup_cac_defaultclasswarning"pclass_s"_2", ;, 1 )					\
+																																								\
+				SYSTEM_POPUP_TITLE_VIS( "@MENU_RESET_TO_DEFAULT", 1 )																							\
+				SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_CUSTOM_CLASS_RESET_WARNING", 1 )																				\
+																																								\
+				FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_YES",	LOCAL_ACCEPT_ACTION( pclass, pclass_s ),	1, ;												)	\
+				FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_NO",	LOCAL_CANCEL_ACTION( pclass_s ),			1, name "popup_cac_defaultclasswarning"pclass_s"_2" )	\
+			}
+
+	RESET_WARNING_POPUP( "@CLASS_CLASS1", "_smg"		)
+	RESET_WARNING_POPUP( "@CLASS_CLASS2", "_cqb"		)
+	RESET_WARNING_POPUP( "@CLASS_CLASS3", "_assault"	)
+	RESET_WARNING_POPUP( "@CLASS_CLASS4", "_lmg"		)
+	RESET_WARNING_POPUP( "@CLASS_CLASS5", "_sniper"		)
+
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( copyClassConfirmation, setfocus copyClassConfirmation_2;, ;, 1 )	
+		SYSTEM_POPUP_TITLE_VIS( getCopyClassConfirmationText( dvarInt("ui_custom_class_highlighted"), dvarInt("ui_classToReplace") ), 1 )
+
+		#define COPY_CLASS_ACTION																			\
+				execNow copyClass (dvarInt("ui_custom_class_highlighted")) (dvarInt("ui_classToReplace"));	\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_YES",		COPY_CLASS_ACTION,	1, ;							) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL",	close self;,		1, name copyClassConfirmation_2	) 
+	}
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( copyCustomGametypeClassConfirmation, setfocus copyCustomGametypeClassConfirmation_2;, ;, 1 )	
+		SYSTEM_POPUP_TITLE_VIS( getCopyCustomGametypeClassConfirmationText( dvarInt("ui_custom_gametype_class_highlighted"), dvarInt("ui_customGametypeClassToReplace") ), 1 )
+
+		#define COPY_CUSTOM_CLASS_ACTION																			\
+				execNow copyCustomGametypeClass (dvarInt("ui_custom_gametype_class_highlighted")) (dvarInt("ui_customGametypeClassToReplace"));	\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_YES",		COPY_CUSTOM_CLASS_ACTION,	1, ;							) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL",	close self;,		1, name copyCustomGametypeClassConfirmation_2	) 
+	}
+
+#ifdef XENON
+	#define SELECT_ICON	"ui_button_xenon_3d_a_32x32"
+#endif
+#ifdef PS3
+	#define SELECT_ICON	"ui_button_ps3_x_32x32"
+#endif
+	
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		5
+	// Copy Class Popup
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( copyClassPopup, ;, ;, 1 ) 
+		SYSTEM_POPUP_TITLE_VIS( GetCopyClassDialogTitle( dvarInt("ui_custom_class_highlighted") ), 1 )
+
+		itemDef
+		{
+			name						custom_class_list
+			type						ITEM_TYPE_LISTBOX
+			feeder						FEEDER_CUSTOM_CLASSES
+			rect						CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X (CHOICE_SIZE_Y*6) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			elementwidth				CHOICE_SIZE_X
+			elementheight				CHOICE_SIZE_Y
+			elementtype					LISTBOX_TEXT	
+			textstyle					ITEM_TEXTSTYLE_NORMAL
+			textfont					UI_FONT_NORMAL
+			textscale					TEXTSIZE_DEFAULT
+			textalignx					CHOICE_SIZE_Y
+			textaligny					0
+			forecolor					1 1 1 1
+			focusColor					1 1 1 1
+			disableColor				1 1 1 1
+			selectBorder				0.8 0.95 1 0
+			outlinecolor				1 1 1 1  
+			elementBackgroundColor		NEW_FRAME_BUTTON_BG_COLOR  
+			selectIcon					SELECT_ICON 
+			elementHighlightColor		NEW_FRAME_BUTTON_TEXT_HIGHLIGHT_COLOR 
+#ifdef PC
+			modal
+			usepaging
+#else //#ifdef PC
+			noscrollbars
+#endif //#ifdef PC
+			noBlinkingHighlight
+			visible			1
+			onfocus 
+			{
+				play CHOICE_FOCUS_SOUND;
+			}			
+			onListboxSelectionChange	
+			{
+				play CHOICE_FOCUS_SOUND; 
+			}
+			doubleclick
+			{
+				execNow set ui_classToReplace (getFeederData("selection"));
+				open copyClassConfirmation;
+				close self;
+			}
+		}		
+
+		SYSTEM_POPUP_BACK_BUTTON
+	}
+	
+	
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		5
+	// Copy Custom Gametype Class Popup
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( copyCustomGametypeClassPopup, ;, ;, 1 ) 
+		SYSTEM_POPUP_TITLE_VIS( GetCopyCustomGametypeClassDialogTitle( dvarInt("ui_custom_gametype_class_highlighted") ), 1 )
+
+		itemDef
+		{
+			name						custom_class_list
+			type						ITEM_TYPE_LISTBOX
+			feeder						FEEDER_CUSTOM_GAMETYPE_CLASSES
+			rect						CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X (CHOICE_SIZE_Y*6) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+			elementwidth				CHOICE_SIZE_X
+			elementheight				CHOICE_SIZE_Y
+			elementtype					LISTBOX_TEXT	
+			textstyle					ITEM_TEXTSTYLE_NORMAL
+			textfont					UI_FONT_NORMAL
+			textscale					TEXTSIZE_DEFAULT
+			textalignx					CHOICE_SIZE_Y
+			textaligny					0
+			forecolor					1 1 1 1
+			focusColor					1 1 1 1
+			disableColor				1 1 1 1
+			selectBorder				0.8 0.95 1 0
+			outlinecolor				1 1 1 1  
+			elementBackgroundColor		NEW_FRAME_BUTTON_BG_COLOR  
+			selectIcon					SELECT_ICON 
+			elementHighlightColor		NEW_FRAME_BUTTON_TEXT_HIGHLIGHT_COLOR 
+#ifdef PC
+			modal
+			usepaging
+#else //#ifdef PC
+			noscrollbars
+#endif //#ifdef PC
+			noBlinkingHighlight
+			visible			1
+			onfocus 
+			{
+				play CHOICE_FOCUS_SOUND;
+			}			
+			onListboxSelectionChange	
+			{
+				play CHOICE_FOCUS_SOUND; 
+			}
+			doubleclick
+			{
+				execNow set ui_customGametypeClassToReplace (getFeederData("selection"));
+				open copyCustomGametypeClassConfirmation;
+				close self;
+			}
+		}		
+
+		SYSTEM_POPUP_BACK_BUTTON
+	}
+
+
+#ifdef PC
+	#undef CHOICE_FOCUS_SOUND
+	#define CHOICE_FOCUS_SOUND		"uin_navigation_over"
+
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		3
+	
+	#define RENAME_ACTION \
+		exec "setNewCustomName"; close self;
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( "pc_rename", exec "getOldCustomName"; setFocus nameEntry;, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_RENAME_CLASS", 1 )
+
+		itemDef 
+		{
+			name			nameEntry
+			TYPE			ITEM_TYPE_UPREDITFIELD
+			text			"@MENU_NAME1"
+			dvar			"ui_custom_newname"
+			rect			CHOICE_RECT( 1 )
+			textaligny		2
+			maxchars		15
+			maxpaintchars	15
+			textalign		ITEM_ALIGN_MIDDLE_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			forecolor		.9 .9 .9 1
+			style			WINDOW_STYLE_FILLED
+			backcolor		0 0 0 .3
+			visible			1
+			mouseenter		{ show keyBindStatus; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ hide keyBindStatus; setfocus ok_button; }
+			accept			{ if ( dvarString( ui_custom_newname ) != "" ) { RENAME_ACTION } }
+		}
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_OK", RENAME_ACTION, ( dvarString( ui_custom_newname ) != "" ), ; )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 2, "@MENU_OK", ;, ;, ( dvarString( ui_custom_newname ) == "" ), ; ) 
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MENU_CANCEL", close self; setDvar ui_custom_newname "";, 1, ; )
+	}
+#endif
+
+	
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		2
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( clearAttachmentNotification, focusFirst;, ;, 1 )	
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_CAC_ATTACHMENTS_CLEARED", 1 )
+
+#define CLEAR_ATTACHMENTS_ACTION \
+		execNow clearAllAttachmentsForItem (dvarString( ui_custom_name )) (STAT_CAC_PRIMARY);	\
+		if ( !dvarBool("buyingAndEquippingProItem") )											\
+		{																						\
+			execnow equipclasscurrentitem (dvarString( ui_custom_name ));						\
+		}																						\
+		else																					\
+		{																						\
+			execnow equipclassitem (dvarString( ui_custom_name )) (GetCurrentItemIndex() + 1);	\
+			execnow buildItemListForSlotName (dvarString( selected_loadout_slot ));				\		
+		}																						\																							
+		setDvar buyingAndEquippingProItem "0";	
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", CLEAR_ATTACHMENTS_ACTION; close self; execnow ui_animate menu_cac_custom * CloseDropDownList 0;, 1, ; ) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_CANCEL", close self;, 1, ; ) 
+	}
+
+	// Redefinitions for MEDIUM_POPUP_SETUP popups
+	#undef	POPUP_WIDTH
+	#define	POPUP_WIDTH								MEDIUM_POPUP_WIDTH		
+	#undef	POPUP_HEIGHT
+	#define	POPUP_HEIGHT							MEDIUM_POPUP_HEIGHT
+	#undef	CHOICE_SIZE_X			
+	#define CHOICE_SIZE_X							CONFIRM_PURCHASE_SIZE_X
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START							POPUP_Y_START_TOP
+	#undef	PLAYER_INFO_ALIGN
+	#define PLAYER_INFO_ALIGN						// Purposely set to nothing. The popup setup macro sets the alignment. If items within it set their own aligment, they end up offset incorrectly.
+	#undef	PLAYER_INFO_X_START
+	#define	PLAYER_INFO_X_START( frameWidth )		( frameWidth - PLAYER_INFO_WIDTH - PLAYER_INFO_PAD )
+	#undef	PLAYER_INFO_Y_START
+	#define	PLAYER_INFO_Y_START( frameHeight )		( PLAYER_INFO_PAD * 2 )
+	#undef	BG_BACKCOLOR
+	#define BG_BACKCOLOR							POPUP_BACKCOLOR
+	// Redefinitions for MEDIUM_POPUP_SETUP popups
+			
+			
+	#define PURCHASE_CONFIRMATION_RIGHT_X			( MEDIUM_POPUP_WIDTH / 2 )
+	#define PURCHASE_INFO_WIDTH						( ( MEDIUM_POPUP_WIDTH / 2 ) - POPUP_SIDE_PAD )
+
+	#define CONFIRMATION_ITEM_INFO_VIS( itemName, itemCost, itemDesc, balanceHeader, balanceAfter, visArg )																																															\
+			PREPROC_TEXT_DRAW_VIS_EX( (PURCHASE_CONFIRMATION_RIGHT_X)	CHOICE_Y( 1 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, locString( "@MENU_POINTS", itemCost ),						TEXTSIZE_LARGE,		0, 0, ITEM_ALIGN_MIDDLE_LEFT,	NEW_FRAME_GREEN_RGB 1,	visArg, ;				)	\	/* Cost								*/
+			PREPROC_TEXT_DRAW_VIS_EX( (PURCHASE_CONFIRMATION_RIGHT_X)	CHOICE_Y( 2 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, "@" + itemName, 											TEXTSIZE_LARGE,		0, 0, ITEM_ALIGN_MIDDLE_LEFT,	NEW_FRAME_GREEN_RGB 1,	visArg, ;				)	\	/* Name								*/
+			PREPROC_TEXT_DRAW_VIS_EX( (PURCHASE_CONFIRMATION_RIGHT_X)	CHOICE_Y( 4 )	PURCHASE_INFO_WIDTH 200,			0 0, "@" + itemDesc,											TEXTSIZE_SMALL,		0, 0, ITEM_ALIGN_TOP_LEFT,		MEDIUM_POPUP_GRAY,		visArg, autowrapped;	)	\	/* Description						*/
+			PREPROC_TEXT_DRAW_VIS_EX( (PURCHASE_CONFIRMATION_RIGHT_X)	CHOICE_Y( 7 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, "@MPUI_YOUR_BANK",											TEXTSIZE_DEFAULT,	0, 0, ITEM_ALIGN_TOP_LEFT,		MEDIUM_POPUP_GRAY,		visArg, ;				)	\	/* Currency Available Header		*/
+			PREPROC_TEXT_DRAW_VIS_EX( (MEDIUM_POPUP_WIDTH-75)			CHOICE_Y( 7 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, locString( "@MENU_POINTS", GetStatByName( "CODPOINTS" ) ),	TEXTSIZE_DEFAULT,	0, 0, ITEM_ALIGN_TOP_LEFT,		1 1 1 1,				visArg, ;				)	\	/* Currency Available				*/
+			PREPROC_TEXT_DRAW_VIS_EX( (PURCHASE_CONFIRMATION_RIGHT_X)	CHOICE_Y( 8 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, balanceHeader,												TEXTSIZE_DEFAULT,	0, 0, ITEM_ALIGN_TOP_LEFT,		MEDIUM_POPUP_GRAY,		visArg, ;				)	\	/* Balance After Purchase Header	*/
+			PREPROC_TEXT_DRAW_VIS_EX( (MEDIUM_POPUP_WIDTH-75)			CHOICE_Y( 8 )	PURCHASE_INFO_WIDTH CHOICE_SIZE_Y,	0 0, balanceAfter,												TEXTSIZE_DEFAULT,	0, 0, ITEM_ALIGN_TOP_LEFT,		1 1 1 1,				visArg, ;				)		/* Balance After Purchase			*/
+
+	#define PURCHASE_CONFIRMATION_ITEM_INFO( itemName, itemCost, itemDesc )	\
+			CONFIRMATION_ITEM_INFO_VIS( itemName, itemCost, itemDesc, "@MPUI_BALANCE_AFTER_PURCHASE",	locString( "@MENU_POINTS", GetStatByName( "CODPOINTS" ) - itemCost ), 1 )	
+
+	#define PURCHASE_CONFIRMATION_ITEM_INFO_VIS( itemName, itemCost, itemDesc, visArg )	\
+			CONFIRMATION_ITEM_INFO_VIS( itemName, itemCost, itemDesc, "@MPUI_BALANCE_AFTER_PURCHASE",	locString( "@MENU_POINTS", GetStatByName( "CODPOINTS" ) - itemCost ), visArg )	
+
+#define IS_TWO_ATTACHMENT_PERK_EQUIPPED \ 
+		( ( STAT_CAC_SPECIALTY2 == getItemIndex( "PERKS_PROFESSIONAL" ) ) || ( STAT_CAC_SPECIALTY2 == getItemIndex( "PERKS_PROFESSIONAL_PRO" ) ) )
+	
+#define TWO_ATTACHMENTS_EQUIPPED \
+		( GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), STAT_CAC_PRIMARY ) > 1 || GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), STAT_CAC_SECONDARY ) > 1 )
+
+#define TWO_ATTACHMENT_PERK_NOT_HIGHLIGHTED \
+		( GetCurrentItemIndex() != getItemIndex( "PERKS_PROFESSIONAL" ) && GetCurrentItemIndex() != getItemIndex( "PERKS_PROFESSIONAL_PRO" ) )
+
+#define PERK_2_EQUIP_ACTION \
+		if( TWO_ATTACHMENTS_EQUIPPED && IS_TWO_ATTACHMENT_PERK_EQUIPPED && TWO_ATTACHMENT_PERK_NOT_HIGHLIGHTED ) \
+		{ \
+			setDvar buyingAndEquippingProItem "0";	\
+			execNow openMenu clearAttachmentNotification; \
+			execnow set ui_closeAfterPurchase 0; \
+		} \
+		else \
+		{ \
+			execnow equipclasscurrentitem (dvarString( ui_custom_name )); \
+			execnow set ui_closeAfterPurchase 1;						\
+		}
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseConfirmation", setfocus "PurchaseConfirmation_3";, ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetCurrentItemName(), GetCurrentItemCost(), GetItemDesc( GetCurrentItemIndex() ) )
+		
+		#define BUY_ACTION																										\
+				execnow purchasecurrentitem;																					\
+				if ( dvarString( ui_inside_popup ) == "select_weapon" )															\
+				{																												\
+					execnow buildItemListForSlotNameAndGroup (dvarString(selected_loadout_slot)) (dvarString(selected_group));	\
+				}																												\
+				elseif ( dvarString( ui_inside_popup ) == "equipment_head" )													\
+				{																												\
+					execnow buildItemListForSlotName (dvarString( selected_loadout_slot ));										\
+				}																												\
+				close self;
+
+		#define BUY_AND_EQUIP_ACTION																							\
+				execnow purchasecurrentitem;																					\
+				if ( dvarString( ui_inside_popup ) == "specialties_2" )															\
+				{																												\
+					PERK_2_EQUIP_ACTION																							\
+				}																												\
+				else																											\
+				{																												\
+					execnow equipclasscurrentitem (dvarString( ui_custom_name ));												\
+					execnow set ui_closeAfterPurchase 1;																			\
+				}																												\
+				if ( dvarString( ui_inside_popup ) == "select_weapon" )															\
+				{																												\
+					execnow buildItemListForSlotNameAndGroup (dvarString(selected_loadout_slot)) (dvarString(selected_group));	\
+					execnow set ui_closeAfterPurchase 1;																			\
+				}																												\
+				elseif ( dvarString( ui_inside_popup ) == "equipment_head" )													\
+				{																												\
+					execnow buildItemListForSlotName (dvarString( selected_loadout_slot ));										\
+				}																												\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_ACTION,				1, ;							)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_ACTION,	1, ;							) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,				1, name PurchaseConfirmation_3	) 
+	}
+
+			
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseKillstreakConfirmation", setfocus "PurchaseKillstreakConfirmation_3";, ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetCurrentItemName(), GetCurrentItemCost(), GetItemDesc( GetCurrentItemIndex() ) )
+		
+		#define BUY_KILLSTREAK_ACTION			\
+				execnow purchasecurrentitem;	\
+				close self;
+
+		#define BUY_AND_EQUIP_KILLSTREAK_ACTION						\
+				execnow purchasecurrentitem;						\
+				execnow equipGlobalItemInSlotSorted 3 killstreak 1;	\
+				execnow set ui_closeAfterPurchase 1;				\
+				close self;
+
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_KILLSTREAK_ACTION,				1, ;																		)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_KILLSTREAK_ACTION,	( GetNumSortedItemsEquipped() < 3 ), ;										) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,							( GetNumSortedItemsEquipped() == 3 ), name PurchaseKillstreakConfirmation_3	) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,							( GetNumSortedItemsEquipped() < 3 ), name PurchaseKillstreakConfirmation_3	) 
+	}
+	
+		
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseProConfirmation", setfocus "PurchaseProConfirmation_3", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetItemName( GetCurrentItemIndex() + 1 ), GetItemCost( GetCurrentItemIndex() + 1 ), GetItemDesc( GetCurrentItemIndex() + 1 ) )
+		
+		#define BUY_PRO_ACTION															\
+				execnow purchasecurrentproitem;											\
+				execnow buildItemListForSlotName (dvarString( selected_loadout_slot ));	\
+				close self;
+
+		#define BUY_AND_EQUIP_PRO_ACTION												\
+				execnow purchasecurrentproitem;											\
+				if ( dvarString( ui_inside_popup ) == "specialties_2" && TWO_ATTACHMENTS_EQUIPPED && IS_TWO_ATTACHMENT_PERK_EQUIPPED && TWO_ATTACHMENT_PERK_NOT_HIGHLIGHTED )					\
+				{																		\
+					setDvar buyingAndEquippingProItem "1";	\
+					execNow openMenu clearAttachmentNotification;											\
+					execnow set ui_closeAfterPurchase 0;													\
+				}																							\	
+				else																						\
+				{																							\																						
+					execnow equipclassitem (dvarString( ui_custom_name )) (GetCurrentItemIndex() + 1);		\
+					execnow set ui_closeAfterPurchase 1;													\
+					execnow buildItemListForSlotName (dvarString( selected_loadout_slot ));					\		
+				}																							\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_PRO_ACTION,				1, ;								)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_PRO_ACTION,	1, ;								) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,					1, name PurchaseProConfirmation_3	) 
+	}
+	
+
+#define GET_SLOT_STAT \
+	( Select( dvarString( selected_loadout_slot ) == "primary", STAT_CAC_PRIMARY, STAT_CAC_SECONDARY ) )
+
+#define SELECTING_PRIMARY \
+	( dvarString( selected_loadout_slot ) == "primary" )
+
+#define CAN_EQUIP_TWO_ATTACHMENTS \
+		( ( SELECTING_PRIMARY ) && ( isItemEquipped( getitemindex("PERKS_PROFESSIONAL"), dvarString( ui_custom_name ) ) || isItemEquipped( getitemindex("PERKS_PROFESSIONAL_PRO"), dvarString( ui_custom_name ) ) ) )
+
+#define NUM_EQUIPPED_ATTACHMENTS \
+		GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), GET_SLOT_STAT )
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseAttachmentConfirmation", setfocus "PurchaseAttachmentConfirmation_3", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetCurrentItemAttachmentName(), GetCurrentItemAttachmentCost(), GetAttachmentDesc( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() ) ) )
+
+		#define BUY_ATTACHMENT_ACTION					\
+				execnow purchasecurrentitemattachment;	\
+				close self;
+
+		#define BUY_ATTACHMENT_AND_EQUIP_ACTION																					\
+				execnow purchasecurrentitemattachment;																			\
+				if( ( NUM_EQUIPPED_ATTACHMENTS < 1 ) || ( NUM_EQUIPPED_ATTACHMENTS == 1 && CAN_EQUIP_TWO_ATTACHMENTS ) )		\
+				{																												\
+					execnow equipclasscurrentattachment ( dvarString( ui_custom_name ) );										\
+				}																												\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_ATTACHMENT_ACTION,				1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_ATTACHMENT_AND_EQUIP_ACTION,	( ( NUM_EQUIPPED_ATTACHMENTS == 0 ) || ( NUM_EQUIPPED_ATTACHMENTS == 1 && CAN_EQUIP_TWO_ATTACHMENTS ) ), ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,							( NUM_EQUIPPED_ATTACHMENTS == 2 || ( ( NUM_EQUIPPED_ATTACHMENTS == 1 ) && !CAN_EQUIP_TWO_ATTACHMENTS ) ), name PurchaseAttachmentConfirmation_3	) 
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,							( ( NUM_EQUIPPED_ATTACHMENTS == 0 ) || ( NUM_EQUIPPED_ATTACHMENTS == 1 && CAN_EQUIP_TWO_ATTACHMENTS ) ), name PurchaseAttachmentConfirmation_3	) 
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseOptionConfirmation", setfocus "PurchaseOptionConfirmation_3", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetWeaponOptionName( GetCurrentItemOption() ), GetWeaponOptionCost( GetCurrentItemOption() ), GetWeaponOptionName( GetCurrentItemOption() ) )
+
+		#define BUY_OPTION_ACTION					\
+				execnow purchasecurrentitemoption;	\
+				close self;
+
+		#define BUY_OPTION_AND_EQUIP_ACTION																			\
+				execnow purchasecurrentitemoption;																	\
+				execnow equipclasscurrentoption ( dvarString( ui_custom_name ) ) ( dvarString( ui_option_name ) );	\
+				execnow set ui_closeAfterPurchase 1;																\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_OPTION_ACTION,				1, ;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_OPTION_AND_EQUIP_ACTION,	1, ;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,					1, name PurchaseOptionConfirmation_3	)
+	}
+
+	
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseContractConfirmation", setfocus "PurchaseContractConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetContractName( GetCurrentContractIndex() ), GetContractCost( GetCurrentContractIndex() ), GetContractDesc( GetCurrentContractIndex() ) )
+		
+		#define BUY_CONTRACT_ACTION																			\
+				execnow activatecontract ( GetCurrentContractIndex() ) ( dvarint( ui_activeContract ) );	\
+				close self;																					\
+				execnow ui_animate menu_xboxlive_contracts anim_controller CloseDropDownList 0;
+
+		#define DEACTIVATE_AND_BUY_CONTRACT_ACTION															\
+				execnow activatecontract ( GetCurrentContractIndex() ) ( dvarint( ui_activeContract ) );	\
+				close self;																					\
+				execnow ui_animate menu_xboxlive_contracts anim_controller CloseDropDownList 0;
+				
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_CONTRACT_ACTION,				( !IsContractInProgress( GetIndexForActiveContract( dvarInt( ui_activeContract ) ) ) ),	;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_DEACTIVATE_AND_BUY_CAPS",	DEACTIVATE_AND_BUY_CONTRACT_ACTION,	( IsContractInProgress( GetIndexForActiveContract( dvarInt( ui_activeContract ) ) ) ),	;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,						1,																						name PurchaseContractConfirmation_2	)
+		PREPROC_TEXT_DRAW_VIS_EX( CHOICE_X( 3 )	CHOICE_Y( 3 ) CHOICE_SIZE_X CHOICE_SIZE_Y, 0 0, "@MPUI_REPLACE_CONTRACT_WARNING", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, NEW_FRAME_ORANGE_RGB 1, when( IsContractInProgress( GetIndexForActiveContract( dvarInt( ui_activeContract ) ) ) );, autowrapped )
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseWeaponOptionConfirmation", setfocus "PurchaseWeaponOptionConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO_VIS( GetItemName( dvarInt( weaponOptionIndex ) ), GetWeaponOptionCost( GetItemOptionByName( dvarString( weaponOptionRef ) ) ), GetItemDesc( dvarInt( weaponOptionIndex ) ), 1 )
+		
+		#define BUY_WEAPON_OPTION_ACTION( optionRef )	\
+				execnow PurchaseWeaponOption optionRef;	\
+				close self;
+				
+		#define BUY_AND_EQUIP_WEAPON_OPTION_ACTION( optionRef ) \
+				execnow PurchaseWeaponOption optionRef; \
+				close self; \
+				execnow toggleWeaponOption (dvarString( ui_custom_name )) optionRef;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_WEAPON_OPTION_ACTION( ( dvarString( weaponOptionRef ) ) ),	1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_WEAPON_OPTION_ACTION( ( dvarString( weaponOptionRef ) ) ),	1, ;							)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,														1, name PurchaseWeaponOptionConfirmation_2	) 
+	}	
+						
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseEmblemLayerConfirmation", setfocus "PurchaseEmblemLayerConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( ( locString( "MENU_EMBLEM_LAYER_CAPS", emblemSelectedLayer() + 1 ) ) , emblemLayerCost( emblemSelectedLayer() ), "" )
+				
+		#define BUY_EMBLEM_LAYER_ACTION			\
+				execnow emblempurchaselayer;	\
+				close self;
+				
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_EMBLEM_LAYER_ACTION,	1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,				1, name PurchaseEmblemLayerConfirmation_2	)
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseClanTagFeatureConfirmation", setfocus "PurchaseClanTagFeatureConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( "MPUI_CLANTAG_" + GetClanTagFeatureName( GetCurrentClanTagFeature() ), GetClanTagFeatureCost( GetCurrentClanTagFeature() ), "MPUI_CLANTAG_" + GetClanTagFeatureName( GetCurrentClanTagFeature() ) + "_DESC" )
+				
+		#define BUY_CLAN_TAG_FEATURE_ACTION										\
+				execnow PurchaseClanTagFeature ( GetCurrentClanTagFeature() );	\
+				close self;	
+				
+		#define BUY_AND_EQUIP_CLAN_TAG_FEATURE_ACTION												\
+				execnow PurchaseClanTagFeature ( GetCurrentClanTagFeature() );						\
+				execNow statwriteddl clanTagStats selectedFeature ( GetCurrentClanTagFeature() );	\
+				close self;	
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_CLAN_TAG_FEATURE_ACTION,	1, ;											)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_CLAN_TAG_FEATURE_ACTION,	1, ;									)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,					1, name PurchaseClanTagFeatureConfirmation_2	)
+	}
+	
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseCurrentWeaponOptionConfirmation", setfocus "PurchaseCurrentWeaponOptionConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( GetWeaponOptionName( GetCurrentItemOption() ), GetWeaponOptionCost( GetCurrentItemOption() ), GetWeaponOptionName( GetCurrentItemOption() ) )
+				
+		#define BUY_CURRENT_WEAPON_OPTION_ACTION	\
+				execnow purchasecurrentitemoption;	\
+				close self;	
+				
+		#define BUY_AND_EQUIP_CURRENT_WEAPON_OPTION_ACTION																	\
+				execnow purchasecurrentitemoption;																			\
+				execnow "equipclasscurrentoption ( dvarString( ui_custom_name ) ) ( dvarString( ui_optiongroup_name ) )";	\
+				execnow set ui_closeAfterPurchase 1;																		\
+				close self;
+				
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_CURRENT_WEAPON_OPTION_ACTION,			1, ;												)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_EQUIP_CAPS",		BUY_AND_EQUIP_CURRENT_WEAPON_OPTION_ACTION,	1, ;												)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,								1, name PurchaseCurrentWeaponOptionConfirmation_2	)
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseEmblemIconConfirmation", setfocus "PurchaseEmblemIconConfirmation_3", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( emblemIconName( localvarint( emblem_selected_icon_id ) ), emblemIconCost( localvarint( emblem_selected_icon_id ) ), "" )
+		
+		#define BUY_EMBLEM_ICON_ACTION									\
+				execnow emblempurchaseicon ( localvarint( emblem_selected_icon_id ) );	\
+				close self;
+
+		#define BUY_SELECT_EMBLEM_ICON_ACTION							\
+				execnow emblempurchaseicon ( localvarint( emblem_selected_icon_id ) );	\
+				close self;												\
+				execNow emblemClear; \
+				execNow emblemIcon ( localvarint( emblem_selected_icon_id ) );							\
+				close emblem_icon_select;								\
+				openimmediate emblem_edit;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_EMBLEM_ICON_ACTION,			1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_SELECT_CAPS",		BUY_SELECT_EMBLEM_ICON_ACTION,	1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,					1, name PurchaseEmblemIconConfirmation_3	)
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseEmblemBackgroundConfirmation", setfocus "PurchaseEmblemBackgroundConfirmation_3", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( emblemBackgroundName( localvarint( bg_hi_index ) ), emblemBackgroundCost( localvarint( bg_hi_index ) ), "" )
+		PREPROC_SHADER_DRAW( (PURCHASE_CONFIRMATION_RIGHT_X) CHOICE_Y( 4 ) 185 40, emblemBackgroundMaterial( localvarint( bg_hi_index ) ), 1 1 1 1 )
+		
+		#define BUY_EMBLEM_BACKGROUND_ACTION											\
+				execnow emblempurchasebackgroundbyindex ( localvarint( bg_hi_index ) );	\
+				close self;
+
+		#define BUY_SELECT_EMBLEM_BACKGROUND_ACTION										\
+				execnow emblempurchasebackgroundbyindex ( localvarint( bg_hi_index ) );	\
+				execnow emblemselectbackground ( localvarint( bg_hi_index ) );			\
+				close self;																\
+				close emblem_bg_select;													\
+				openimmediate emblem_edit;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_EMBLEM_BACKGROUND_ACTION,			1, ;											)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_BUY_AND_SELECT_CAPS",		BUY_SELECT_EMBLEM_BACKGROUND_ACTION,	1, ;											)
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,							1, name PurchaseEmblemBackgroundConfirmation_3	)
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PurchaseAttachmentPointConfirmation", setfocus "PurchaseAttachmentPointConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+
+		#define SELECTED_ATTACHMENT_POINT_NAME \
+				tablelookup( "mp/attachmentTable.csv", 4, dvarString( "selected_attachment_point" ), 3 )
+		
+		#define SELECTED_ATTACHMENT_POINT_COST \
+				tablelookup( "mp/attachmentTable.csv", 4, dvarString( "selected_attachment_point" ), 12 )
+
+		#define SELECTED_ATTACHMENT_POINT_DESC \
+				tablelookup( "mp/attachmentTable.csv", 4, dvarString( "selected_attachment_point" ), 7 )
+
+		PURCHASE_CONFIRMATION_ITEM_INFO( SELECTED_ATTACHMENT_POINT_NAME, SELECTED_ATTACHMENT_POINT_COST, SELECTED_ATTACHMENT_POINT_DESC )
+		
+		#define IS_PRIMARY ( dvarString( "selected_loadout_slot" ) == "primary" )
+
+		#define PURCHASE_ATTACH_POINT_ACTION																													\
+				execnow "purchaseitemattachmentpoint" (Select( IS_PRIMARY, STAT_CAC_PRIMARY, STAT_CAC_SECONDARY )) (dvarString( "selected_attachment_point" ));	\
+				close self;
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				PURCHASE_ATTACH_POINT_ACTION,	1, ;											)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self;,					1, name PurchaseAttachmentPointConfirmation_2	)
+	}
+
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "PrestigeLBPurchaseConfirmation", setfocus "PrestigeLBPurchaseConfirmation_2", ;, POPUP_GLOW_GREEN, 1, 1 )
+		MEDIUM_POPUP_TITLE_VIS( "@MENU_CONFIRM_PURCHASE_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+		PURCHASE_CONFIRMATION_ITEM_INFO( "MPUI_PRESTIGE_LEADERBOARDS_CAPS", GetItemCost(GetItemIndex("FEATURE_PRESTIGE_LB")), "" )
+		
+		#define BUY_PRESTIGE_LB_ACTION										\
+				execNow purchaseItem (getItemIndex("FEATURE_PRESTIGE_LB"));	\
+				execnow "uploadstats";										\
+				close self;													\
+				openImmediate menu_playercards_lb_prestige					
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_BUY_CAPS",				BUY_PRESTIGE_LB_ACTION,	1, ;										)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CANCEL_PURCHASE_CAPS",	close self,				1, name PrestigeLBPurchaseConfirmation_2	) 
+	}
+
+
+	// Redefinitions for LARGE_POPUP_SETUP popups
+	#undef	POPUP_WIDTH
+	#define	POPUP_WIDTH								LARGE_POPUP_WIDTH		
+	#undef	POPUP_HEIGHT
+	#define	POPUP_HEIGHT							LARGE_POPUP_HEIGHT
+	#undef	CHOICE_SIZE_X			
+	#define CHOICE_SIZE_X							(LARGE_POPUP_WIDTH / 3)
+	// Redefinitions for LARGE_POPUP_SETUP popups
+
+	
+	// ====================================================================================================
+	// reset to default class selection ===================================================================
+	// ====================================================================================================
+	#define RESET_DEFAULT_ACTION( ptype )	\
+			play CHOICE_FOCUS_SOUND;		\
+			open "popup_cac_defaultclasswarning"ptype;
+			
+	#undef	CHOICE_GROUP
+	#define CHOICE_GROUP				"reset_class"
+
+	// hackaround to work for PC's floating mouse unfocusing
+	#undef  UI_FOCUSFIRST
+	#ifdef PC
+		#define UI_FOCUSFIRST "ui_class"
+	#else
+		#define UI_FOCUSFIRST "ui_fake_focus"
+	#endif
+	menuDef	
+	{
+		#define IS_CUSTOM_CLASS_MODE	dvarInt( ui_useCustomClassInfo ) == 1
+
+		LARGE_POPUP_SETUP_VIS( "popup_cac_template", execnow "set "UI_FOCUSFIRST" class_smg";, ;, POPUP_GLOW_WHITE, 0, 1 )
+		
+		LARGE_POPUP_TITLE_VIS( dvarString( dvarString( ui_custom_name ) ), when( !IS_CUSTOM_CLASS_MODE && IS_ONLINE_GAME && !IS_BASICTRAINING_GAME ) )
+		LARGE_POPUP_TITLE_VIS( dvarString( dvarString( offline_custom_name ) ), when( !IS_CUSTOM_CLASS_MODE && ( !IS_ONLINE_GAME || IS_BASICTRAINING_GAME ) ) )
+		LARGE_POPUP_TITLE_VIS( dvarString( custom_class_name ), when( IS_CUSTOM_CLASS_MODE ) )
+
+		LARGE_POPUP_SUBTITLE_VIS( toUpper( dvarstring(ui_menu_selection_title) ), 1 )	
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	1, "@CLASS_CLASS1", RESET_DEFAULT_ACTION( "_smg" ),		setdvar ui_class class_custom_smg;		setDvarFromLocString( ui_default_name, "@CLASS_CLASS1" );, ;, 1, ; )
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	2, "@CLASS_CLASS2", RESET_DEFAULT_ACTION( "_cqb" ),		setdvar ui_class class_custom_cqb;		setDvarFromLocString( ui_default_name, "@CLASS_CLASS2" );, ;, 1, ; )
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	3, "@CLASS_CLASS3", RESET_DEFAULT_ACTION( "_assault" ),	setdvar ui_class class_custom_assault;	setDvarFromLocString( ui_default_name, "@CLASS_CLASS3" );, ;, 1, ; )
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	4, "@CLASS_CLASS4", RESET_DEFAULT_ACTION( "_lmg" ),		setdvar ui_class class_custom_lmg;		setDvarFromLocString( ui_default_name, "@CLASS_CLASS4" );, ;, 1, ; )
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	5, "@CLASS_CLASS5", RESET_DEFAULT_ACTION( "_sniper" ),	setdvar ui_class class_custom_sniper;	setDvarFromLocString( ui_default_name, "@CLASS_CLASS5" );, ;, 1, ; )
+		
+		#undef	CAC_WIDTH
+		#define CAC_WIDTH	LARGE_POPUP_WIDTH
+		#undef	CAC_HEIGHT
+		#define CAC_HEIGHT	LARGE_POPUP_HEIGHT
+
+		#define COMMON_ITEM_INFO_WIDTH		200
+		#define COMMON_ITEM_INFO_X			(CAC_WIDTH - COMMON_ITEM_INFO_WIDTH - POPUP_SIDE_PAD )
+		#define COMMON_ITEM_INFO_Y			(POPUP_SIDE_PAD*1.5)
+
+		// Default class stats
+		#undef	STAT_CAC_PRIMARY_GRENADE			
+		#define STAT_CAC_PRIMARY_GRENADE			GetDefaultClassSlot( dvarstring( ui_class ), "primarygrenade" )
+		#undef	STAT_CAC_PRIMARY					
+		#define STAT_CAC_PRIMARY					GetDefaultClassSlot( dvarstring( ui_class ), "primary" )
+		// no default attachments or camo for now
+		#undef	STAT_CAC_PRIMARY_ATTACHMENT			
+		#define STAT_CAC_PRIMARY_ATTACHMENT			0
+		#undef	STAT_CAC_PRIMARY_CAMO				
+		#define STAT_CAC_PRIMARY_CAMO				0
+		#undef	STAT_CAC_SECONDARY					
+		#define STAT_CAC_SECONDARY					GetDefaultClassSlot( dvarstring( ui_class ), "secondary" )
+		// no default attachments or camo for now
+		#undef	STAT_CAC_SECONDARY_ATTACHMENT		
+		#define STAT_CAC_SECONDARY_ATTACHMENT		0
+		#undef	STAT_CAC_SECONDARY_CAMO				
+		#define STAT_CAC_SECONDARY_CAMO				0
+		#undef	STAT_CAC_SPECIALTY1				
+		#define STAT_CAC_SPECIALTY1					GetDefaultClassSlot( dvarstring( ui_class ), "specialty1" )
+		#undef	STAT_CAC_SPECIALTY2				
+		#define STAT_CAC_SPECIALTY2					GetDefaultClassSlot( dvarstring( ui_class ), "specialty2" )
+		#undef	STAT_CAC_SPECIALTY3					
+		#define STAT_CAC_SPECIALTY3					GetDefaultClassSlot( dvarstring( ui_class ), "specialty3" )		
+		#undef	STAT_CAC_EQUIPMENT					
+		#define STAT_CAC_EQUIPMENT					GetDefaultClassSlot( dvarstring( ui_class ), "equipment" )
+		#undef	STAT_CAC_SPECIAL_GRENADE				
+		#define STAT_CAC_SPECIAL_GRENADE			GetDefaultClassSlot( dvarstring( ui_class ), "specialgrenade" )
+		#undef	STAT_CAC_BODY					
+		#define STAT_CAC_BODY						GetDefaultClassSlot( dvarstring( ui_class ), "body" )
+		#undef	STAT_CAC_DEATHSTREAK				
+		#define STAT_CAC_DEATHSTREAK				GetDefaultClassSlot( dvarstring( ui_class ), "deathstreak" )
+		#undef	STAT_CAC_KILLSTREAK_TIER1			
+		#define STAT_CAC_KILLSTREAK_TIER1			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak1" )
+		#undef	STAT_CAC_KILLSTREAK_TIER2			
+		#define STAT_CAC_KILLSTREAK_TIER2			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak2" )
+		#undef	STAT_CAC_KILLSTREAK_TIER3			
+		#define STAT_CAC_KILLSTREAK_TIER3			GetDefaultClassSlot( dvarstring( ui_class ), "killstreak3" )
+		#undef	FIRST_ATTACHMENT_PRIMARY_WEAPON
+		#define FIRST_ATTACHMENT_PRIMARY_WEAPON 	-1	
+		#undef	SECOND_ATTACHMENT_PRIMARY_WEAPON
+		#define SECOND_ATTACHMENT_PRIMARY_WEAPON 	-1
+
+
+		#include "ui_mp/newframe.inc"
+		#include "ui_mp/cac_item_info.inc"
+		
+		LARGE_POPUP_BACK_BUTTON
+	}

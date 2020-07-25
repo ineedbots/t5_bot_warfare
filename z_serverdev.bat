@@ -1,0 +1,1 @@
+start BlackOpsMP.exe +set dedicated 1 +set developer 1 +set developer_script 1 +set logfile 2 +set scr_game_spectatetype 2 +set sv_cheats 1 +set sv_maxclients 32 +set sv_licensenum 0 +set net_port 28960 +set sv_ranked 0 +set scr_tdm_scorelimit 0 +set scr_bots_managed_spawn 1 +set scr_bots_managed_all 7 +devmap mp_nuked

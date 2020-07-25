@@ -1,0 +1,1618 @@
+#include "ui/menudef.h"
+#include "ui_mp/cac_stats.inc"
+#include "ui_mp/common_macro.inc"
+
+#undef	ORIGIN_TITLE
+#define ORIGIN_TITLE				0 0
+
+#ifdef CONSOLE
+	#undef	CHOICE_X_START
+	#define CHOICE_X_START			0
+
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START			50
+	
+	#define RECT_ALIGN				;
+#else
+	#undef	CHOICE_X_START
+	#define CHOICE_X_START			30
+
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START			90
+	
+	#define RECT_ALIGN				HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN;
+#endif
+
+#undef CHOICE_GROUP
+#define CHOICE_GROUP "cac_weapon"
+
+#define BUTTON_BG_WIDTH				210
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/cac_viewer.inc"
+
+#include "ui_mp/cac_loadout.inc"
+#include "ui_mp/cac_player_model.inc"
+#include "ui_mp/cac_weapon_anim_states.inc"
+#include "ui_mp/grid_common.inc"
+#include "ui_mp/overlaybg.inc"
+#include "ui_mp/popup_player_info.inc"
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/item_listbox.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X					200
+
+#define TOP_Y_OFFSET_ON					10
+#define BOTTOM_Y_OFFSET_ON				-110
+#define TOP_Y_OFFSET_OFF				-20
+#define BOTTOM_Y_OFFSET_OFF				-60
+
+#define LEFT_X_OFFSET					0
+#define MIDDLE_X_OFFSET					-100
+#define RIGHT_X_OFFSET					-200
+
+#define CLASS_BONUS_VALUE				GetClassBonus( dvarString( ui_custom_name ) )
+#define CAN_GUN_HAVE_CUSTOM_RETICLE		( dvarInt( ui_canHaveCustomReticle ) == 1 )
+#define CUSTOMIZING_RETICLE				( localVarInt( "ui_disable_controls" ) == 0 && dvarString( ui_inside_popup ) == "select_reticle" )
+#define CUSTOMIZING_RETICLE_COLOR		( localVarInt( "ui_disable_controls" ) == 0 && dvarString( ui_inside_popup ) == "select_reticle_color" )
+#define CUSTOMIZING_LENS				( localVarInt( "ui_disable_controls" ) == 0 && dvarString( ui_inside_popup ) == "select_lens" )
+
+#define WEAPON_GROUP_LIST_BUTTON_B_ACTION								\
+		if ( dvarString( selected_loadout_slot ) == "primary" )			\
+		{																\
+			execnow setCurrentItemIndex ( STAT_CAC_PRIMARY );			\
+		}																\
+		elseif ( dvarString( selected_loadout_slot ) == "secondary" )	\
+		{																\
+			execnow setCurrentItemIndex ( STAT_CAC_SECONDARY );			\
+		}
+	
+#define WEAPON_LIST_BUTTON_B_ACTION														\
+		execnow set cac_weapon_current_list weapon_group_list;							\
+		execnow set cac_weapon_feeder_count ( GetFeederCount( weapon_group_list ) );	\
+		execnow set ui_next_inside_popup select_weapon_group;							\
+		if ( dvarString( selected_loadout_slot ) == "primary" )							\
+		{																				\
+			execnow setCurrentItemIndex ( STAT_CAC_PRIMARY );							\
+		}																				\
+		elseif ( dvarString( selected_loadout_slot ) == "secondary" )					\
+		{																				\
+			execnow setCurrentItemIndex ( STAT_CAC_SECONDARY );							\
+		}
+
+#define	UPDATE_ATTACH_SLOT_TOP												\
+		if ( dvarString( selected_loadout_slot ) == "primary" )				\
+		{																	\
+			execnow set ui_att_slot_top ( CAC_PRI_ATTACHMENT_SLOT_TOP );	\
+		}																	\
+		elseif ( dvarString( selected_loadout_slot ) == "secondary" )		\
+		{																	\
+			execnow set ui_att_slot_top ( CAC_SEC_ATTACHMENT_SLOT_TOP );	\
+		}																	\
+		if ( IsAttachmentAllowedOnItemIndex( STAT_CAC_PRIMARY, "elbit" ) || IsAttachmentAllowedOnItemIndex( STAT_CAC_PRIMARY, "reflex" ) ) \
+		{																	\
+			setDvar ui_canHaveCustomReticle 1;								\
+		}																	\
+		else																\
+		{																	\
+			setDvar ui_canHaveCustomReticle 0;								\
+		}
+		
+#undef ON_ESC
+#define ON_ESC																							\
+	if( dvarString( cac_weapon_current_list ) == "weapon_list" )										\
+	{																									\
+		execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;								\
+		WEAPON_LIST_BUTTON_B_ACTION																		\
+	}																									\
+	elseif( dvarString( cac_weapon_current_list ) == "weapon_group_list" )								\
+	{																									\
+		execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;								\
+		WEAPON_GROUP_LIST_BUTTON_B_ACTION																\
+	}																									\
+	else																								\
+	{																									\
+		if ( dvarString( selected_loadout_slot ) == "primary" )											\
+		{																								\
+			execnow setCurrentItemIndex ( STAT_CAC_PRIMARY );											\
+		}																								\
+		elseif ( dvarString( selected_loadout_slot ) == "secondary" )									\
+		{																								\
+			execnow setCurrentItemIndex ( STAT_CAC_SECONDARY );											\
+		}																								\
+																										\
+		if ( dvarString( ui_inside_popup ) != "0" )														\
+		{																								\
+			execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;							\
+		}																								\
+		else																							\
+		{																								\
+			closeimmediate self;																		\
+			execnow changemenuopenslidedirection menu_cac_custom MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;	\
+			openimmediate menu_cac_custom;																\
+		}																								\
+	}
+	
+{
+
+	menuDef
+	{
+		name					cac_weapon
+		rect					0 0 640 480
+		style					WINDOW_STYLE_EMPTY
+		control					MENU_CONTROL_OPENER
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT
+		popup
+
+		onOpen
+		{
+			if ( dvarString( ui_faction ) == "" ) { setdvar ui_faction FIRST_FACTION; }
+			execnow set ui_cac_weapon_hint_text "";
+			SHOW_VIEWER;
+			SET_VIEWER_MODE_PLAYER;
+			// set focus to first menu selection
+			setfocus NEW_FRAME_BUTTON_NAME"1";
+			execnow set cac_weapon_feeder_count 0;
+			UPDATE_ATTACH_SLOT_TOP
+			execNow set ui_numBarPartitions 10;
+			setlocalVarBool ui_inside_dropdown 0;
+		}
+
+		onFocus
+		{
+			setLocalVarInt ui_highlight -1;
+			execnow set ui_cac_weapon_hint_text "";
+			setLocalVarString ui_choicegroup CHOICE_GROUP;
+			activateBlur;
+
+			UPDATE_ATTACH_SLOT_TOP
+			if ( dvarBool( "ui_closeAfterPurchase" ) ) 
+			{
+				execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;
+				execnow set ui_closeAfterPurchase 0;
+			}
+		}
+
+		onEsc
+		{
+			ON_ESC
+		}
+
+		onClose
+		{
+			deactivateBlur;
+			HIDE_VIEWER;
+		}
+
+		// Frame setup
+		#define	CAC_HEIGHT					NEW_FRAME_DEFAULT_HEIGHT
+		#define CAC_WIDTH					( CAC_HEIGHT * FRAME_ASPECT_RATIO )
+		#define IS_CUSTOM_CLASS_MODE		dvarInt( ui_useCustomClassInfo ) == 1
+		#define IS_ONLINE_GAME				( dvarInt( splitscreen ) == 0 && dvarInt( systemlink ) == 0 )
+		#define IS_BASICTRAINING_GAME		( dvarInt( xblive_basictraining ) > 0 )
+
+		NEW_FRAME( CAC_WIDTH, CAC_HEIGHT )
+		NEW_FRAME_TITLE( CAC_WIDTH, CAC_HEIGHT, "@MPUI_CREATE_A_CLASS_CAPS", when( !IS_CUSTOM_CLASS_MODE ) )
+		NEW_FRAME_TITLE( CAC_WIDTH, CAC_HEIGHT, "@CUSTOM_EDIT_CLASS_LOADOUT_CAPS", when( IS_CUSTOM_CLASS_MODE ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( dvarString( ui_custom_name ) ) + " / " + locString("@MPUI_PRIMARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "primary" && !IS_CUSTOM_CLASS_MODE && ( IS_ONLINE_GAME && !IS_BASICTRAINING_GAME ) ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( dvarString( ui_custom_name ) ) + " / " + locString("@MPUI_SECONDARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "secondary" && !IS_CUSTOM_CLASS_MODE && ( IS_ONLINE_GAME && !IS_BASICTRAINING_GAME ) ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( dvarString( offline_custom_name ) ) + " / " + locString("@MPUI_PRIMARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "primary" && !IS_CUSTOM_CLASS_MODE && ( !IS_ONLINE_GAME || IS_BASICTRAINING_GAME ) ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( dvarString( offline_custom_name ) ) + " / " + locString("@MPUI_SECONDARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "secondary" && !IS_CUSTOM_CLASS_MODE && ( !IS_ONLINE_GAME || IS_BASICTRAINING_GAME ) ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( custom_class_name ) + " / " + locString("@MPUI_PRIMARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "primary" && IS_CUSTOM_CLASS_MODE ) )
+		NEW_FRAME_SUBTITLE( CAC_WIDTH, CAC_HEIGHT, dvarString( custom_class_name ) + " / " + locString("@MPUI_SECONDARY_WEAPON_CAPS"), when( dvarString( selected_loadout_slot ) == "secondary" && IS_CUSTOM_CLASS_MODE ) )
+
+		PLAYER_INFO_VIS( CAC_WIDTH, CAC_HEIGHT, 1 )
+
+#define DIRT_IMAGE_WIDTH			400
+#define DIRT_IMAGE_HEIGHT			128
+#define DIRT_IMAGE_X				(-DIRT_IMAGE_WIDTH/2)
+#define DIRT_IMAGE_Y				60
+
+#ifndef PC_INGAME
+		/* dirt image */
+		PREPROC_SHADER_DRAW( DIRT_IMAGE_X DIRT_IMAGE_Y DIRT_IMAGE_WIDTH DIRT_IMAGE_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "menu_mp_lobby_cac_dirt", 1 1 1 0.2 )
+
+		CAC_FACTION_MODEL
+		
+#ifdef PC
+		CAC_ROTATE_ARROWS
+#endif // #ifdef PC
+#endif
+		// Button setup
+#define FEEDER_MAX						10
+#define FEEDER_COUNT					( dvarInt( cac_weapon_feeder_count ) )
+//#define LIMITED_FEEDER_COUNT			( Select( ( FEEDER_COUNT > FEEDER_MAX ), FEEDER_MAX, FEEDER_COUNT ) )
+#define LIMITED_FEEDER_COUNT			1
+#define SCROLL_ARROWS_OFFSET			( Select( ( FEEDER_COUNT > FEEDER_MAX ), ( NEW_FRAME_BUTTON_SPACING ), 0 ) )
+
+#undef	BUTTON_BG_WIDTH
+#define BUTTON_BG_WIDTH					NEW_FRAME_BUTTON_WIDTH
+#define WEAPON_BUTTON_HEIGHT			NEW_FRAME_BUTTON_HEIGHT
+#define WEAPON_BUTTON_WIDTH				NEW_FRAME_BUTTON_WIDTH
+#define LEFT_X							NEW_FRAME_CHOICE_X_START
+#define TOP_Y							NEW_FRAME_CHOICE_Y_START
+#define BOTTOM_Y						( CAC_HEIGHT / 2 - WEAPON_BUTTON_HEIGHT - 10 )
+
+#define SELECT_WEAPON_INDEX				1
+#define SELECT_WEAPON_INDEX_STRING		"1"
+#define ATTACHMENTS_INDEX				2
+#define CAMO_INDEX						3
+#define CAMO_INDEX_STRING				"3"
+#define RETICLE_INDEX					4
+#define RETICLE_INDEX_STRING			"4"
+#define RETICLE_COLOR_INDEX				5
+#define RETICLE_COLOR_INDEX_STRING		"5"
+#define LENS_INDEX						6
+#define LENS_INDEX_STRING				"6"
+#define GUN_TAG_INDEX					7
+#define GUN_TAG_INDEX_STRING			"7"
+#define GUN_EMBLEM_INDEX				8
+#define GUN_EMBLEM_INDEX_STRING			"8"
+#define DUAL_WIELD_INDEX				9
+#define SECOND_ATTACHMENT_INDEX			10
+#define HINT_INDEX						11
+
+#define SELECT_WEAPON_Y					( TOP_Y )
+#define ATTACHMENTS_Y					( SELECT_WEAPON_Y		+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define CAMO_Y							( ATTACHMENTS_Y 		+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define RETICLE_Y						( CAMO_Y				+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_SEPARATED_BUTTON_SPACING )
+#define RETICLE_COLOR_Y					( RETICLE_Y				+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define LENS_Y							( RETICLE_COLOR_Y		+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define GUN_TAG_Y						( LENS_Y				+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_SEPARATED_BUTTON_SPACING )
+#define GUN_EMBLEM_Y					( GUN_TAG_Y				+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define DUAL_WIELD_Y					( GUN_EMBLEM_Y			+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define SECOND_ATTACHMENT_Y				( DUAL_WIELD_Y			+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+#define HINT_Y							( SECOND_ATTACHMENT_Y	+ WEAPON_BUTTON_HEIGHT + NEW_FRAME_BUTTON_SPACING )
+
+#define LAST_Y							HINT_Y
+#define ACCORDION_HEIGHT				( BOTTOM_Y - LAST_Y )
+
+		// Listbox setup
+#define LIST_X_START					LEFT_X
+#define LIST_HEIGHT						0
+#define LIST_UNROLLED_HEIGHT			( FEEDER_MAX * 17 + 5 )
+#define LIST_WIDTH						WEAPON_BUTTON_WIDTH
+#define	LIST_ELEM_HEIGHT				17
+#undef	CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_CENTER
+#undef	CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN			VERTICAL_ALIGN_CENTER
+
+		// Animation states
+#define BUTTONS_FADE_TIME				90
+#define ACCORDION_EXPAND_TIME			150
+#define ACCORDION_ROLLUP_TIME			150
+#define INTERIM_ANIM_TIME				15
+		
+#define GET_SLOT_STAT \
+		( Select( dvarString( selected_loadout_slot ) == "primary", STAT_CAC_PRIMARY, STAT_CAC_SECONDARY ) )
+
+#define LISTBOX_STATES																										\
+		state																												\
+		{																													\
+			name	Unrolled																								\
+			rect	LIST_X_START LIST_Y_START LIST_WIDTH LIST_UNROLLED_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN	\
+		}
+	
+		// This is a dummy itemDef to disable controls.
+		// Used when animating.
+		itemDef
+		{
+			name	dummyButton
+			type	ITEM_TYPE_BUTTON_NO_TEXT
+			rect	0 0 0 0
+			visible	when( localVarInt( "ui_disable_controls" ) == 1 );
+			
+			execKeyInt BUTTON_B {}
+			execKeyInt APAD_UP {}
+			execKeyInt DPAD_UP {}
+			execKeyInt APAD_DOWN {}
+			execKeyInt DPAD_DOWN {}
+			execKeyInt APAD_LEFT {}
+			execKeyInt DPAD_LEFT {}
+			execKeyInt APAD_RIGHT {}
+			execKeyInt DPAD_RIGHT {}
+		}
+
+		// Animation controller
+		itemDef
+		{
+			name	anim_controller
+			style	WINDOW_STYLE_SHADER
+			rect	0 0 0 0
+			visible 1
+			decoration
+
+			// Open drop down list
+			state
+			{
+				name	OpenDropDownList
+				onEnter
+				{
+					setLocalVarInt ui_disable_controls 1;
+					setFocus dummyButton;
+					execNow if ( localVarInt( ui_weaponButton ) < 8 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"8" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 7 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"7" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 6 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"6" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 5 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"5" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 4 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"4" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 3 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"3" Transparent BUTTONS_FADE_TIME;
+					execNow if ( localVarInt( ui_weaponButton ) < 2 ) ui_animate cac_weapon NEW_FRAME_BUTTON_NAME"2" Transparent BUTTONS_FADE_TIME;
+					execnow ui_animate cac_weapon menu_hint Transparent BUTTONS_FADE_TIME;
+					execnow ui_animate cac_weapon list_hint Transparent 0;
+					execnow ui_animate cac_weapon anim_controller OpenDropDownList2 ( BUTTONS_FADE_TIME + INTERIM_ANIM_TIME );
+				}
+			}
+			state
+			{
+				name	OpenDropDownList2
+				onEnter
+				{
+					setLocalVarBool ui_inside_dropdown 1;
+					execnow ui_animate cac_weapon (dvarString( cac_weapon_current_list )) Unrolled ACCORDION_EXPAND_TIME;
+					execnow ui_animate cac_weapon list_hint Default ACCORDION_EXPAND_TIME;
+					play uin_navigation_menu_sm_open;
+					execnow ui_animate cac_weapon anim_controller OpenDropDownList3 ( ( LIMITED_FEEDER_COUNT * ACCORDION_EXPAND_TIME ) + INTERIM_ANIM_TIME );
+				}
+			}
+			state
+			{
+				name OpenDropDownList3
+				onEnter
+				{
+					execnow focusitem ( dvarString( cac_weapon_current_list ) );
+					setLocalVarInt ui_disable_controls 0;
+				}
+			}
+
+			// Close drop down list
+			state
+			{
+				name	CloseDropDownList
+				onEnter
+				{
+					UPDATE_ATTACH_SLOT_TOP
+					setLocalVarInt ui_disable_controls 1;
+					setFocus dummyButton;
+					execnow ui_animate cac_weapon (dvarString( cac_weapon_current_list )) Default ( LIMITED_FEEDER_COUNT * ACCORDION_ROLLUP_TIME );
+					execnow ui_animate cac_weapon list_hint Transparent ACCORDION_ROLLUP_TIME;
+					execnow ui_animate cac_weapon anim_controller CloseDropDownList2 ( ( LIMITED_FEEDER_COUNT * ACCORDION_ROLLUP_TIME ) + INTERIM_ANIM_TIME );
+					execnow set cac_weapon_current_list "";
+					execnow set cac_weapon_feeder_count 0;
+					play uin_navigation_menu_sm_close;
+				}
+			}
+			state
+			{
+				name	CloseDropDownList2
+				onEnter
+				{
+					setLocalVarInt ui_inside_dropdown 0;
+					if ( dvarString( cac_weapon_current_list ) != "" )
+					{
+						execnow set ui_inside_popup (dvarString(ui_next_inside_popup));
+						if( dvarString(ui_next_inside_popup) == "select_weapon_group" )
+						{
+							execnow setCurrentItemIndex ( GET_SLOT_STAT );						
+						}
+						execnow ui_animate cac_weapon anim_controller OpenDropDownList 0;
+					}
+					else
+					{
+						execnow ui_animate cac_weapon * Default BUTTONS_FADE_TIME;
+						execnow ui_animate cac_weapon list_hint Transparent 0;
+						execnow ui_animate cac_weapon anim_controller CloseDropDownList3 ( BUTTONS_FADE_TIME + INTERIM_ANIM_TIME );	
+					}
+				}
+			}
+			state
+			{
+				name	CloseDropDownList3
+				onEnter
+				{
+					execnow focusitem (NEW_FRAME_BUTTON_NAME+localVarInt( ui_weaponButton ));
+					setLocalVarInt ui_disable_controls 0;
+					execnow set ui_inside_popup "0";
+				}
+			}
+		}
+
+#define IS_PRI					( dvarString( selected_loadout_slot ) == "primary" )
+#define IS_SEC					( dvarString( selected_loadout_slot ) == "secondary" )
+
+		// Button actions
+#define COMMON_BUTTON_ACTION \
+		execnow ui_animate cac_weapon anim_controller OpenDropDownList 0;
+
+#define SELECT_WEAPON_ACTION															\
+		if ( dvarString( ui_inside_popup ) != "0" )										\
+		{																				\
+			ON_ESC																		\
+		}																				\
+		else																			\
+		{																				\
+			setDvar ui_inside_popup select_weapon_group;								\
+			execnow set cac_weapon_current_list weapon_group_list;						\
+			execnow set cac_weapon_feeder_count ( GetFeederCount( weapon_group_list ) );\
+			setLocalVarInt ui_weaponButton SELECT_WEAPON_INDEX;							\
+			COMMON_BUTTON_ACTION														\
+		}
+
+#define SELECT_WEAPON_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= SELECT_WEAPON_INDEX ) )
+		
+#define ATTACHMENTS_ACTION																\
+		if ( dvarString( ui_inside_popup ) != "0" )										\
+		{																				\
+			ON_ESC																		\
+		}																				\
+		else																			\
+		{																				\
+			if ( dvarString( selected_loadout_slot ) == "primary" )						\
+			{																			\
+				execnow setCurrentItemIndex ( STAT_CAC_PRIMARY );						\
+			}																			\
+			elseif ( dvarString( selected_loadout_slot ) == "secondary" )				\
+			{																			\
+				execnow setCurrentItemIndex ( STAT_CAC_SECONDARY );						\
+			}																			\
+			setDvar ui_inside_popup attachments;										\
+			execnow set cac_weapon_current_list attachments_list;						\
+			execnow set cac_weapon_feeder_count ( GetFeederCount( attachments_list ) );	\
+			setLocalVarInt ui_weaponButton ATTACHMENTS_INDEX;							\
+			COMMON_BUTTON_ACTION														\
+		}
+
+#define ATTACHMENTS_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= ATTACHMENTS_INDEX ) )
+
+#define WEAPON_OPTION_ACTION( popupName, currentList, index, group )				\
+		if ( dvarString( ui_inside_popup ) != "0" )									\
+		{																			\
+			ON_ESC																	\
+		}																			\
+		else																		\
+		{																			\
+			execNow set ui_currentWeaponOptionGroup group;							\
+			if ( dvarString( selected_loadout_slot ) == "primary" )					\
+			{																		\
+				execNow set selected_group GetItemGroup( STAT_CAC_PRIMARY );		\
+				execnow setCurrentItemIndex ( STAT_CAC_PRIMARY );					\
+			}																		\
+			elseif ( dvarString( selected_loadout_slot ) == "secondary" )			\
+			{																		\
+				execNow set selected_group GetItemGroup( STAT_CAC_SECONDARY );		\
+				execnow setCurrentItemIndex ( STAT_CAC_SECONDARY );					\
+			}																		\
+			setDvar ui_inside_popup popupName;										\
+			execnow set cac_weapon_current_list currentList;						\
+			execnow set cac_weapon_feeder_count ( GetFeederCount( currentList ) );	\
+			setLocalVarInt ui_weaponButton index;									\
+			COMMON_BUTTON_ACTION													\
+		}
+
+#define CAMO_ACTION														\
+		WEAPON_OPTION_ACTION( select_camo, camo_list, CAMO_INDEX, 0 )	\
+
+#define CAMO_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= CAMO_INDEX ) )
+
+#define RETICLE_ACTION															\
+		WEAPON_OPTION_ACTION( select_reticle, reticle_list, RETICLE_INDEX, 1 )	\
+
+#define RETICLE_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= RETICLE_INDEX ) )
+	
+#define RETICLE_COLOR_ACTION	\
+		WEAPON_OPTION_ACTION( select_reticle_color, reticle_color_list, RETICLE_COLOR_INDEX, 5 )
+
+#define RETICLE_COLOR_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= RETICLE_COLOR_INDEX ) )
+	
+#define LENS_ACTION														\
+		WEAPON_OPTION_ACTION( select_lens, lens_list, LENS_INDEX, 2 )	\
+
+#define LENS_VIS \
+		( !localVarBool( ui_inside_dropdown ) || ( localVarInt( ui_weaponButton ) >= LENS_INDEX ) )
+
+		//  Conditions
+#include "ui_mp/cac_attachment_conditions.inc"
+
+#define IS_NO_LIST_OPEN			 	( dvarString( "ui_inside_popup" ) == "0" )
+#define IS_WEAPON_LIST_OPEN		 	( dvarString( "ui_inside_popup" ) == "select_weapon_group" || dvarString( "ui_inside_popup" ) == "select_weapon" )
+#define IS_ATTACHMENT_LIST_OPEN	 	( dvarString( "ui_inside_popup" ) == "attachments" )
+#define ATTACHMENTS_AVAILABLE	 	( GetCurrentItemNumAttachments() > 1 )	// None counts as an attachment. 
+#define IS_CAMO_LIST_OPEN		 	( dvarString( "ui_inside_popup" ) == "select_camo" )
+#define IS_RETICLE_LIST_OPEN	 	( dvarString( "ui_inside_popup" ) == "select_reticle" )
+#define IS_LENS_LIST_OPEN		 	( dvarString( "ui_inside_popup" ) == "select_lens" || dvarString( "ui_inside_popup" ) == "select_lens_color" )
+
+#define ACCORDION_BUTTON_RECT( yPos )	\
+		LEFT_X yPos WEAPON_BUTTON_WIDTH WEAPON_BUTTON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+
+		// Accordion buttons
+		NEW_FRAME_BUTTON(	1, ACCORDION_BUTTON_RECT( SELECT_WEAPON_Y ),	
+							"@MPUI_PRIMARY_WEAPON_CAPS", 
+							SELECT_WEAPON_ACTION, 
+							;, 
+							;, 
+							dvarString( selected_loadout_slot ) == "primary" && SELECT_WEAPON_VIS, ;, ; )
+		NEW_FRAME_BUTTON(	1, ACCORDION_BUTTON_RECT( SELECT_WEAPON_Y ),	
+							"@MPUI_SECONDARY_WEAPON_CAPS", 
+							SELECT_WEAPON_ACTION, 
+							;, 
+							;, 
+							dvarString( selected_loadout_slot ) == "secondary" && SELECT_WEAPON_VIS, ;, ; )
+		NEW_FRAME_NEWICON_RECT_VIS(	LEFT_X, SELECT_WEAPON_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+									( ANY_NEW_PRIMARIES && dvarString( selected_loadout_slot ) == "primary" && dvarString( "ui_inside_popup" ) == "0" ),
+									 name NEW_FRAME_BUTTON_NAME SELECT_WEAPON_INDEX_STRING; )
+		NEW_FRAME_NEWICON_RECT_VIS(	LEFT_X, SELECT_WEAPON_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+									( ANY_NEW_SECONDARIES && dvarString( selected_loadout_slot ) == "secondary" && dvarString( "ui_inside_popup" ) == "0" ),	
+									name NEW_FRAME_BUTTON_NAME SELECT_WEAPON_INDEX_STRING; )
+		
+
+
+		NEW_FRAME_BUTTON(	2, ACCORDION_BUTTON_RECT( ATTACHMENTS_Y ),	
+							"@MPUI_ATTACHMENTS_CAPS", 
+							ATTACHMENTS_ACTION, 
+							;, 
+							;, 
+							ATTACHMENTS_AVAILABLE && ATTACHMENTS_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	2, ACCORDION_BUTTON_RECT( ATTACHMENTS_Y ),	
+								"@MPUI_ATTACHMENTS_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY, 
+								;, 
+								execnow set ui_cac_weapon_hint_text "@MPUI_GUN_HAS_NO_ATTACHMENTS";, 
+								execnow set ui_cac_weapon_hint_text "";,
+								!ATTACHMENTS_AVAILABLE && ATTACHMENTS_VIS, ;, ; )
+		
+
+
+		NEW_FRAME_BUTTON(	3, ACCORDION_BUTTON_RECT( CAMO_Y ),	
+							"@MPUI_CAMO_CAPS", 
+							CAMO_ACTION, 
+							CLEAR_ITEM_NEW( FEATURE_CAMO ), 
+							;, 
+							( IS_PRI && !CAMO_LOCKED ) && CAMO_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	3, ACCORDION_BUTTON_RECT( CAMO_Y ),	
+								"@MPUI_CAMO_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_CAMO );, 
+								execnow set ui_cac_weapon_hint_text "";, 
+								( IS_PRI && CAMO_LOCKED ) && CAMO_VIS, ;, ; )
+		NEW_FRAME_NEWICON_RECT_VIS(		LEFT_X, CAMO_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_ITEM_NEW( FEATURE_CAMO ) && IS_PRI ), 
+										name NEW_FRAME_BUTTON_NAME CAMO_INDEX_STRING; )
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	LEFT_X, CAMO_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_PRI && CAMO_LOCKED ),
+										name NEW_FRAME_BUTTON_NAME CAMO_INDEX_STRING; )
+									
+
+
+		NEW_FRAME_BUTTON(	4, ACCORDION_BUTTON_RECT( RETICLE_Y ),	
+							"@MPUI_RETICLE_CAPS", 
+							RETICLE_ACTION, 
+							CLEAR_ITEM_NEW( FEATURE_RETICLES ), 
+							;, 
+							( LENSESORRETICLES_AVAILABLE && IS_PRI && !RETICLES_LOCKED ) && RETICLE_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	4, ACCORDION_BUTTON_RECT( RETICLE_Y ),	
+								"@MPUI_RETICLE_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text "@MPUI_NEED_RETICLE_ATTACHMENT"; CLEAR_ITEM_NEW( FEATURE_RETICLES ), 
+								execnow set ui_cac_weapon_hint_text "";, 
+								( !LENSESORRETICLES_AVAILABLE && !RETICLES_LOCKED && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ) && RETICLE_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	4, ACCORDION_BUTTON_RECT( RETICLE_Y ),	
+								"@MPUI_RETICLE_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_RETICLES );, 
+								execnow set ui_cac_weapon_hint_text "";, 
+								( RETICLES_LOCKED && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ) && RETICLE_VIS, ;, ; )
+		NEW_FRAME_NEWICON_RECT_VIS(		LEFT_X, RETICLE_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_ITEM_NEW( FEATURE_RETICLES ) && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ), 
+										name NEW_FRAME_BUTTON_NAME RETICLE_INDEX_STRING; )
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	LEFT_X, RETICLE_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE && RETICLES_LOCKED ), 
+										name NEW_FRAME_BUTTON_NAME RETICLE_INDEX_STRING; )
+								
+
+
+		NEW_FRAME_BUTTON(	5, ACCORDION_BUTTON_RECT( RETICLE_COLOR_Y ),	
+							"@MPUI_RETICLE_COLOR_CAPS", 
+							RETICLE_COLOR_ACTION, 
+							CLEAR_ITEM_NEW( FEATURE_RETICLE_COLOR ), 
+							;, 
+							( LENSESORRETICLES_AVAILABLE && IS_PRI && !RETICLE_COLOR_LOCKED ) && RETICLE_COLOR_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	5, ACCORDION_BUTTON_RECT( RETICLE_COLOR_Y ),	
+								"@MPUI_RETICLE_COLOR_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text "@MPUI_NEED_RETICLE_COLOR_ATTACHMENT"; CLEAR_ITEM_NEW( FEATURE_RETICLE_COLOR ), 
+								execnow set ui_cac_weapon_hint_text "";, 
+								( !LENSESORRETICLES_AVAILABLE && !RETICLE_COLOR_LOCKED && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ) && RETICLE_COLOR_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	5, ACCORDION_BUTTON_RECT( RETICLE_COLOR_Y ),	
+								"@MPUI_RETICLE_COLOR_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_RETICLES );, 
+								execnow set ui_cac_weapon_hint_text "";,
+								( RETICLE_COLOR_LOCKED && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ) && RETICLE_COLOR_VIS, ;, ; )
+		NEW_FRAME_NEWICON_RECT_VIS(		LEFT_X, RETICLE_COLOR_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_ITEM_NEW( FEATURE_RETICLE_COLOR ) && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ), 
+										name NEW_FRAME_BUTTON_NAME RETICLE_COLOR_INDEX_STRING; )
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	LEFT_X, RETICLE_COLOR_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE && RETICLE_COLOR_LOCKED ), 
+										name NEW_FRAME_BUTTON_NAME RETICLE_COLOR_INDEX_STRING; )
+								
+
+
+		NEW_FRAME_BUTTON(	6, ACCORDION_BUTTON_RECT( LENS_Y ),	
+							"@MPUI_LENS_CAPS", 
+							LENS_ACTION, 
+							CLEAR_ITEM_NEW( FEATURE_LENSES ), 
+							;, 
+							( LENSESORRETICLES_AVAILABLE && !LENSES_LOCKED && IS_PRI ) && LENS_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	6, ACCORDION_BUTTON_RECT( LENS_Y ),	
+								"@MPUI_LENS_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text "@MPUI_NEED_LENS_ATTACHMENT"; CLEAR_ITEM_NEW( FEATURE_LENSES ), 
+								execnow set ui_cac_weapon_hint_text "";,
+								( IS_PRI && !LENSESORRETICLES_AVAILABLE && !LENSES_LOCKED && CAN_GUN_HAVE_CUSTOM_RETICLE ) && LENS_VIS, ;, ; )
+		NEW_FRAME_BUTTON_COLOR(	6, ACCORDION_BUTTON_RECT( LENS_Y ),	
+								"@MPUI_LENS_CAPS", MEDIUM_GRAY_RGB, MEDIUM_GRAY_ALPHA, MEDIUM_GRAY,  
+								;, 
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_LENSES ); ,
+								execnow set ui_cac_weapon_hint_text "";,
+								( IS_PRI && LENSES_LOCKED && CAN_GUN_HAVE_CUSTOM_RETICLE ) && LENS_VIS, ;, ; )
+		NEW_FRAME_NEWICON_RECT_VIS(		LEFT_X, LENS_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_ITEM_NEW( FEATURE_LENSES ) && IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE ), 
+										name NEW_FRAME_BUTTON_NAME LENS_INDEX_STRING; )
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	LEFT_X, LENS_Y, WEAPON_BUTTON_WIDTH, WEAPON_BUTTON_HEIGHT, HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+										( IS_PRI && CAN_GUN_HAVE_CUSTOM_RETICLE && LENSES_LOCKED ), 
+										name NEW_FRAME_BUTTON_NAME LENS_INDEX_STRING; )
+
+		// Fixed buttons
+		// ---------------------------------------------------------------------------------------------------------------------
+#define IS_FIXED_BUTTON_ACTIVE		( dvarInt( ui_useCustomClassInfo ) == 0 && ( dvarString( "ui_inside_popup" ) == "0" ) )
+
+		// Gun Tag Button
+#define HAVE_ENOUGH_FOR_GUN_TAG		( GetWeaponOptionCost( GetItemOptionByName( "tag" ) ) <= GetStatByName( "CODPOINTS" ) )
+#define CAN_NOT_AFFORD_GUN_TAG		( !GUN_TAG_LOCKED && !GUN_TAG_PURCHASED && !HAVE_ENOUGH_FOR_GUN_TAG )
+#define CAN_AFFORD_GUN_TAG			( !GUN_TAG_LOCKED && !GUN_TAG_PURCHASED && HAVE_ENOUGH_FOR_GUN_TAG )
+#define CAN_TOGGLE_GUN_TAG			( GUN_TAG_PURCHASED )	
+#define IS_PRI_GUN_TAG_EQUIPPED		( IS_PRI && (STAT_CAC_PRIMARY_TAG) ) 
+#define IS_SEC_GUN_TAG_EQUIPPED		( IS_SEC && (STAT_CAC_SECONDARY_TAG) ) 
+
+#define GUN_TAG_X					LEFT_X
+#define GUN_TAG_W					WEAPON_BUTTON_WIDTH
+#define GUN_TAG_H					WEAPON_BUTTON_HEIGHT
+#define GUN_TAG_ALIGN				HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define GUN_TAG_RECT				GUN_TAG_X GUN_TAG_Y GUN_TAG_W GUN_TAG_H GUN_TAG_ALIGN
+#define GUN_TAG_COST_W				50
+#define GUN_TAG_COST_RECT			(GUN_TAG_X+GUN_TAG_W-GUN_TAG_COST_W-2) GUN_TAG_Y GUN_TAG_COST_W GUN_TAG_H GUN_TAG_ALIGN
+#define GUN_TAG_EQUIP_W				GUN_TAG_H
+#define GUN_TAG_EQUIP_RECT			(GUN_TAG_X+GUN_TAG_W-GUN_TAG_EQUIP_W-2) GUN_TAG_Y GUN_TAG_EQUIP_W GUN_TAG_EQUIP_W GUN_TAG_ALIGN
+		
+#define PURCHASE_GUN_TAG_ACTION												\
+		execnow set weaponOptionIndex ( GetItemIndex( FEATURE_GUN_TAG ) );	\
+		execnow set weaponOptionRef "tag";									\
+		open PurchaseWeaponOptionConfirmation;
+
+#define TOGGLE_GUN_TAG_ACTION \
+		execnow toggleWeaponOption (dvarString( ui_custom_name )) tag;
+
+#define GUN_TAG_VIS \
+		( !localVarBool( ui_inside_dropdown ) )
+		
+#define GUN_TAG_BUTTONS( xArg, yArg, wArg, hArg, alignArg, visArg )																					\
+		/* Buttons */																																\
+		NEW_FRAME_DBUTTON(		7, xArg yArg wArg hArg alignArg, "@MPUI_GUN_TAG_CAPS",																\
+								;,																													\
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_GUN_TAG );,									\
+								execnow set ui_cac_weapon_hint_text "";,																			\
+								( IS_PRI && GUN_TAG_LOCKED && dvarInt( ui_useCustomClassInfo ) == 0 && visArg ), ;, ; )								\
+		NEW_FRAME_BUTTON_COLOR(	7, xArg yArg wArg hArg alignArg, "@MPUI_GUN_TAG_CAPS", NEW_FRAME_RED_RGB, NEW_FRAME_RED_ALPHA, NEW_FRAME_RED,		\
+								;,																													\	
+								CLEAR_ITEM_NEW( FEATURE_GUN_TAG ),																					\
+								;,																													\
+								( IS_PRI && CAN_NOT_AFFORD_GUN_TAG && visArg ),	;, ; )																\
+		NEW_FRAME_BUTTON_COLOR(	7, xArg yArg wArg hArg alignArg, "@MPUI_GUN_TAG_CAPS", NEW_FRAME_GREEN_RGB, NEW_FRAME_GREEN_ALPHA, NEW_FRAME_GREEN,	\
+								PURCHASE_GUN_TAG_ACTION,																							\
+								CLEAR_ITEM_NEW( FEATURE_GUN_TAG ),																					\
+								;,																													\
+								( IS_PRI && CAN_AFFORD_GUN_TAG && visArg ), ;, ; )																	\
+		NEW_FRAME_BUTTON_COLOR(	7, xArg yArg wArg hArg alignArg, "@MPUI_GUN_TAG_CAPS", WHITE_RGB, WHITE_ALPHA, BLACK,								\
+								TOGGLE_GUN_TAG_ACTION,																								\
+								CLEAR_ITEM_NEW( FEATURE_GUN_TAG ),																					\
+								;,																													\
+								( IS_PRI && CAN_TOGGLE_GUN_TAG && visArg ), ;, ; )																	\	
+		/* New Icon */																																\
+		NEW_FRAME_NEWICON_RECT_VIS(	xArg, yArg, wArg, hArg, alignArg,																				\
+									( IS_ITEM_NEW( FEATURE_GUN_TAG ) && IS_PRI && visArg ),															\
+									name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; )																\
+		/* Locked Icon */																															\
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	xArg, yArg, wArg, hArg, alignArg,																			\
+										(IS_PRI && GUN_TAG_LOCKED && visArg),																		\
+										name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; )															\
+		/* Cost */																																	\
+		PREPROC_TEXT_DRAW_VIS_EX(	(xArg+wArg-GUN_TAG_COST_W-10) yArg GUN_TAG_COST_W hArg alignArg, 0 0,											\
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "tag" ) ) ),								\
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_RED,													\
+									when( IS_PRI && CAN_NOT_AFFORD_GUN_TAG && visArg );,															\
+									name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( NEW_FRAME_RED_RGB )  )			\
+		PREPROC_TEXT_DRAW_VIS_EX(	(xArg+wArg-GUN_TAG_COST_W-10) yArg GUN_TAG_COST_W hArg alignArg, 0 0,											\
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "tag" ) ) ),								\
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN,												\
+									when( IS_PRI && CAN_AFFORD_GUN_TAG && visArg );,																\
+									name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( NEW_FRAME_GREEN_RGB )  )			\
+		/* Equipped Icon */																															\
+		PREPROC_SHADER_DRAW_VIS_EX(	(xArg+wArg-GUN_TAG_EQUIP_W-2) yArg GUN_TAG_EQUIP_W GUN_TAG_EQUIP_W alignArg,									\
+									"menu_mp_killstreak_select", 1 1 1 1,																			\
+									when( IS_PRI && IS_PRI_GUN_TAG_EQUIPPED && visArg );,															\
+									name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )							\
+		PREPROC_SHADER_DRAW_VIS_EX(	(xArg+wArg-GUN_TAG_EQUIP_W-2) yArg GUN_TAG_EQUIP_W GUN_TAG_EQUIP_W alignArg,									\
+									"menu_mp_killstreak_select", 1 1 1 1,																			\
+									when( IS_PRI && IS_SEC_GUN_TAG_EQUIPPED && visArg );,															\
+									name NEW_FRAME_BUTTON_NAME GUN_TAG_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )
+		
+		GUN_TAG_BUTTONS( GUN_TAG_X, GUN_TAG_Y, GUN_TAG_W, GUN_TAG_H, GUN_TAG_ALIGN, CAN_GUN_HAVE_CUSTOM_RETICLE && GUN_TAG_VIS	)
+		GUN_TAG_BUTTONS( GUN_TAG_X, RETICLE_Y, GUN_TAG_W, GUN_TAG_H, GUN_TAG_ALIGN, !CAN_GUN_HAVE_CUSTOM_RETICLE && GUN_TAG_VIS	)
+
+		// Gun Emblem Button
+#define HAVE_ENOUGH_FOR_GUN_EMBLEM		( GetWeaponOptionCost( GetItemOptionByName( "emblem" ) ) <= GetStatByName( "CODPOINTS" ) )
+#define CAN_NOT_AFFORD_GUN_EMBLEM		( !GUN_EMBLEM_LOCKED && !GUN_EMBLEM_PURCHASED && !HAVE_ENOUGH_FOR_GUN_EMBLEM )
+#define CAN_AFFORD_GUN_EMBLEM			( !GUN_EMBLEM_LOCKED && !GUN_EMBLEM_PURCHASED && HAVE_ENOUGH_FOR_GUN_EMBLEM )
+#define CAN_TOGGLE_GUN_EMBLEM			( GUN_EMBLEM_PURCHASED )	
+#define IS_PRI_GUN_EMBLEM_EQUIPPED		( IS_PRI && (STAT_CAC_PRIMARY_EMBLEM) ) 
+#define IS_SEC_GUN_EMBLEM_EQUIPPED		( IS_SEC && (STAT_CAC_SECONDARY_EMBLEM) ) 
+
+#define GUN_EMBLEM_X					LEFT_X
+#define GUN_EMBLEM_W					WEAPON_BUTTON_WIDTH
+#define GUN_EMBLEM_H					WEAPON_BUTTON_HEIGHT
+#define GUN_EMBLEM_ALIGN				HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define GUN_EMBLEM_RECT					GUN_EMBLEM_X GUN_EMBLEM_Y GUN_EMBLEM_W GUN_EMBLEM_H GUN_EMBLEM_ALIGN
+#define GUN_EMBLEM_COST_W				50
+#define GUN_EMBLEM_COST_RECT			(GUN_EMBLEM_X+GUN_EMBLEM_W-GUN_EMBLEM_COST_W-2) GUN_EMBLEM_Y GUN_EMBLEM_COST_W GUN_EMBLEM_H GUN_EMBLEM_ALIGN
+#define GUN_EMBLEM_EQUIP_W				GUN_EMBLEM_H
+#define GUN_EMBLEM_EQUIP_RECT			(GUN_EMBLEM_X+GUN_EMBLEM_W-GUN_EMBLEM_EQUIP_W-2) GUN_EMBLEM_Y GUN_EMBLEM_EQUIP_W GUN_EMBLEM_EQUIP_W GUN_EMBLEM_ALIGN
+		
+#define PURCHASE_GUN_EMBLEM_ACTION												\
+		execnow set weaponOptionIndex ( GetItemIndex( FEATURE_GUN_EMBLEM ) );	\
+		execnow set weaponOptionRef "emblem";									\
+		open PurchaseWeaponOptionConfirmation;
+		
+#define TOGGLE_GUN_EMBLEM_ACTION	\
+		execnow toggleWeaponOption (dvarString( ui_custom_name )) emblem;
+
+#define GUN_EMBLEM_VIS \
+		( !localVarBool( ui_inside_dropdown ) )
+
+#define GUN_EMBLEM_BUTTONS( xArg, yArg, wArg, hArg, alignArg, visArg )																					\
+		/* Buttons */																																	\
+		NEW_FRAME_DBUTTON(		8, xArg yArg wArg hArg alignArg, "@MPUI_GUN_EMBLEM_CAPS",																\
+								;,																														\
+								execnow set ui_cac_weapon_hint_text GET_UNLOCK_LEVEL_STRING( FEATURE_GUN_EMBLEM );,										\
+								execnow set ui_cac_weapon_hint_text "";,																				\
+								( IS_PRI && GUN_EMBLEM_LOCKED && dvarInt( ui_useCustomClassInfo ) == 0 && visArg ),	;, ; )								\
+		NEW_FRAME_BUTTON_COLOR(	8, xArg yArg wArg hArg alignArg, "@MPUI_GUN_EMBLEM_CAPS", NEW_FRAME_RED_RGB, NEW_FRAME_RED_ALPHA, NEW_FRAME_RED,		\
+								;,																														\
+								CLEAR_ITEM_NEW( FEATURE_GUN_EMBLEM ),																					\
+								;,																														\
+								(IS_PRI && CAN_NOT_AFFORD_GUN_EMBLEM && visArg), ;, ; )																	\
+		NEW_FRAME_BUTTON_COLOR(	8, xArg yArg wArg hArg alignArg, "@MPUI_GUN_EMBLEM_CAPS", NEW_FRAME_GREEN_RGB, NEW_FRAME_GREEN_ALPHA, NEW_FRAME_GREEN,	\
+								PURCHASE_GUN_EMBLEM_ACTION,																								\
+								CLEAR_ITEM_NEW( FEATURE_GUN_EMBLEM ),																					\
+								;,																														\
+								(IS_PRI && CAN_AFFORD_GUN_EMBLEM && visArg), ;, ; )																		\
+		NEW_FRAME_BUTTON_COLOR(	8, xArg yArg wArg hArg alignArg, "@MPUI_GUN_EMBLEM_CAPS", WHITE_RGB, WHITE_ALPHA, BLACK,								\
+								TOGGLE_GUN_EMBLEM_ACTION,																								\
+								CLEAR_ITEM_NEW( FEATURE_GUN_EMBLEM ),																					\
+								;,																														\
+								(IS_PRI && CAN_TOGGLE_GUN_EMBLEM && visArg), ;, ; )																		\
+		/* New Icon */																																	\
+		NEW_FRAME_NEWICON_RECT_VIS(	xArg, yArg, wArg, hArg, alignArg,																					\
+									( IS_ITEM_NEW( FEATURE_GUN_EMBLEM ) && IS_PRI && visArg ),															\
+									name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; )																\
+		/* Locked Icon */																																\
+		NEW_FRAME_LOCKEDICON_RECT_VIS(	xArg, yArg, wArg, hArg, alignArg,																				\
+										(IS_PRI && GUN_EMBLEM_LOCKED && visArg),																		\
+										name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; )															\
+		/* Cost */																																		\
+		PREPROC_TEXT_DRAW_VIS_EX(	(xArg+wArg-GUN_EMBLEM_COST_W-10) yArg GUN_TAG_COST_W hArg alignArg, 0 0,												\
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "emblem" ) ) ),								\
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_RED,														\
+									when( IS_PRI && CAN_NOT_AFFORD_GUN_EMBLEM && visArg );,																\
+									name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( NEW_FRAME_RED_RGB )  )				\
+		PREPROC_TEXT_DRAW_VIS_EX(	(xArg+wArg-GUN_EMBLEM_COST_W-10) yArg GUN_TAG_COST_W hArg alignArg, 0 0,												\
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "emblem" ) ) ),								\
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN,													\
+									when( IS_PRI && CAN_AFFORD_GUN_EMBLEM && visArg );,																	\
+									name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( NEW_FRAME_GREEN_RGB )  )			\
+		/* Equipped Icon */																																\
+		PREPROC_SHADER_DRAW_VIS_EX(	(xArg+wArg-GUN_EMBLEM_EQUIP_W-2) yArg GUN_TAG_EQUIP_W GUN_TAG_EQUIP_W alignArg,										\
+										"menu_mp_killstreak_select", 1 1 1 1,																			\
+										when( IS_PRI && IS_PRI_GUN_EMBLEM_EQUIPPED && visArg );,														\
+										name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )						\
+		PREPROC_SHADER_DRAW_VIS_EX(	(xArg+wArg-GUN_EMBLEM_EQUIP_W-2) yArg GUN_TAG_EQUIP_W GUN_TAG_EQUIP_W alignArg,										\
+										"menu_mp_killstreak_select", 1 1 1 1,																			\
+										when( IS_PRI && IS_SEC_GUN_EMBLEM_EQUIPPED && visArg );,														\
+										name NEW_FRAME_BUTTON_NAME GUN_EMBLEM_INDEX_STRING; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )
+										
+		GUN_EMBLEM_BUTTONS( GUN_EMBLEM_X, GUN_EMBLEM_Y,		GUN_EMBLEM_W, GUN_EMBLEM_H, GUN_EMBLEM_ALIGN, CAN_GUN_HAVE_CUSTOM_RETICLE && GUN_EMBLEM_VIS		)
+		GUN_EMBLEM_BUTTONS( GUN_EMBLEM_X, RETICLE_COLOR_Y,	GUN_EMBLEM_W, GUN_EMBLEM_H, GUN_EMBLEM_ALIGN, !CAN_GUN_HAVE_CUSTOM_RETICLE && GUN_EMBLEM_VIS	)
+		
+		// Hint text
+		#define HINT_EX_ARGS( yArg, listArg )			\
+				name list_hint;							\
+				NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )	\
+				exp rect Y( yArg + WEAPON_BUTTON_HEIGHT*2 + min( getFeederCount( listArg ), FEEDER_MAX ) * 17 );
+		
+		// Weapon list hint
+		HINT_TEXT_ALL( 1, LEFT_X, 0, CHOICE_SIZE_X,		dvarString( ui_cac_weapon_hint_text ), 1 1 1 1,	( ( dvarString( ui_cac_weapon_hint_text ) != "" ) && ( dvarString( "ui_inside_popup" ) == "select_weapon" ) ),	HINT_EX_ARGS( SELECT_WEAPON_Y, weapon_list )			)
+		// Menu-level without reticle customization hint
+		HINT_TEXT_ALL( 6, LEFT_X, 0, CHOICE_SIZE_X,		dvarString( ui_cac_weapon_hint_text ), 1 1 1 1,	( ( dvarString( ui_cac_weapon_hint_text ) != "" ) && !CAN_GUN_HAVE_CUSTOM_RETICLE ),							name menu_hint; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )	)
+		// Menu-level with reticle customization hint
+		HINT_TEXT_ALL( 10, LEFT_X, 0, CHOICE_SIZE_X,	dvarString( ui_cac_weapon_hint_text ), 1 1 1 1,	( ( dvarString( ui_cac_weapon_hint_text ) != "" ) && CAN_GUN_HAVE_CUSTOM_RETICLE ),								name menu_hint; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )	)
+		// camo list hint
+		HINT_TEXT_ALL( 1, LEFT_X, 0, CHOICE_SIZE_X,		dvarString( ui_cac_weapon_hint_text ), 1 1 1 1,	( ( dvarString( ui_cac_weapon_hint_text ) != "" ) && ( dvarString( "ui_inside_popup" ) == "select_camo" ) ),	HINT_EX_ARGS( CAMO_Y, camo_list )						)
+		
+
+// Dual wield has been moved to attachments.
+#if 0
+		// Dual Wield Button
+#define PRI_HAS_DW				( ItemHasDualWield( STAT_CAC_PRIMARY ) )
+#define SEC_HAS_DW				( ItemHasDualWield( STAT_CAC_SECONDARY ) )
+#define PRI_IS_DW				( ItemIsDualWield( STAT_CAC_PRIMARY ) )
+#define SEC_IS_DW				( ItemIsDualWield( STAT_CAC_SECONDARY ) )
+#define IS_PRI_DW_LOCKED		( IsItemDualWieldLocked( STAT_CAC_PRIMARY ) )
+#define IS_SEC_DW_LOCKED		( IsItemDualWieldLocked( STAT_CAC_SECONDARY ) )
+#define IS_PRI_DW_PURCHASED		( IsItemDualWieldPurchased( STAT_CAC_PRIMARY ) )
+#define IS_SEC_DW_PURCHASED		( IsItemDualWieldPurchased( STAT_CAC_SECONDARY ) )
+#define HAVE_ENOUGH_FOR_PRI_DW	( GetItemDualWieldCost( STAT_CAC_PRIMARY ) <= GetStatByName( "CODPOINTS" ) )
+#define HAVE_ENOUGH_FOR_SEC_DW	( GetItemDualWieldCost( STAT_CAC_SECONDARY ) <= GetStatByName( "CODPOINTS" ) )
+
+#define IS_PRI_NA_OR_LOCKED		( IS_PRI && ( !PRI_HAS_DW || (PRI_HAS_DW && IS_PRI_DW_LOCKED) ) )
+#define IS_SEC_NA_OR_LOCKED		( IS_SEC && ( !SEC_HAS_DW || (SEC_HAS_DW && IS_SEC_DW_LOCKED) ) )
+#define CAN_NOT_AFFORD_PRI_DW	( IS_PRI && PRI_HAS_DW && !IS_PRI_DW_LOCKED && !IS_PRI_DW_PURCHASED && !HAVE_ENOUGH_FOR_PRI_DW )
+#define CAN_NOT_AFFORD_SEC_DW	( IS_SEC && SEC_HAS_DW && !IS_SEC_DW_LOCKED && !IS_SEC_DW_PURCHASED && !HAVE_ENOUGH_FOR_SEC_DW )
+#define CAN_AFFORD_PRI_DW		( IS_PRI && PRI_HAS_DW && !IS_PRI_DW_LOCKED && !IS_PRI_DW_PURCHASED && HAVE_ENOUGH_FOR_PRI_DW )
+#define CAN_AFFORD_SEC_DW		( IS_SEC && SEC_HAS_DW && !IS_SEC_DW_LOCKED && !IS_SEC_DW_PURCHASED && HAVE_ENOUGH_FOR_SEC_DW )
+#define CAN_TOGGLE_PRI_DW		( IS_PRI && ( (PRI_IS_DW) || (!PRI_IS_DW && PRI_HAS_DW && IS_PRI_DW_PURCHASED) ) )	
+#define CAN_TOGGLE_SEC_DW		( IS_SEC && ( (SEC_IS_DW) || (!SEC_IS_DW && SEC_HAS_DW && IS_SEC_DW_PURCHASED) ) )	
+
+#define DW_RECT_X			LEFT_X
+#define DW_RECT_Y			DUAL_WIELD_Y
+#define DW_RECT_W			WEAPON_BUTTON_WIDTH
+#define DW_RECT_H			WEAPON_BUTTON_HEIGHT
+#define DW_RECT_ALIGN		HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define	DW_RECT				DW_RECT_X DW_RECT_Y DW_RECT_W DW_RECT_H DW_RECT_ALIGN
+#define DW_COST_W			50
+#define DW_COST_RECT		(DW_RECT_X+DW_RECT_W-DW_COST_W-2) DW_RECT_Y DW_COST_W DW_RECT_H DW_RECT_ALIGN
+#define DW_EQUIP_W			DW_RECT_H
+#define DW_EQUIP_RECT		(DW_RECT_X+DW_RECT_W-DW_EQUIP_W-2) DW_RECT_Y DW_EQUIP_W DW_EQUIP_W DW_RECT_ALIGN
+#define DW_BUTTON_STATES	WEAPON_BUTTON_STATES( DUAL_WIELD_INDEX, DUAL_WIELD_Y )
+
+#define TOGGLE_PRI_DUAL_WIELD_ACTION																					\
+		if( !PRI_IS_DW )																								\
+		{																												\
+			execnow equipclassitem (dvarString( ui_custom_name )) ( GetItemDualWieldIndex( STAT_CAC_PRIMARY ) );		\
+		}																												\
+		else																											\
+		{																												\
+			execnow equipclassitem (dvarString( ui_custom_name )) ( GetItemDualWieldBaseIndex( STAT_CAC_PRIMARY ) );	\	
+		}
+		
+#define TOGGLE_SEC_DUAL_WIELD_ACTION																					\
+		if( !SEC_IS_DW )																								\
+		{																												\
+			execnow equipclassitem (dvarString( ui_custom_name )) ( GetItemDualWieldIndex( STAT_CAC_SECONDARY ) );		\
+		}																												\
+		else																											\
+		{																												\
+			execnow equipclassitem (dvarString( ui_custom_name )) ( GetItemDualWieldBaseIndex( STAT_CAC_SECONDARY ) );	\	
+		}
+
+		// Primary Weapon
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	;, ;, ;, ( !IS_FIXED_BUTTON_ACTIVE && IS_PRI && !PRI_IS_DW && !IS_PRI_DW_PURCHASED ),	;, decoration; DW_BUTTON_STATES )
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_DUAL_WIELD_CAPS",		;, ;, ;, ( !IS_FIXED_BUTTON_ACTIVE && CAN_TOGGLE_PRI_DW ),								;, decoration; DW_BUTTON_STATES )
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	;, ;, ;, ( IS_FIXED_BUTTON_ACTIVE && IS_PRI && !PRI_IS_DW && IS_PRI_NA_OR_LOCKED ),		;, DW_BUTTON_STATES )
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	NEW_FRAME_RED,		NEW_FRAME_RED,		;,										;, ;, ( IS_FIXED_BUTTON_ACTIVE && !PRI_IS_DW && CAN_NOT_AFFORD_PRI_DW ),	;, DW_BUTTON_STATES	)
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	NEW_FRAME_GREEN,	NEW_FRAME_GREEN,	open PurchaseDualWieldConfirmation;,	;, ;, ( IS_FIXED_BUTTON_ACTIVE && !PRI_IS_DW && CAN_AFFORD_PRI_DW ),		;, DW_BUTTON_STATES	)
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_DUAL_WIELD_CAPS",		WHITE_RGB,	WHITE_ALPHA, BLACK,	TOGGLE_PRI_DUAL_WIELD_ACTION,			;, ;, ( IS_FIXED_BUTTON_ACTIVE && CAN_TOGGLE_PRI_DW ),						;, DW_BUTTON_STATES	)
+		
+		NEW_FRAME_LOCKEDICON_RECT_VIS( DW_RECT_X, DW_RECT_Y, DW_RECT_W, DW_RECT_H, DW_RECT_ALIGN, (IS_FIXED_BUTTON_ACTIVE && IS_PRI && !PRI_IS_DW && PRI_HAS_DW && IS_PRI_DW_LOCKED), DW_BUTTON_STATES )
+		// Cost
+		PREPROC_TEXT_DRAW_VIS_EX(	DW_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetItemDualWieldCost( STAT_CAC_PRIMARY ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_RED,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_NOT_AFFORD_PRI_DW  );,	
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+		PREPROC_TEXT_DRAW_VIS_EX(	DW_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetItemDualWieldCost( STAT_CAC_PRIMARY ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_AFFORD_PRI_DW  );,
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+		// Equipped icon
+		PREPROC_SHADER_DRAW_VIS_EX(	DW_EQUIP_RECT,
+									"menu_mp_killstreak_select", 1 1 1 1, 
+									when( IS_FIXED_BUTTON_ACTIVE && IS_PRI && PRI_IS_DW );, 
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )
+
+		// Secondary Weapon
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	;, ;, ;, ( !IS_FIXED_BUTTON_ACTIVE && IS_SEC && !SEC_IS_DW && !IS_SEC_DW_PURCHASED ),	;, decoration; DW_BUTTON_STATES )
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_DUAL_WIELD_CAPS",		;, ;, ;, ( !IS_FIXED_BUTTON_ACTIVE && CAN_TOGGLE_SEC_DW ),								;, decoration; DW_BUTTON_STATES )
+		NEW_FRAME_DBUTTON( 8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	;, ;, ;, ( IS_FIXED_BUTTON_ACTIVE && IS_SEC && !SEC_IS_DW && IS_SEC_NA_OR_LOCKED ),		;, DW_BUTTON_STATES )
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	NEW_FRAME_RED,		NEW_FRAME_RED,		;,										;, ;, ( IS_FIXED_BUTTON_ACTIVE && !SEC_IS_DW && CAN_NOT_AFFORD_SEC_DW ),	;, DW_BUTTON_STATES	)
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_BUY_DUAL_WIELD_CAPS",	NEW_FRAME_GREEN,	NEW_FRAME_GREEN,	open PurchaseDualWieldConfirmation;,	;, ;, ( IS_FIXED_BUTTON_ACTIVE && !SEC_IS_DW && CAN_AFFORD_SEC_DW ),		;, DW_BUTTON_STATES	)
+		NEW_FRAME_BUTTON_COLOR(	8, DW_RECT, "@MPUI_DUAL_WIELD_CAPS",		WHITE_RGB, WHITE_ALPHA,	BLACK,	TOGGLE_SEC_DUAL_WIELD_ACTION,			;, ;, ( IS_FIXED_BUTTON_ACTIVE && CAN_TOGGLE_SEC_DW ),						;, DW_BUTTON_STATES	)
+		
+		NEW_FRAME_LOCKEDICON_RECT_VIS( DW_RECT_X, DW_RECT_Y, DW_RECT_W, DW_RECT_H, DW_RECT_ALIGN, (IS_FIXED_BUTTON_ACTIVE && IS_SEC && !SEC_IS_DW && SEC_HAS_DW && IS_SEC_DW_LOCKED), DW_BUTTON_STATES )
+		// Cost
+		PREPROC_TEXT_DRAW_VIS_EX(	DW_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetItemDualWieldCost( STAT_CAC_SECONDARY ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_RED,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_NOT_AFFORD_SEC_DW  );,	
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+		PREPROC_TEXT_DRAW_VIS_EX(	DW_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetItemDualWieldCost( STAT_CAC_SECONDARY ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_AFFORD_SEC_DW  );,
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+		// Equipped icon
+		PREPROC_SHADER_DRAW_VIS_EX(	DW_EQUIP_RECT, 
+									"menu_mp_killstreak_select", 1 1 1 1,
+									when( IS_FIXED_BUTTON_ACTIVE && IS_SEC && SEC_IS_DW );, 
+									DW_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 ) )
+
+		// Second Attachment Button
+#define SEC_ATTACH_AVAILABLE		( GetCurrentItemNumAttachments() > 2 )	// None counts as an attachment. Need at least 2 attachments.
+#define HAVE_ENOUGH_FOR_SEC_ATTACH	( GetWeaponOptionCost( GetItemOptionByName( "2ndattach" ) ) <= GetStatByName( "CODPOINTS" ) )
+#define CAN_NOT_AFFORD_SEC_ATTACH	( SEC_ATTACH_AVAILABLE && !GUN_2NDATTACH_LOCKED && !GUN_2NDATTACH_PURCHASED && !HAVE_ENOUGH_FOR_SEC_ATTACH )
+#define CAN_AFFORD_SEC_ATTACH		( SEC_ATTACH_AVAILABLE && !GUN_2NDATTACH_LOCKED && !GUN_2NDATTACH_PURCHASED && HAVE_ENOUGH_FOR_SEC_ATTACH )
+
+#define SEC_ATTACH_X				LEFT_X
+#define SEC_ATTACH_Y				SECOND_ATTACHMENT_Y
+#define SEC_ATTACH_W				WEAPON_BUTTON_WIDTH
+#define SEC_ATTACH_H				WEAPON_BUTTON_HEIGHT
+#define SEC_ATTACH_ALIGN			HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define SEC_ATTACH_RECT				SEC_ATTACH_X SEC_ATTACH_Y SEC_ATTACH_W SEC_ATTACH_H SEC_ATTACH_ALIGN
+#define SEC_ATTACH_COST_W			50
+#define SEC_ATTACH_COST_RECT		(SEC_ATTACH_X+SEC_ATTACH_W-SEC_ATTACH_COST_W-2) SEC_ATTACH_Y SEC_ATTACH_COST_W SEC_ATTACH_H SEC_ATTACH_ALIGN
+#define SEC_ATTACH_BUTTON_STATES	WEAPON_BUTTON_STATES( SECOND_ATTACHMENT_INDEX, SECOND_ATTACHMENT_Y )
+		
+#define PURCHASE_2ND_ATTACH_ACTION														\
+		execnow set weaponOptionIndex ( GetItemIndex( FEATURE_SECOND_ATTACHMENT ) );	\
+		execnow set weaponOptionRef "2ndAttach";										\
+		open PurchaseWeaponOptionConfirmation;
+
+		NEW_FRAME_DBUTTON( 9, SEC_ATTACH_RECT, "@MPUI_BUY_SECOND_ATTACHMENT_CAPS", ;, ;, ;, (!IS_FIXED_BUTTON_ACTIVE || GUN_2NDATTACH_PURCHASED || GUN_2NDATTACH_LOCKED || !SEC_ATTACH_AVAILABLE ), ;, SEC_ATTACH_BUTTON_STATES )
+		NEW_FRAME_BUTTON_COLOR(	9, SEC_ATTACH_RECT, "@MPUI_BUY_SECOND_ATTACHMENT_CAPS", NEW_FRAME_RED_RGB, NEW_FRAME_RED_ALPHA,	NEW_FRAME_RED,		;,							;, ;, (IS_FIXED_BUTTON_ACTIVE && CAN_NOT_AFFORD_SEC_ATTACH ),	;, SEC_ATTACH_BUTTON_STATES )
+		NEW_FRAME_BUTTON_COLOR(	9, SEC_ATTACH_RECT, "@MPUI_BUY_SECOND_ATTACHMENT_CAPS", NEW_FRAME_GREEN_RGB, NEW_FRAME_GREEN_ALPHA,	NEW_FRAME_GREEN,	PURCHASE_2ND_ATTACH_ACTION,	;, ;, (IS_FIXED_BUTTON_ACTIVE && CAN_AFFORD_SEC_ATTACH ),		;, SEC_ATTACH_BUTTON_STATES )
+		
+		NEW_FRAME_LOCKEDICON_RECT_VIS( SEC_ATTACH_X, SEC_ATTACH_Y, SEC_ATTACH_W, SEC_ATTACH_H, SEC_ATTACH_ALIGN, (IS_FIXED_BUTTON_ACTIVE && GUN_2NDATTACH_LOCKED), SEC_ATTACH_BUTTON_STATES )
+		// Cost
+		PREPROC_TEXT_DRAW_VIS_EX(	SEC_ATTACH_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "2ndAttach" ) ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_RED,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_NOT_AFFORD_SEC_ATTACH  );,	
+									SEC_ATTACH_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+		PREPROC_TEXT_DRAW_VIS_EX(	SEC_ATTACH_COST_RECT, 0 0, 
+									locString( "@MENU_POINTS", GetWeaponOptionCost( GetItemOptionByName( "2ndAttach" ) ) ), 
+									CHOICE_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN,
+									when( IS_FIXED_BUTTON_ACTIVE && CAN_AFFORD_SEC_ATTACH  );,
+									SEC_ATTACH_BUTTON_STATES; NEW_FRAME_TRANSPARENT_STATE( 1 1 1 )  )
+
+#endif 
+
+#ifdef PC
+	#define COMMON_LIST_EX_PC	\
+		modal					\
+		usepaging
+#else //#ifdef PC
+	#define COMMON_LIST_EX_PC
+#endif //#ifdef PC
+
+		// Listbox actions
+#define COMMON_LIST_EX( buttonBActionArg )										\
+		LISTBOX_STATES															\
+		execKeyInt BUTTON_B														\
+		{																		\
+			play CHOICE_FOCUS_SOUND;											\
+			execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;	\
+			buttonBActionArg													\
+		}																		\
+		COMMON_LIST_EX_PC
+
+#define WEAPON_GROUP_LIST_ACTION																					\
+		play CHOICE_ACTION_SOUND;																					\
+		execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;											\
+		execnow set cac_weapon_current_list weapon_list;															\
+		execnow buildItemListForSlotNameAndGroup (dvarString(selected_loadout_slot)) (dvarString(selected_group));	\
+		execnow set cac_weapon_feeder_count ( GetFeederCount( weapon_list ) );										\
+		execnow set ui_next_inside_popup select_weapon;							
+
+#define WEAPON_LIST_ACTION														\
+		if ( IsCurrentItemPurchased() )											\
+		{																		\
+			play CHOICE_ACTION_SOUND;											\
+			execnow equipclasscurrentitem (dvarString( ui_custom_name ));		\
+			execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;	\
+		}																		\
+		elseif ( !IsItemLocked( GetCurrentItemIndex() )						&&	\
+				 ( GetCurrentItemCost() <= GetStatByName( "CODPOINTS" ) )	&&	\
+				 !IsCurrentItemClassified() )									\
+		{																		\
+			play CHOICE_ACTION_SOUND;											\
+			open "PurchaseConfirmation";										\
+		}
+		
+#define WEAPON_LIST_ONSELECTION																					\
+		if ( IsCurrentItemClassified() )																		\
+		{																										\
+			execnow set ui_cac_weapon_hint_text (GetCurrentItemClassifiedHintText());							\
+		}																										\
+		elseif ( IsItemLocked( GetCurrentItemIndex() ) )														\
+		{																										\
+			execnow set ui_cac_weapon_hint_text (GET_UNLOCK_LEVEL_STRING(GetItemName(GetCurrentItemIndex())));	\ 
+		}																										\
+		else																									\
+		{																										\
+			if( IsItemNew( GetCurrentItemIndex() ) )															\
+			{																									\
+				CLEAR_ITEM_NEW( ( GetItemName( GetCurrentItemIndex() ) ) );										\
+			}																									\
+			execnow set ui_cac_weapon_hint_text "";																\
+		}
+
+#define CAN_EQUIP_TWO_ATTACHMENTS \
+		( ( IS_PRI ) && ( isItemEquipped( getitemindex("PERKS_PROFESSIONAL"), dvarString( ui_custom_name ) ) || isItemEquipped( getitemindex("PERKS_PROFESSIONAL_PRO"), dvarString( ui_custom_name ) ) ) )
+
+#define NUM_EQUIPPED_ATTACHMENTS \
+		GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), GET_SLOT_STAT )
+
+#define IS_CURRENT_ATTACHMENT_EQUIPPED \
+		( getItemAttachment( getCurrentItemIndex(), getCurrentItemAttachmentNum() ) == GetItemEquippedAttachment( dvarString( ui_custom_name ), GET_SLOT_STAT, 0 ) || \
+		  getItemAttachment( getCurrentItemIndex(), getCurrentItemAttachmentNum() ) == GetItemEquippedAttachment( dvarString( ui_custom_name ), GET_SLOT_STAT, 1 ) )
+
+#define ATTACHMENTS_LIST_ACTION																											\
+		if ( isCurrentItemAttachmentPurchased() )																						\
+		{																																\
+			if( IS_CURRENT_ATTACHMENT_EQUIPPED )																						\
+			{																															\
+				execNow clearAttachmentForItemAtPoint (dvarString( ui_custom_name )) (GET_SLOT_STAT) (getCurrentItemAttachmentPoint());	\
+			}																															\
+			elseif( ( NUM_EQUIPPED_ATTACHMENTS < 1 ) || ( NUM_EQUIPPED_ATTACHMENTS == 1 && CAN_EQUIP_TWO_ATTACHMENTS ) )				\
+			{																															\
+				play CHOICE_ACTION_SOUND;																								\
+				execnow equipclasscurrentattachment ( dvarString( ui_custom_name ) );													\
+			}																															\
+		}																																\
+		elseif ( !isItemlocked( GetCurrentItemIndex() ) && ( getCurrentItemAttachmentCost() <= GetStatByName( "CODPOINTS" ) ) )			\
+		{																																\
+			open "PurchaseAttachmentConfirmation";																						\
+		}
+
+#define CLEAR_CAC_HINT	\
+		exec "set ui_cac_weapon_hint_text @NULL_EMPTY;"
+		
+#define SET_OPTION_HINT																																\
+		if ( GetWeaponOptionUnlockPLevel( GetCurrentItemOption() ) > PRESTIGE )																		\
+		{																																			\
+			exec set ui_cac_weapon_hint_text ( locString( CLASS_PRESTIGE_UNCLASSIFY_DESC, GetWeaponOptionUnlockPLevel( GetCurrentItemOption() ) ) );	\
+		}																																			\
+		else																																		\
+		{																																			\
+			CLEAR_CAC_HINT																															\
+		}
+
+#define OPTION_LIST_ACTION( optionGroup )																											\
+		if ( GetWeaponOptionUnlockPLevel( GetCurrentItemOption() ) <= PRESTIGE )																	\
+		{																																			\
+			if ( isCurrentItemOptionPurchased() )																									\
+			{																																		\
+				play CHOICE_ACTION_SOUND;																											\
+				execnow "equipclasscurrentoption ( dvarString( ui_custom_name ) ) "optionGroup;														\
+				execnow ui_animate cac_weapon anim_controller CloseDropDownList 0;																	\
+			}																																		\
+			elseif ( !isItemlocked( GetCurrentItemIndex() ) && ( GetWeaponOptionCost( GetCurrentItemOption() ) <= GetStatByName( "CODPOINTS" ) ) )	\
+			{																																		\
+				setDvar ui_optiongroup_name optionGroup;																							\
+				open "PurchaseCurrentWeaponOptionConfirmation";																						\
+			}																																		\
+		}
+
+		// Listboxes
+#undef	LIST_Y_START
+#define	LIST_Y_START	(SELECT_WEAPON_Y+WEAPON_BUTTON_HEIGHT)
+		ITEM_LISTBOX_EX( "weapon_group_list",		FEEDER_WEAPON_GROUPS,		WEAPON_GROUP_LIST_ACTION,				CLEAR_CAC_HINT,				;,							when( dvarString( "ui_inside_popup" ) == "select_weapon_group" ),	COMMON_LIST_EX( WEAPON_GROUP_LIST_BUTTON_B_ACTION )	)
+		ITEM_LISTBOX_EX( "weapon_list",				FEEDER_ITEMSINSLOTANDGROUP,	WEAPON_LIST_ACTION,						WEAPON_LIST_ONSELECTION,	WEAPON_LIST_ONSELECTION,	when( dvarString( "ui_inside_popup" ) == "select_weapon" ),			COMMON_LIST_EX( WEAPON_LIST_BUTTON_B_ACTION )		)
+
+#undef	LIST_X_START
+#define LIST_X_START	(LEFT_X-3)
+#undef	LIST_Y_START
+#define	LIST_Y_START	(ATTACHMENTS_Y+WEAPON_BUTTON_HEIGHT) 
+#undef	LIST_WIDTH
+#define LIST_WIDTH		(WEAPON_BUTTON_WIDTH+4)
+		ATTACHMENTS_LISTBOX_EX( "attachments_list",	FEEDER_ATTACHMENTS,			ATTACHMENTS_LIST_ACTION,				;,							;,							when( dvarString( "ui_inside_popup" ) == "attachments" ),			COMMON_LIST_EX( UPDATE_ATTACH_SLOT_TOP ) ) 
+#undef	LIST_X_START
+#define LIST_X_START	LEFT_X
+
+#ifdef PC
+#undef	LIST_WIDTH
+#define LIST_WIDTH		(WEAPON_BUTTON_WIDTH+16)
+#else //#ifdef PC
+#undef	LIST_WIDTH
+#define LIST_WIDTH		WEAPON_BUTTON_WIDTH
+#endif //#ifdef PC
+
+#undef	LIST_Y_START
+#define LIST_Y_START	(CAMO_Y+WEAPON_BUTTON_HEIGHT)
+		ITEM_LISTBOX_EX( "camo_list",				FEEDER_WEAPONOPTIONS,		OPTION_LIST_ACTION( "camo" ),			SET_OPTION_HINT,			SET_OPTION_HINT,			when( dvarString( "ui_inside_popup" ) == "select_camo" ),			COMMON_LIST_EX( ; )	)
+
+#undef	LIST_Y_START
+#define LIST_Y_START	(RETICLE_Y+WEAPON_BUTTON_HEIGHT)
+#ifdef PC
+#undef	LIST_WIDTH
+#define LIST_WIDTH		(WEAPON_BUTTON_WIDTH+16)
+#endif //#ifdef PC
+		ITEM_LISTBOX_EX( "reticle_list",			FEEDER_WEAPONOPTIONS,		OPTION_LIST_ACTION( "reticle" ),		;,							;,							when( dvarString( "ui_inside_popup" ) == "select_reticle" ),		COMMON_LIST_EX( ; )	)		
+		
+#undef	LIST_Y_START
+#define	LIST_Y_START	(RETICLE_COLOR_Y+WEAPON_BUTTON_HEIGHT)
+		ITEM_LISTBOX_EX( "reticle_color_list",		FEEDER_WEAPONOPTIONS,		OPTION_LIST_ACTION( "reticlecolor" ),	;,							;,							when( dvarString( "ui_inside_popup" ) == "select_reticle_color" ),	COMMON_LIST_EX( ; )	)
+		
+#undef	LIST_Y_START
+#define LIST_Y_START	(LENS_Y+WEAPON_BUTTON_HEIGHT)
+		ITEM_LISTBOX_EX( "lens_list",				FEEDER_WEAPONOPTIONS,		OPTION_LIST_ACTION( "lens" ),			;,							;,							when( dvarString( "ui_inside_popup" ) == "select_lens" ),			COMMON_LIST_EX( ; )	)		
+		
+#define PLAYER_WEAPON_IMAGE_X		85
+#define PLAYER_WEAPON_IMAGE_Y		-130
+#define PLAYER_WEAPON_CLASSIFIED_Y	-180
+#define PLAYER_WEAPON_IMAGE_WIDTH	180
+#define PLAYER_WEAPON_IMAGE_HEIGHT	90
+
+		/* Camo */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( (PLAYER_WEAPON_IMAGE_X-10),
+										(PLAYER_WEAPON_IMAGE_Y-5),
+										( PLAYER_WEAPON_IMAGE_WIDTH+20 ),
+										(PLAYER_WEAPON_IMAGE_HEIGHT+10),
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										getWeaponOptionImage( STAT_CAC_PRIMARY_CAMO ), 1 1 1 1,
+										when( IS_PRI && ( dvarString(ui_inside_popup ) != "select_camo" || localVarInt( "ui_disable_controls" ) != 0 ) && dvarString(ui_inside_popup ) != "select_weapon" && dvarString(ui_inside_popup ) != "select_weapon_group"),
+										; ) 
+		/* Camo when camo list open */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( (PLAYER_WEAPON_IMAGE_X-10),
+										(PLAYER_WEAPON_IMAGE_Y-5),
+										( PLAYER_WEAPON_IMAGE_WIDTH+20 ),
+										(PLAYER_WEAPON_IMAGE_HEIGHT+10),
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										getWeaponOptionImage( GetCurrentItemOption() ), 1 1 1 1,
+										when ( ( IS_PRI && dvarString(ui_inside_popup ) == "select_camo" && dvarString(ui_inside_popup ) != "select_weapon" && dvarString(ui_inside_popup ) != "select_weapon_group" && localVarInt( "ui_disable_controls" ) == 0 ) &&
+										( GetWeaponOptionUnlockPLevel( GetCurrentItemOption() ) <= PRESTIGE ) ), ; ) 
+		/* Weapon Image when not selecting weapon */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( PLAYER_WEAPON_IMAGE_X,
+										PLAYER_WEAPON_IMAGE_Y,
+										( PLAYER_WEAPON_IMAGE_WIDTH ),
+										PLAYER_WEAPON_IMAGE_HEIGHT,
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										GetItemImage( GET_SLOT_STAT ), 1 1 1 1,
+										when( dvarString(ui_inside_popup ) != "select_weapon" ), 
+										; )
+		/* Weapon Image when inside weapon list */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( PLAYER_WEAPON_IMAGE_X,
+										PLAYER_WEAPON_IMAGE_Y,
+										( PLAYER_WEAPON_IMAGE_WIDTH ),
+										PLAYER_WEAPON_IMAGE_HEIGHT,
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										GetItemImage( GetCurrentItemIndex() ), 1 1 1 1,
+										when( !IsCurrentItemClassified() && dvarString(ui_inside_popup ) == "select_weapon" ), 
+										; )
+		/* Dark Weapon Image when inside weapon list and weapon is classified */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( PLAYER_WEAPON_IMAGE_X,
+										PLAYER_WEAPON_IMAGE_Y,
+										( PLAYER_WEAPON_IMAGE_WIDTH ),
+										PLAYER_WEAPON_IMAGE_HEIGHT,
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										GetItemImage( GetCurrentItemIndex() ), 0 0 0 0.8,
+										when( !isCurrentItemPurchased() && IsCurrentItemClassified() && dvarString(ui_inside_popup ) == "select_weapon" ), 
+										; )
+		/* classified image when inside weapon list and weapon is classified */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX( PLAYER_WEAPON_IMAGE_X,
+										PLAYER_WEAPON_CLASSIFIED_Y,
+										PLAYER_WEAPON_IMAGE_WIDTH,
+										PLAYER_WEAPON_IMAGE_WIDTH,
+										HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+										"menu_mp_lobby_classified", 1 1 1 1,
+										when( !isCurrentItemPurchased() && IsCurrentItemClassified() && dvarString(ui_inside_popup ) == "select_weapon" ), 
+										; )
+		
+#define CURRENT_ATTACHMENT_VIS	\
+		(dvarString( ui_inside_popup ) == "attachments")
+
+#define HAS_X_ATTACHMENTS( minAttachments ) \
+	( GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), GET_SLOT_STAT ) >= minAttachments )
+	  
+#define GET_ITEM_EQUIPPED_ATTACHMENT( index ) \
+	( GetItemEquippedAttachment( dvarString( ui_custom_name ), GET_SLOT_STAT, index ) )
+		
+#define LOADOUT_SUMMARY_VIS ( 	( dvarString( ui_inside_popup ) != "select_weapon" ) && \
+								( dvarString( ui_inside_popup ) != "attachments" ) 		)
+
+#define LOADOUT_SUMMARY_WIDTH				PLAYER_WEAPON_IMAGE_WIDTH		
+#define LOADOUT_SUMMARY_ICON_WIDTH			32
+#define LOADOUT_SUMMARY_ICON_HEIGHT			LOADOUT_SUMMARY_ICON_WIDTH
+#define LOADOUT_SUMMARY_X					PLAYER_WEAPON_IMAGE_X
+#define LOADOUT_SUMMARY_Y					(PLAYER_WEAPON_IMAGE_Y+PLAYER_WEAPON_IMAGE_HEIGHT-LOADOUT_SUMMARY_ICON_HEIGHT/2+2)
+#define LOADOUT_ATTACHMENT1_X				(LOADOUT_SUMMARY_X+16)
+#define LOADOUT_ATTACHMENT2_X				(LOADOUT_SUMMARY_X+LOADOUT_SUMMARY_WIDTH-16)
+#define LOADOUT_LENS_ICON_WIDTH				29
+#define LOADOUT_LENS_ICON_HEIGHT			LOADOUT_LENS_ICON_WIDTH
+#define LOADOUT_RETICLE_ICON_WIDTH			20
+#define LOADOUT_RETICLE_ICON_HEIGHT			LOADOUT_RETICLE_ICON_WIDTH
+#define LOADOUT_SUMMARY_VERT_SPACING		7
+#define LOADOUT_SUMMARY_TEXT_X( imageX )	( imageX+LOADOUT_SUMMARY_ICON_WIDTH+5 )
+#define LOADOUT_SUMMARY_TEXT_WIDTH			(LOADOUT_SUMMARY_WIDTH-LOADOUT_SUMMARY_ICON_WIDTH-10)
+#define WEAPON_NAME_X						90
+#define WEAPON_NAME_Y						( PLAYER_WEAPON_IMAGE_Y + PLAYER_WEAPON_IMAGE_HEIGHT + 15 )
+#define WEAPON_GROUP_NAME_Y					( WEAPON_NAME_Y + 20 )
+		
+		/* Weapon Name */ 
+		PREPROC_TEXT_DRAW_VIS_EX(	WEAPON_NAME_X WEAPON_NAME_Y 170 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+									toUpper( locString( "@"+GetCurrentItemName() ) ), 
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR, 
+									when( !IsCurrentItemClassified() && LOADOUT_SUMMARY_VIS );, ; )
+		
+		/* Underline Image */
+		PREPROC_SHADER_DRAW_VIS_EX( PLAYER_WEAPON_IMAGE_X (WEAPON_NAME_Y-3) PLAYER_WEAPON_IMAGE_WIDTH 16 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									"menu_mp_lobby_cac_line_2_prong", 1 1 1 1, 
+									when( LOADOUT_SUMMARY_VIS && !LENSESORRETICLES_AVAILABLE );, ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX( PLAYER_WEAPON_IMAGE_X (WEAPON_NAME_Y-3) PLAYER_WEAPON_IMAGE_WIDTH 16 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									"menu_mp_lobby_cac_line_2_prong_left", 1 1 1 1, 
+									when( LOADOUT_SUMMARY_VIS && LENSESORRETICLES_AVAILABLE );, ; ) 
+		
+		/* Attachment 1 Name */
+		/*PREPROC_TEXT_DRAW_VIS_EX( (LOADOUT_SUMMARY_TEXT_X(LOADOUT_SUMMARY_X)) LOADOUT_SUMMARY_Y LOADOUT_SUMMARY_TEXT_WIDTH LOADOUT_SUMMARY_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,  
+		"@" + GetAttachmentName( GET_ITEM_EQUIPPED_ATTACHMENT( 0 ) ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 1 ) );, autoWrapped; )*/
+		/* Attachment 1 Image */
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT1_X-LOADOUT_SUMMARY_ICON_WIDTH/2) LOADOUT_SUMMARY_Y LOADOUT_SUMMARY_ICON_WIDTH LOADOUT_SUMMARY_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetAttachmentImage( GET_ITEM_EQUIPPED_ATTACHMENT( 0 ) ), 1 1 1 1,
+									when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 1 ) && GetAttachmentName( GET_ITEM_EQUIPPED_ATTACHMENT( 0 ) ) != MPUI_DW );, ; )
+		/* Attachment 1 DW Images */
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT1_X-LOADOUT_SUMMARY_ICON_WIDTH/2+6) (LOADOUT_SUMMARY_Y+3) LOADOUT_SUMMARY_ICON_WIDTH (LOADOUT_SUMMARY_ICON_HEIGHT/2) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetItemImage( GetCurrentItemIndex() ), 0.6 0.6 0.6 0.6,
+									when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 1 ) && GetAttachmentName( GET_ITEM_EQUIPPED_ATTACHMENT( 0 ) ) == MPUI_DW );, rotation 45; )
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT1_X-LOADOUT_SUMMARY_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+3) LOADOUT_SUMMARY_ICON_WIDTH (LOADOUT_SUMMARY_ICON_HEIGHT/2) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetItemImage( GetCurrentItemIndex() ), 1 1 1 1,
+									when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 1 ) && GetAttachmentName( GET_ITEM_EQUIPPED_ATTACHMENT( 0 ) ) == MPUI_DW );, rotation 45; )
+									
+		/* Lens Backing */
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT1_X-LOADOUT_LENS_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_LENS_ICON_HEIGHT/2) LOADOUT_LENS_ICON_WIDTH LOADOUT_LENS_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									"menu_mp_weapons_attach_lens", 1 1 1 1,
+									when( LOADOUT_SUMMARY_VIS && LENSESORRETICLES_AVAILABLE );, ; )
+									
+		/* Reticle Image For Summary */
+		PREPROC_OWNERDRAW_ALL( 	(LOADOUT_ATTACHMENT1_X-LOADOUT_RETICLE_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_RETICLE_ICON_HEIGHT/2) LOADOUT_RETICLE_ICON_WIDTH LOADOUT_RETICLE_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+								1 1 1 1, UI_RETICLE_PREVIEW, when( LOADOUT_SUMMARY_VIS && LENSESORRETICLES_AVAILABLE && !CUSTOMIZING_RETICLE && !CUSTOMIZING_RETICLE_COLOR );,
+								exp ownerdata( GetWeaponOptionImage( GetWeaponOptionGroupIndex( STAT_CAC_PRIMARY_RETICLE, 1 ) ), STAT_CAC_PRIMARY_RETICLE_COLOR ); )
+		/* Reticle Image While Customizing Reticle */
+		PREPROC_OWNERDRAW_ALL( 	(LOADOUT_ATTACHMENT1_X-LOADOUT_RETICLE_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_RETICLE_ICON_HEIGHT/2) LOADOUT_RETICLE_ICON_WIDTH LOADOUT_RETICLE_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+								1 1 1 1, UI_RETICLE_PREVIEW, when( LOADOUT_SUMMARY_VIS && CUSTOMIZING_RETICLE );,
+								exp ownerdata( GetWeaponOptionImage( GetCurrentItemOption() ), STAT_CAC_PRIMARY_RETICLE_COLOR ); )
+		/* Reticle Image While Customizing Reticle Color */
+		PREPROC_OWNERDRAW_ALL( 	(LOADOUT_ATTACHMENT1_X-LOADOUT_RETICLE_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_RETICLE_ICON_HEIGHT/2) LOADOUT_RETICLE_ICON_WIDTH LOADOUT_RETICLE_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+								1 1 1 1, UI_RETICLE_PREVIEW, when( LOADOUT_SUMMARY_VIS && CUSTOMIZING_RETICLE_COLOR );,
+								exp ownerdata( GetWeaponOptionImage( GetWeaponOptionGroupIndex( STAT_CAC_PRIMARY_RETICLE, 1 ) ), GetCurrentItemOption() - GetWeaponOptionGroupIndex( 0, 5 ) ); )
+		
+		/* Lens Image For Summary */
+		PREPROC_OWNERDRAW_ALL( 	(LOADOUT_ATTACHMENT1_X-LOADOUT_LENS_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_LENS_ICON_HEIGHT/2) LOADOUT_LENS_ICON_WIDTH LOADOUT_LENS_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+								1 1 1 1, UI_LENS_PREVIEW, when( LOADOUT_SUMMARY_VIS && LENSESORRETICLES_AVAILABLE && !CUSTOMIZING_LENS );,
+								exp ownerdata( "menu_mp_weapons_color_lens", STAT_CAC_PRIMARY_LENS ); )
+		/* Lens Image While Customizing Lens */
+		PREPROC_OWNERDRAW_ALL( 	(LOADOUT_ATTACHMENT1_X-LOADOUT_LENS_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_LENS_ICON_HEIGHT/2) LOADOUT_LENS_ICON_WIDTH LOADOUT_LENS_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+								1 1 1 1, UI_LENS_PREVIEW, when( LOADOUT_SUMMARY_VIS && CAN_GUN_HAVE_CUSTOM_RETICLE && CUSTOMIZING_LENS );,
+								exp ownerdata( "menu_mp_weapons_color_lens", GetCurrentItemOption() - GetWeaponOptionGroupIndex( 0, 2 ) ); )
+		/* Lens Highlight */
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT1_X-LOADOUT_LENS_ICON_WIDTH/2) (LOADOUT_SUMMARY_Y+LOADOUT_SUMMARY_ICON_HEIGHT+LOADOUT_SUMMARY_VERT_SPACING+LOADOUT_SUMMARY_ICON_HEIGHT/2-LOADOUT_LENS_ICON_HEIGHT/2) LOADOUT_LENS_ICON_WIDTH LOADOUT_LENS_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									"menu_mp_weapons_lens_hilight", 1 1 1 1,
+									when( LOADOUT_SUMMARY_VIS && LENSESORRETICLES_AVAILABLE );, ; )
+		
+		/* Attachment 2 Name */
+		/*PREPROC_TEXT_DRAW_VIS_EX( (LOADOUT_SUMMARY_TEXT_X(LOADOUT_SUMMARY_X+LOADOUT_SUMMARY_WIDTH/2)) LOADOUT_SUMMARY_Y LOADOUT_SUMMARY_TEXT_WIDTH LOADOUT_SUMMARY_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,  
+		"@" + GetAttachmentName( GET_ITEM_EQUIPPED_ATTACHMENT( 1 ) ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 2 ) );, autoWrapped; )*/
+		/* Attachment 2 Image */
+		PREPROC_SHADER_DRAW_VIS_EX( (LOADOUT_ATTACHMENT2_X-LOADOUT_SUMMARY_ICON_WIDTH/2) LOADOUT_SUMMARY_Y LOADOUT_SUMMARY_ICON_WIDTH LOADOUT_SUMMARY_ICON_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetAttachmentImage( GET_ITEM_EQUIPPED_ATTACHMENT( 1 ) ), 1 1 1 1,
+									when( LOADOUT_SUMMARY_VIS && HAS_X_ATTACHMENTS( 2 ) );, ; )
+
+#define CURRENT_ATTACHMENT_NAME_X			PLAYER_WEAPON_IMAGE_X	
+#define CURRENT_ATTACHMENT_NAME_Y			(PLAYER_WEAPON_IMAGE_Y+PLAYER_WEAPON_IMAGE_HEIGHT+5)
+#define CURRENT_ATTACHMENT_NAME_WIDTH		PLAYER_WEAPON_IMAGE_WIDTH
+#define CURRENT_ATTACHMENT_NAME_HEIGHT		32
+
+		/* Weapon Attachment Name */
+		PREPROC_TEXT_DRAW_VIS_EX(	CURRENT_ATTACHMENT_NAME_X CURRENT_ATTACHMENT_NAME_Y CURRENT_ATTACHMENT_NAME_WIDTH CURRENT_ATTACHMENT_NAME_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,  
+									"@" + GetCurrentItemAttachmentName() + "_CAPS", 
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR, 
+									when( CURRENT_ATTACHMENT_VIS && !IsCurrentItemClassified() ), 
+									autoWrapped; )
+
+#define CURRENT_ATTACHMENT_IMAGE_WIDTH		50
+#define CURRENT_ATTACHMENT_IMAGE_HEIGHT		50
+#define CURRENT_ATTACHMENT_IMAGE_X			(CURRENT_ATTACHMENT_NAME_X+CURRENT_ATTACHMENT_NAME_WIDTH/2 - CURRENT_ATTACHMENT_IMAGE_WIDTH/2 )
+#define CURRENT_ATTACHMENT_IMAGE_Y			(CURRENT_ATTACHMENT_NAME_Y+25)
+
+		/* Weapon Attachment Image */
+		PREPROC_SHADER_DRAW_VIS_EX( CURRENT_ATTACHMENT_IMAGE_X CURRENT_ATTACHMENT_IMAGE_Y CURRENT_ATTACHMENT_IMAGE_WIDTH CURRENT_ATTACHMENT_IMAGE_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetAttachmentImage( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() )  ), 1 1 1 1,
+									when( CURRENT_ATTACHMENT_VIS && !IsCurrentItemClassified() && GetAttachmentName( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() ) ) != MPUI_DW ), ; )
+		/* Weapon Attachment DW Images */
+		PREPROC_SHADER_DRAW_VIS_EX( (CURRENT_ATTACHMENT_IMAGE_X+5) (CURRENT_ATTACHMENT_IMAGE_Y+10) CURRENT_ATTACHMENT_IMAGE_WIDTH (CURRENT_ATTACHMENT_IMAGE_HEIGHT/2) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetItemImage( GetCurrentItemIndex() ), 0.6 0.6 0.6 0.6,
+									when( CURRENT_ATTACHMENT_VIS && !IsCurrentItemClassified() && GetAttachmentName( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() ) ) == MPUI_DW ), rotation 45 )
+		PREPROC_SHADER_DRAW_VIS_EX( (CURRENT_ATTACHMENT_IMAGE_X-5) (CURRENT_ATTACHMENT_IMAGE_Y+10) CURRENT_ATTACHMENT_IMAGE_WIDTH (CURRENT_ATTACHMENT_IMAGE_HEIGHT/2) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,
+									GetItemImage( GetCurrentItemIndex() ), 1 1 1 1,
+									when( CURRENT_ATTACHMENT_VIS && !IsCurrentItemClassified() && GetAttachmentName( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() ) ) == MPUI_DW ), rotation 45 )
+
+#define CURRENT_ATTACHMENT_DESC_X			CURRENT_ATTACHMENT_NAME_X	
+#define CURRENT_ATTACHMENT_DESC_Y			(CURRENT_ATTACHMENT_IMAGE_Y+CURRENT_ATTACHMENT_IMAGE_HEIGHT+5)
+#define CURRENT_ATTACHMENT_DESC_WIDTH		CURRENT_ATTACHMENT_NAME_WIDTH
+#define CURRENT_ATTACHMENT_DESC_HEIGHT		20
+
+		PREPROC_TEXT_DRAW_VIS_EX(	CURRENT_ATTACHMENT_DESC_X CURRENT_ATTACHMENT_DESC_Y CURRENT_ATTACHMENT_DESC_WIDTH CURRENT_ATTACHMENT_DESC_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,  
+									"@" + GetCurrentItemAttachmentDesc(), 
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR, 
+									when( CURRENT_ATTACHMENT_VIS && !IsCurrentItemClassified() ), autoWrapped; )
+		
+#define WEAPON_STAT_NAMES_X 95
+#define WEAPON_STATS_X (WEAPON_STAT_NAMES_X+110)
+#define WEAPON_DESC_WIDTH ( CAC_WIDTH/2 - 25 )
+#define WEAPON_STATS_Y 85
+
+#define GET_WEAPON_STAT( statName ) \ 
+		getDStat( "ItemStats", GetCurrentItemIndex(), "stats", statName, "statValue" )
+
+#define WEAPON_KDRATIO \
+		GET_WEAPON_STAT( "kills" ) / max( 1, GET_WEAPON_STAT( "deathsDuringUse" ) )
+	
+#define WEAPON_ACCURACY \
+		( ( GET_WEAPON_STAT( "hits" ) / max( 1, GET_WEAPON_STAT( "shots" ) ) ) * 100 )
+		
+#define WEAPON_STAT_SPACING 17
+
+#define GUN_STATS_VIS when( dvarBool( ui_cac_gun_attributes_vis ) && !IsCurrentItemClassified() )
+
+		/* WEAPON STAT NAMES */
+		/* Weapon kdratio */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STAT_NAMES_X WEAPON_STATS_Y 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_KILL_DEATH_RATIO_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, GUN_STATS_VIS, ; )
+		/* Weapon accuracy */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STAT_NAMES_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_ACCURACY_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, GUN_STATS_VIS, ; )
+		/* Weapon kills */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STAT_NAMES_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_KILLS_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, GUN_STATS_VIS, ; )
+		/* Weapon deaths */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STAT_NAMES_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*3) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_DEATHS_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, GUN_STATS_VIS, ; )
+		/* Weapon headshots */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STAT_NAMES_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*4) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_HEADSHOTS_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, GUN_STATS_VIS, ; )
+
+		/* WEAPON STATS */
+		/* Weapon kdratio */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STATS_X WEAPON_STATS_Y 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, getFloatAsFormattedString( WEAPON_KDRATIO, 2 ) , TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, GUN_STATS_VIS, ; )
+		/* Weapon accuracy */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STATS_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, getFloatAsFormattedString( WEAPON_ACCURACY, 2 ) + " %", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, GUN_STATS_VIS, ; )
+		/* Weapon kills */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STATS_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, GET_WEAPON_STAT( "kills" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, GUN_STATS_VIS, ; )
+		/* Weapon deaths */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STATS_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*3) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, GET_WEAPON_STAT( "deathsDuringUse" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, GUN_STATS_VIS, ; )
+		/* Weapon headshots */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_STATS_X (WEAPON_STATS_Y+WEAPON_STAT_SPACING*4) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, GET_WEAPON_STAT( "headshots" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, GUN_STATS_VIS, ; )
+
+#define GUN_ATTRIBUTES_VIS				( !dvarBool( ui_cac_gun_attributes_vis ) && !IsCurrentItemClassified() )
+
+#define WEAPON_ATTRIBUTE_NAMES_X		WEAPON_STAT_NAMES_X
+#define WEAPON_ATTRIBUTE_BAR_X			(WEAPON_ATTRIBUTE_NAMES_X+60)
+#define WEAPON_ATTRIBUTE_BAR_HEIGHT		9
+#define WEAPON_ATTRIBUTE_BAR_WIDTH		(WEAPON_ATTRIBUTE_BAR_HEIGHT*10)
+
+#define ATTRIBUTES_TABLE_COL_REF	    1
+#define ATTRIBUTES_TABLE_COL_ACCURACY	2
+#define ATTRIBUTES_TABLE_COL_DAMAGE     3
+#define ATTRIBUTES_TABLE_COL_RANGE		4
+#define ATTRIBUTES_TABLE_COL_FIRE_RATE	5
+#define ATTRIBUTES_TABLE_COL_MOBILITY   6
+#define ATTRIBUTES_TABLE_COL_FIRE_TYPE  8
+
+		/* WEAPON ATTRIBUTES */
+#define DAMAGE_BAR_Y		(WEAPON_STATS_Y+2)
+		/* Weapon damage label */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_NAMES_X (DAMAGE_BAR_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_DAMAGE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( GUN_ATTRIBUTES_VIS ), ; )
+		/* Weapon damage bar */ 
+		itemDef
+		{
+			name			"damageBar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			WEAPON_ATTRIBUTE_BAR_X DAMAGE_BAR_Y WEAPON_ATTRIBUTE_BAR_WIDTH WEAPON_ATTRIBUTE_BAR_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAW_ATTRIBUTE_BAR
+			dvar			ui_numBarPartitions
+			exp             ownerdata( ATTRIBUTES_TABLE_COL_DAMAGE ); 
+			visible			when( GUN_ATTRIBUTES_VIS )
+			decoration
+		}	
+
+#define RANGE_BAR_Y		(DAMAGE_BAR_Y+WEAPON_STAT_SPACING)
+		/* Weapon range label */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_NAMES_X (RANGE_BAR_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_RANGE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( GUN_ATTRIBUTES_VIS ), ; )
+		/* Weapon damage bar */ 
+		itemDef
+		{
+			name			"rangeBar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			WEAPON_ATTRIBUTE_BAR_X RANGE_BAR_Y WEAPON_ATTRIBUTE_BAR_WIDTH WEAPON_ATTRIBUTE_BAR_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAW_ATTRIBUTE_BAR
+			dvar			ui_numBarPartitions
+			exp             ownerdata( ATTRIBUTES_TABLE_COL_RANGE ); 
+			visible			when( GUN_ATTRIBUTES_VIS )
+			decoration
+		}	
+
+#define ACCURACY_BAR_Y		(RANGE_BAR_Y+WEAPON_STAT_SPACING)
+		/* Weapon accuracy label */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_NAMES_X (ACCURACY_BAR_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_ACCURACY_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( GUN_ATTRIBUTES_VIS ), ; )
+		/* Weapon accuracy bar */ 
+		itemDef
+		{
+			name			"accuracyBar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			WEAPON_ATTRIBUTE_BAR_X ACCURACY_BAR_Y WEAPON_ATTRIBUTE_BAR_WIDTH WEAPON_ATTRIBUTE_BAR_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAW_ATTRIBUTE_BAR
+			dvar			ui_numBarPartitions
+			exp             ownerdata( ATTRIBUTES_TABLE_COL_ACCURACY ); 
+			visible			when( GUN_ATTRIBUTES_VIS )
+			decoration
+		}
+
+#define MOBILITY_BAR_Y		(ACCURACY_BAR_Y+WEAPON_STAT_SPACING)
+		/* Weapon mobility label */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_NAMES_X (MOBILITY_BAR_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_MOBILITY_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( GUN_ATTRIBUTES_VIS ), ; )
+		/* Weapon mobility bar */ 
+		itemDef
+		{
+			name			"mobilityBar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			WEAPON_ATTRIBUTE_BAR_X MOBILITY_BAR_Y WEAPON_ATTRIBUTE_BAR_WIDTH WEAPON_ATTRIBUTE_BAR_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAW_ATTRIBUTE_BAR
+			dvar			ui_numBarPartitions
+			exp             ownerdata( ATTRIBUTES_TABLE_COL_MOBILITY ); 
+			visible			when( GUN_ATTRIBUTES_VIS )
+			decoration
+		}
+
+#ifndef PC
+		// ROTATE =============================================================
+		PREPROC_TEXT_DRAW(	95 (CAC_HEIGHT/2) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+							"@PLATFORM_ROTATE", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1 )
+#endif
+
+#define WEAPON_FIRE_TYPE \
+		tablelookup( "mp/attributesTable.csv", ATTRIBUTES_TABLE_COL_REF, GetItemRef( GetCurrentItemIndex() ), ATTRIBUTES_TABLE_COL_FIRE_TYPE )
+
+#define FULL_AUTO_ATTACHMENT \ 
+		( ( ( GetAttachmentName( GetItemAttachment( GetCurrentItemIndex(), GetCurrentItemAttachmentNum() ) ) == "MPUI_AUTO" ) && ( IS_ATTACHMENT_LIST_OPEN ) ) || ( ( GetAttachmentName( GetItemEquippedAttachment( dvarString( ui_custom_name ), GET_SLOT_STAT, 0 ) ) == "MPUI_AUTO" ) && ( IS_NO_LIST_OPEN ) ) )
+
+
+#define FIRE_RATE_Y		(MOBILITY_BAR_Y+WEAPON_STAT_SPACING)
+		/* Weapon FIRE RATE */ 
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_NAMES_X (FIRE_RATE_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_FIRE_RATE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_COMMON_TEXT_COLOR, when( GUN_ATTRIBUTES_VIS ), ; )
+		/* Weapon fire rate bar shown only when weapon is full auto */ 
+		itemDef
+		{
+			name			"fireRateBar"
+			type			ITEM_TYPE_OWNERDRAW
+			rect			WEAPON_ATTRIBUTE_BAR_X FIRE_RATE_Y WEAPON_ATTRIBUTE_BAR_WIDTH WEAPON_ATTRIBUTE_BAR_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			forecolor		1 1 1 1
+			ownerdraw		UI_DRAW_ATTRIBUTE_BAR
+			dvar			ui_numBarPartitions
+			exp             ownerdata( ATTRIBUTES_TABLE_COL_FIRE_RATE ); 
+			visible			when( GUN_ATTRIBUTES_VIS && WEAPON_FIRE_TYPE == "MPUI_FULL_AUTO" )
+			decoration
+		}
+
+
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_BAR_X (FIRE_RATE_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@"+WEAPON_FIRE_TYPE, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, when( GUN_ATTRIBUTES_VIS && WEAPON_FIRE_TYPE != "MPUI_FULL_AUTO" && !FULL_AUTO_ATTACHMENT ), ; )
+		PREPROC_TEXT_DRAW_VIS_EX( WEAPON_ATTRIBUTE_BAR_X (FIRE_RATE_Y-2) 10 10 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_FULL_AUTO", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_ORANGE_RGB 1, when( GUN_ATTRIBUTES_VIS && WEAPON_FIRE_TYPE != "MPUI_FULL_AUTO" && FULL_AUTO_ATTACHMENT ), ; )
+
+#define TOGGLE_ATTRIBUTES_AND_STATS					\ 
+		if( dvarBool( ui_cac_gun_attributes_vis ) )	\
+		{											\
+			setDvar ui_cac_gun_attributes_vis 0; }	\
+		else										\
+		{											\
+			setDvar ui_cac_gun_attributes_vis 1;	\
+		} 
+
+		// Gun Stats
+#ifdef PC
+		#undef CHOICE_TEXTSIZE
+		#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+		
+		#undef CHOICE_TEXTFONT
+		#define CHOICE_TEXTFONT			UI_FONT_NORMAL
+		
+		#define BUTTON_SPACING			20
+		#define GUN_STATS_BUTTON_OFFSET ( getTextWidth( locString( "@PLATFORM_BACK" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+		
+		NEW_FRAME_BUTTON_PC_LEFT_OFFSET( CAC_WIDTH, CAC_HEIGHT, GUN_STATS_BUTTON_OFFSET, "@PLATFORM_GUN_STATS", TOGGLE_ATTRIBUTES_AND_STATS, when( !dvarBool( ui_cac_gun_attributes_vis ) ) )
+#else // #ifdef PC
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			180 ( CAC_HEIGHT / 2 ) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			text			"@PLATFORM_GUN_STATS"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_BOTTOM_LEFT  
+			execkeyint		BUTTON_BACK { TOGGLE_ATTRIBUTES_AND_STATS } 
+			visible			when( !dvarBool( ui_cac_gun_attributes_vis ) )
+			decoration
+		}
+#endif // #ifdef PC
+
+		// Gun Attributes
+#ifdef PC
+		NEW_FRAME_BUTTON_PC_LEFT_OFFSET( CAC_WIDTH, CAC_HEIGHT, GUN_STATS_BUTTON_OFFSET, "@PLATFORM_GUN_ATTRIBUTES", TOGGLE_ATTRIBUTES_AND_STATS, when( dvarBool( ui_cac_gun_attributes_vis ) ) )
+#else // #ifdef PC
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			180 ( CAC_HEIGHT / 2 ) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			text			"@PLATFORM_GUN_ATTRIBUTES"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_BOTTOM_LEFT
+			execkeyint		BUTTON_BACK { TOGGLE_ATTRIBUTES_AND_STATS }
+			visible			when( dvarBool( ui_cac_gun_attributes_vis ) )
+			decoration
+		}
+#endif // #ifdef PC
+
+#define ANY_ATTACHMENTS_EQUIPPED \
+		( ( GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), STAT_CAC_PRIMARY ) > 0 ) || ( GetItemNumAttachmentsEquipped( dvarString( ui_custom_name ), STAT_CAC_SECONDARY ) > 0 ) )
+
+#define CLEAR_ATTACHMENTS_ACTION	\
+		play CHOICE_FOCUS_SOUND;	\
+		execnow clearAllAttachmentsForItem ( dvarString( ui_custom_name ) ) ( getCurrentItemIndex() ) ;
+		
+#ifdef PC
+		NEW_FRAME_BUTTON_PC_RIGHT_OFFSET( CAC_WIDTH, CAC_HEIGHT, 0, "@PLATFORM_CLEAR_ATTACHMENTS", CLEAR_ATTACHMENTS_ACTION, when( dvarString( ui_inside_popup ) == "attachments" && ANY_ATTACHMENTS_EQUIPPED ) )	
+#else // #ifdef PC
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			-165 ( CAC_HEIGHT / 2 ) 120 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			text			"@PLATFORM_CLEAR_ATTACHMENTS"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_MIDDLE_LEFT  
+			execKeyInt		BUTTON_Y { play CHOICE_FOCUS_SOUND; CLEAR_ATTACHMENTS_ACTION }
+			visible			when( dvarString( ui_inside_popup ) == "attachments" && ANY_ATTACHMENTS_EQUIPPED )
+			decoration
+		}
+#endif // #ifdef PC	
+		
+#ifdef PC
+		// back button
+		NEW_FRAME_BACK_BUTTON_ACTION( CAC_WIDTH, CAC_HEIGHT, ON_ESC )
+#else // #ifdef PC
+		NEW_FRAME_BACK_BUTTON( CAC_WIDTH, CAC_HEIGHT )
+#endif // #ifdef PC		
+		
+	}
+}
+
+

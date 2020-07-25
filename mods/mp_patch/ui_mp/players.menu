@@ -1,0 +1,166 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+
+#define LIST_ELEM_HEIGHT			18
+#define MAX_PLAYERS					32					
+
+#define PLAYERLIST_HEIGHT			((MAX_PLAYERS/2)*LIST_ELEM_HEIGHT)
+#define PLAYERLIST_WIDTH			235
+#define PLAYERLIST_SPACING			56
+
+#define PLAYERLIST_A_X_START		(-PLAYERLIST_WIDTH-(PLAYERLIST_SPACING/2))
+#define PLAYERLIST_B_X_START		(PLAYERLIST_SPACING/2)
+#define PLAYERLIST_Y_START			(-PLAYERLIST_HEIGHT/2)
+
+#define PLAYERLIST_A_RECT			PLAYERLIST_A_X_START PLAYERLIST_Y_START PLAYERLIST_WIDTH PLAYERLIST_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define PLAYERLIST_B_RECT			PLAYERLIST_B_X_START PLAYERLIST_Y_START PLAYERLIST_WIDTH PLAYERLIST_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+
+#define RANK_BG_WIDTH				33
+#define COLUMN_SCORE_WIDTH			34
+#define MUTE_ICON_WIDTH				LIST_ELEM_HEIGHT
+#define FRIEND_ICON_WIDTH			LIST_ELEM_HEIGHT
+#define FRIEND_ICON_START_X			( PLAYERLIST_WIDTH - FRIEND_ICON_WIDTH - 4 )
+#define MUTE_ICON_START_X			( FRIEND_ICON_START_X - MUTE_ICON_WIDTH - 4 )
+#define COLUMN_NAME_START_X			34
+#define COLUMN_NAME_WIDTH			( FRIEND_ICON_START_X - COLUMN_NAME_START_X )
+
+#define IN_PREGAME						( dvarbool( ui_pregame ) )
+
+#include "ui_mp/menustyle.inc"
+#include "ui_mp/choices_setup_teams.menu"
+
+#undef ON_ESC
+#define ON_ESC \
+	close self; \
+	open class;
+
+#define AAR_HEIGHT					NEW_FRAME_DEFAULT_HEIGHT
+#define AAR_WIDTH					( AAR_HEIGHT * FRAME_ASPECT_RATIO )
+
+#define AAR_AWARD_IMAGE_COLOR		0.8 0.68 0.47 0.6
+#define AAR_AWARD_IMAGE_COLOR_GREY	1 1 1 0.3
+
+#define AAR_BODY_X_START			( -AAR_WIDTH / 2 + 15 )
+#define	AAR_BODY_Y_START			( -AAR_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( AAR_HEIGHT ) )
+
+#define AAR_SCOREBOARD_COLUMN_SPACING 70
+#define AAR_SCOREBOARD_COLUMN_4_X 420
+#define AAR_SCOREBOARD_COLUMN_3_X ( AAR_SCOREBOARD_COLUMN_4_X - AAR_SCOREBOARD_COLUMN_SPACING )
+#define AAR_SCOREBOARD_COLUMN_2_X ( AAR_SCOREBOARD_COLUMN_3_X - AAR_SCOREBOARD_COLUMN_SPACING )
+#define AAR_SCOREBOARD_COLUMN_1_X ( AAR_SCOREBOARD_COLUMN_2_X - 50 )
+#define AAR_SCOREBOARD_COLUMN_SCORE_X ( AAR_SCOREBOARD_COLUMN_1_X - 50 )
+
+#define AAR_DBLCLICK_ACTION( menuName )															\
+				play CHOICE_FOCUS_SOUND;																																\
+				execnow set selectedPlayerXuid ( getfeederdata( "xuid" ) );																								\
+				execnow set selectedFriendName ( getfeederdata( "name" ) );																								\
+				if( (getfeederdata( "xuid" ) != getXuid()) && (getfeederdata( "xuid" ) != 0) )																			\
+				{																																						\
+					hideMenu self;																																		\
+					if (IsInGame())																																		\
+					{																																					\
+						showMenu "pausedbkgnd";																															\
+					}																																					\
+					execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;															\
+					execNow openMenu menu_playercard;																													\
+				}
+		
+
+#define AAR_SCOREBOARD_LISTBOX( scoreboard_name, feederId, x, y, w, h, visArg, extraArgs, menuName ) \
+		itemDef \
+		{ \
+			name						scoreboard_name \
+			type						ITEM_TYPE_LISTBOX \
+			feeder						feederId \
+			rect						x y w h HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER \
+			origin						0 0 \
+			elementwidth				30 \
+			elementheight				17 \
+			elementtype					LISTBOX_TEXT \
+			textstyle					ITEM_TEXTSTYLE_NORMAL \
+			textfont					UI_FONT_NORMAL \
+			textscale					TEXTSIZE_SMALL \
+			forecolor					1 1 1 1 \
+			focusColor					1 1 1 1 \
+			disableColor				1 1 1 1 \
+			elementHighlightColor		0 0 0 1 \
+			noBlinkingHighlight \
+			visible						visArg \
+			userarea 10		-1	0	(w-16)	19	24	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_NEMESIS_BG */	\
+							-1	0	40		19	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_RANK_BG */		\
+							3	0	50		16	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_RANK */		\
+							16	1	16		16	32  ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_RANK_ICON */	\
+							50	0	100		16	32	ITEM_ALIGN_LEFT  ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_NAME */		\
+							AAR_SCOREBOARD_COLUMN_SCORE_X	0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_SCORE */		\
+							AAR_SCOREBOARD_COLUMN_1_X		0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_1 */			\
+							AAR_SCOREBOARD_COLUMN_2_X		0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_2 */			\
+							(AAR_SCOREBOARD_COLUMN_3_X+85)		0	16 16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_3 */			\
+							(AAR_SCOREBOARD_COLUMN_4_X+70)		0	16 16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_4 */			\
+			\
+			doubleclick \
+			{ \
+				AAR_DBLCLICK_ACTION( menuName ) \
+			} \
+			\
+			extraArgs \			
+		}
+
+{
+	menuDef
+	{
+		name			"players"
+		focuscolor		COLOR_FOCUSED
+		style			WINDOW_STYLE_EMPTY
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+
+		onEsc
+		{
+			ON_ESC
+		}
+		onOpen
+		{
+			if (IsInGame())
+			{
+				showMenu "pausedbkgnd";
+			}
+			setdvar ui_friendsListOpen "0";
+			setdvar ui_ingamePlayersOpen "1";
+			
+			// TODO: Set Focus to something?
+		}
+		onClose
+		{
+			if (IsInGame())
+			{
+				hideMenu "pausedbkgnd";
+			}
+			setdvar ui_ingamePlayersOpen "0";
+		}		
+
+		// ------------------ TREE TITLE ------------------
+		CHOICE_MENU_TITLE_ALIGN_VIS( "@MENU_PLAYERS_CAPS", HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP, ITEM_ALIGN_MIDDLE_LEFT, 1 )
+	
+		/* LABEL FOR COLUMN "SCORE" */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+12+AAR_SCOREBOARD_COLUMN_SCORE_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_SCORE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 1 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+12+AAR_SCOREBOARD_COLUMN_1_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 0 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 2 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+12+AAR_SCOREBOARD_COLUMN_2_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 1 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 3 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+12+AAR_SCOREBOARD_COLUMN_3_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MENU_FRIEND" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 4 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+12+AAR_SCOREBOARD_COLUMN_4_X-16) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "MP_MUTED" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+
+		/* SCOREBOARD */
+		AAR_SCOREBOARD_LISTBOX( scoreboard_listbox, FEEDER_AAR_SCOREBOARD, (AAR_BODY_X_START+10), (AAR_BODY_Y_START+5), (AAR_WIDTH-40), (AAR_HEIGHT-65), 1, ;, menu_aar_scoreboard )
+
+
+		// Back button
+#ifdef PC
+		NEW_FRAME_BACK_BUTTON_ACTION_PC_VIS( ON_ESC, when( MenuHasFocus() ); )
+#endif
+	}
+}

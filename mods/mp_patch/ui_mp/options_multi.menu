@@ -1,0 +1,701 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#define 	OPTIONS_STYLE			1
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui/framestyle.inc"
+#include "ui/frame.inc"
+
+#undef CHOICE_BUTTON_NAME
+#define CHOICE_BUTTON_NAME		"options_multi_"
+#undef MENUDEF_NAME
+#define MENUDEF_NAME			options_multi
+
+#undef	OPTIONS_MULTI_HEIGHT
+#undef	OPTIONS_MULTI_WIDTH
+#define OPTIONS_MULTI_HEIGHT		332
+#define OPTIONS_MULTI_WIDTH			OPTIONS_MULTI_HEIGHT * FRAME_ASPECT_RATIO
+
+{
+	menuDef 
+	{
+		name			"options_multi"
+		fullScreen		0
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop		""
+
+		onOpen
+		{
+			exec "setfromdvar ui_name name";
+			
+			LOCAL_CLOSE_ALL_BUT( options_multi )
+			
+			setLocalVarBool ui_hideBack 1;
+
+			if (IsInGame())
+			{
+				showMenu "pausedbkgnd";
+			}			
+			else
+			{
+				activateBlur;
+			}
+		}
+		onClose
+		{
+			if (IsInGame())
+			{
+				hideMenu "pausedbkgnd";
+			}
+			else
+			{
+				deactivateBlur;
+			}
+
+			setLocalVarBool ui_hideBack 0;
+			exec "setfromdvar name ui_name";
+			uiScript "updateClanInProfile"
+		}
+		
+		onESC 
+		{ 
+			close self;		
+			open options_new_pc;
+		}
+		PC_TAB_SWITCH_ACTIONS( options_new_pc, options_controls_new_pc, options_controls_new_pc )
+
+		#include "ui_mp/leftside_options.inc"
+		
+#undef	CHOICE_X_START
+#undef	CHOICE_Y_START
+#undef	CHOICE_HORIZONTAL_ALIGN
+#undef	CHOICE_VERTICAL_ALIGN
+#undef	CHOICE_DVAR_EXTRA_WIDTH
+#undef	CHOICE_TEXT_OFFSET_X
+
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+#define CHOICE_X_START				((-OPTIONS_MULTI_WIDTH/2) - 75)
+#define CHOICE_Y_START				((-OPTIONS_MULTI_HEIGHT/2) + 32)
+#define CHOICE_DVAR_EXTRA_WIDTH		120
+#define CHOICE_TEXT_OFFSET_X		-10
+
+#undef CHOICE_TEXTSTYLE
+#undef CHOICE_TEXTSIZE
+#define CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+
+#undef	CHOICE_TEXT_COLOR_NO_HL
+#undef	CHOICE_TEXT_COLOR_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_NO_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_HL
+
+#define	CHOICE_TEXT_COLOR_NO_HL			CHOICE_TEXTCOLOR
+#define	CHOICE_TEXT_COLOR_HL			1 1 1 1
+#define	CHOICE_CAPTION_TEXT_COLOR_NO_HL	CHOICE_TEXTCOLOR
+#define	CHOICE_CAPTION_TEXT_COLOR_HL	0 0 0 1
+
+		FRAME_CHOICE_SECTION_TITLE_VIS( 21, "@MENU_MULTIPLAYER_CAPS", ( dvarint( ui_multiplayer ) ) )
+		FRAME_CHOICE_SECTION_TITLE_VIS( 21, "@MENU_COOPERATIVE_OPTIONS_CAPS", ( !dvarint( ui_multiplayer ) ) )
+		
+		FRAME_CHOICE_DVARFLOATLIST_VIS( 22, "@MENU_TEAM_INDICATOR_CAPS", team_indicator, { "@MENU_INDICATOR_FULL_CAPS" 0 "@MENU_INDICATOR_ABBREVIATED_CAPS" 1 "@MENU_INDICATOR_ICON_CAPS" 2 "@MENU_INDICATOR_ALTERNATE_CAPS" 3 }, ;, 1 )
+		FRAME_CHOICE_DVARYESNO_VIS( 23, "@MENU_ALLOW_DOWNLOAD_CAPS", cl_allowdownload, ;,( dvarint( ui_multiplayer ) ) )
+		FRAME_CHOICE_DVARYESNO_VIS( 24, "@PATCH_OPTIONS_COLOR_FRIENDS_CAPS", cg_drawFriendInColor, ;,( dvarint( ui_multiplayer ) ) )
+		FRAME_CHOICE_DVARYESNO_VIS( 25, "@PLATFORM_OPTIONS_RESTRICT_EMBLEMS_CAPS", live_restrictEmblems, ;,( dvarint( ui_multiplayer ) ) )
+
+		//FRAME_CHOICE_SEPARATOR( CHOICE_SEP_1 )
+
+	}
+}
+
+
+/*
+{
+menuDef 
+{
+	name options_multi
+	fullScreen 0				
+	rect 0 0 370 480				// Size and position of the menu
+	focusColor COLOR_FOCUSED			// Menu focus color for text and items
+	soundloop ""
+	onOpen
+	{
+		exec "setfromdvar ui_name name"
+		setdvar ui_background_gradient_show "1";
+	}
+	onClose
+	{
+		exec "setfromdvar name ui_name"
+	}
+	onESC 
+	{ 
+		close options_multi;		
+	}
+	itemDef
+	{
+		type			ITEM_TYPE_TEXT
+		origin			ORIGIN_TITLE
+		forecolor		1 1 1 1
+		text			"@MENU_MULTIPLAYER"
+		textfont		UI_FONT_NORMAL
+		textscale		TEXTSIZE_TITLE
+		visible			1
+		decoration
+	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_VOICE_CHAT_BUTTON"
+		rect		0 0 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+   	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_VOTE_YES"
+		rect		0 15 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_VOTE_NO"
+		rect		0 30 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_CHAT"
+		rect		0 45 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_TEAM_CHAT"
+		rect		0 60 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_QUICK_CHAT"
+		rect		0 75 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_ALLOW_DOWNLOAD"
+		rect		0 90 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_DRAW_HUD"
+		rect		0 105 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_CONNECTION"
+		rect		0 120 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BUTTON
+		text "@MENU_WEAPON_MENU"
+		rect		0 135 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+    	}
+
+	itemDef
+	{
+		name		player_name
+		type		ITEM_TYPE_BUTTON
+		text		"@MENU_PLAYER_NAME"
+		rect		0 150 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+
+	}
+
+
+	itemDef
+	{
+		name		misc
+		type		ITEM_TYPE_BUTTON
+		text		"@MPUI_PUNKBUSTER"
+		rect		0 165 1 13 
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		decoration
+
+	}
+
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "+talk"
+		rect		0 0 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+   	}
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "vote yes"
+		rect		0 15 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+    	}
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "vote no"
+		rect		0 30 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "chatmodepublic"
+		rect		0 45 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "chatmodeteam"
+		rect		0 60 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "mp_QuickMessage"
+		rect		0 75 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		mouseEnter 
+		{
+			play "mouse_over";
+			show keyBindStatus
+		}
+		mouseexit { hide keyBindStatus }
+		action { play CHOICE_ACTION_SOUND; }
+    	}
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_YESNO
+		text " "
+		dvar "cl_allowdownload"
+		rect		0 90 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		action { play CHOICE_ACTION_SOUND; }
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_YESNO
+		text " "
+		dvar "hud_enable"
+		rect		0 105 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		action { play CHOICE_ACTION_SOUND; }
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+    	}
+
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_MULTI
+		text " "
+		dvar "rate"
+		dvarFloatList { "@MENU_ISDN" 5000 "@MENU_LAN_CABLE_XDSL" 25000  }
+		rect		0 120 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		action { play CHOICE_ACTION_SOUND; }
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+    	}
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_BIND
+		text " "
+		dvar "openscriptmenu ingame changeweapon"
+		rect		0 135 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		action { play CHOICE_ACTION_SOUND; }
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+    }
+	itemDef
+	{
+		name		player_name
+		type		ITEM_TYPE_EDITFIELD
+		text		" "
+		dvar		"ui_name"
+		rect		0 150 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		maxChars	31
+		maxpaintchars	18
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+	}
+
+	itemDef
+	{
+		name misc		
+		type ITEM_TYPE_YESNO
+		text " "
+		dvar "cl_punkbuster"
+		rect		0 165 320 13
+		origin 50 120
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		textalign	ITEM_ALIGN_LEFT
+		textalignx	170 
+		textaligny	11
+		textscale	0.25
+		style		WINDOW_STYLE_FILLED
+		backcolor	0 0 0 0
+		forecolor	.9 .9 .9 1
+		visible		1 
+		action { play CHOICE_ACTION_SOUND; }
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+   	}
+
+///////////////////////////////////////////////////////////
+	itemDef 
+	{
+		name		cdkeybt
+		text		"@MENU_ENTER_KEY_CODE"
+		type		ITEM_TYPE_BUTTON
+		style		WINDOW_STYLE_FILLED
+		textstyle	ITEM_TEXTSTYLE_SHADOWED
+		rect		102 330 150 20 
+		textalign	ITEM_ALIGN_CENTER
+		textscale	.3		
+		textaligny	14
+		forecolor	.9 .9 .95 1
+		visible		1
+		textfont	UI_FONT_NORMAL
+		mouseEnter 
+		{
+			play "mouse_over";
+		}
+		action 
+		{ 
+			play CHOICE_ACTION_SOUND;
+			open cdkey_menu;
+		}
+	}
+
+	itemDef 
+	{
+		name keyBindStatus
+		rect 0 350 360 15 
+		ownerdraw UI_KEYBINDSTATUS
+		text " "      
+		style WINDOW_STYLE_FILLED
+		backcolor 0 0 0 0
+		forecolor .9 .9 .9 1
+		textscale .20
+		textalignx -12
+		textalign ITEM_ALIGN_CENTER
+		textaligny 12
+		visible 0
+		decoration 
+	}
+
+}
+
+}//
+*/

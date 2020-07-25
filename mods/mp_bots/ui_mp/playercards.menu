@@ -1,0 +1,1352 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui/frame.inc"
+
+#undef	CHOICE_X_START
+#define CHOICE_X_START	 			FRAME_CHOICE_X_START
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START	 			FRAME_CHOICE_Y_START
+#define BUTTON_BG_WIDTH				FRAME_BUTTON_WIDTH
+
+#define CHOICE_SEP_OFFSET_X			20
+#define CHOICE_SEP_OFFSET_Y			-2
+
+#define CHOICE_GROUP				"playercard"
+
+#ifdef XENON
+	#define SELECT_ICON				"ui_button_xenon_3d_a_32x32"
+#endif
+#ifdef PS3
+	#define SELECT_ICON				"ui_button_ps3_x_32x32"
+#endif
+
+#include "ui_mp/menustyle.inc"
+#include "ui_mp/overlaybg.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/popup_player_info.inc"
+#include "ui_mp/stats_info.inc"
+
+#ifndef BASE_LB_TYPES_COUNT
+#define BASE_LB_TYPES_COUNT			int(tableLookup( "mp/gameTypesTable.csv", 0, "maxnum_gametype", 1 ))
+#endif 
+
+#undef	CHOICE_TEXTCOLOR 
+#define CHOICE_TEXTCOLOR			NEW_FRAME_COMMON_TEXT_COLOR
+
+#define PLAYER_EMBLEM_BG_SIZE		(190)
+#define PLAYER_EMBLEM_SIZE			(PLAYER_EMBLEM_BG_SIZE - 20)
+#define PLAYER_EMBLEM_X_START		70
+#define PLAYER_EMBLEM_Y_START		(CHOICE_Y_START+20)
+
+#undef  CHOICE_SIZE_X
+#define CHOICE_SIZE_X				BUTTON_BG_WIDTH
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE			ITEM_TEXTSTYLE_NORMAL
+
+#undef	CHOICE_HORIZONTAL_ALIGN 
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER 
+
+#undef  CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+
+#define PLAYER_RANK					getDStat( "PlayerStatsList", "RANK" )
+#define PLAYER_PRESTIGE				getDStat( "PlayerStatsList", "PLEVEL" )
+#define PLAYER_RANKXP				getDStat( "PlayerStatsList", "RANKXP" )
+
+#define PLAYER_CARD_COMMON_ITEMS \																																			\
+		/* PLAYER NAME */																																					\
+		PLAYER_CLAN_TAG_AND_NAME( PLAYER_EMBLEM_X_START, (PLAYER_EMBLEM_Y_START-18), 1 )																					\
+		/* BACKGROUND FOR EMBLEM */																																			\
+		PREPROC_SHADER_DRAW_VIS_EX(	PLAYER_EMBLEM_X_START PLAYER_EMBLEM_Y_START PLAYER_EMBLEM_BG_SIZE PLAYER_EMBLEM_BG_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	\
+									"white", 0 0 0 0.4,																														\
+									1, ; )																																	\
+		/* PLAYER EMBLEM */																																					\
+		PLAYER_EMBLEM_ALL( (PLAYER_EMBLEM_X_START+10), (PLAYER_EMBLEM_Y_START+10), PLAYER_EMBLEM_SIZE, PLAYER_EMBLEM_SIZE, 1 )	
+
+#define FRIENDS_PLAYER_CARD_COMMON_ITEMS																																	\
+		/* PLAYER NAME */																																					\
+		FRIEND_NAME( PLAYER_EMBLEM_X_START, (PLAYER_EMBLEM_Y_START-18), 1 )																									\
+		/* BACKGROUND FOR EMBLEM */																																			\
+		PREPROC_SHADER_DRAW_VIS_EX(	PLAYER_EMBLEM_X_START PLAYER_EMBLEM_Y_START PLAYER_EMBLEM_BG_SIZE PLAYER_EMBLEM_BG_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	\
+									"white", 0 0 0 0.4,																														\
+									1, ; )																																	\
+		/* PLAYER EMBLEM */																																					\
+		FRIEND_EMBLEM_ALL( (PLAYER_EMBLEM_X_START+10), (PLAYER_EMBLEM_Y_START+10), PLAYER_EMBLEM_SIZE, PLAYER_EMBLEM_SIZE, 1 )	
+		
+
+#undef CLOSE_CARD_DROPDOWN_CLANTAG
+#define CLOSE_CARD_DROPDOWN_CLANTAG											\
+			play CHOICE_FOCUS_SOUND;										\
+			setLocalVarBool ui_show_clan_edit 0;							\
+			execnow ui_animate menu_playercard_self * CloseDropDownList 0;	\
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION																															\
+			if( dvarstring( "ui_in_player_card_popup" ) == "clantag" )																			\
+			{																																	\
+				CLOSE_CARD_DROPDOWN_CLANTAG																										\
+			}																																	\
+			else																																\
+			{																																	\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM, MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM ) ;	\
+				CLEARUIHINT;																													\
+				deactivateBlur;																													\
+				play uin_navigation_menu_lg_close;																								\
+				if( dvarInt( ui_leaderboardOpen ) == 1 )                                                                                        \				
+				{                                                                                                                               \
+					execnow changemenucloseslidedirection menu_playercard_self MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;                              \
+					close self;                                                                                                                 \
+					execnow openmenu (dvarString("leaderboard_menu_name"));                                                                     \
+				}                                                                                                                               \
+				else                                                                                                                            \
+				{                                                                                                                               \
+					close self;																													\
+					setdvar ui_playercard_self_open 0;																							\
+				}                                                                                                                               \
+			}
+
+#define PLAYER_CARD_DROPDOWN_LIST_NAME			"player_card_dropdown_list_"
+#define PLAYER_CARD_BUTTON_NAME					"playercard_button_"
+
+#undef	NEW_FRAME_BUTTON_NAME
+#define NEW_FRAME_BUTTON_NAME					"playercard_button_"
+#define PLAYER_CARD_SELECTION_FADE_TIME			80
+#define PLAYER_CARD_SELECTION_SLIDE_TIME		80
+#define PLAYER_CARD_SELECTION_UNROLL_TIME		120
+
+#define PLAYER_CARD_LISTBOX_RECT				(CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT+2) (CHOICE_SIZE_X+4) 0 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#define PLAYER_CARD_LISTBOX_UNROLLED_RECT		(CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT+2) (CHOICE_SIZE_X+4) 250 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+
+#define CHALLENGES_LOCKED ( IS_ITEM_LOCKED( FEATURE_CHALLENGES ) )
+
+{
+	menuDef
+	{
+		name					menu_playercard_self
+		rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP 
+		control					MENU_CONTROL_OPENER			
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		onOpen	
+		{ 
+			activateBlur;
+			setLocalVarBool ui_show_clan_edit 0;
+			play uin_navigation_menu_lg_open;
+		}
+		onFocus {	
+
+				}
+		onClose	
+		{deactivateBlur; }
+		onESC	
+		{
+			ON_ESC_ACTION
+		}
+
+		FRAME_DEFAULT
+		FRAME_TITLE_DEFAULT( "@MENU_MY_PLAYERCARD_CAPS", when( dvarString( ui_in_player_card_popup ) != "clantag" ) )
+		FRAME_TITLE_DEFAULT( "@MPUI_CLAN_TAG_CAPS", when( dvarString( ui_in_player_card_popup ) == "clantag" ) )
+		
+		PLAYER_INFO_VIS( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, 1 )
+
+		// This is a dummy itemDef to disable controls.
+		// Used when animating.
+		itemDef
+		{
+			name	dummyButton
+			type	ITEM_TYPE_BUTTON_NO_TEXT
+			rect	0 0 0 0
+			visible	when( localVarString( "ui_disable_controls" ) == 1 );
+			
+			execKeyInt APAD_UP {}
+			execKeyInt DPAD_UP {}
+			execKeyInt APAD_DOWN {}
+			execKeyInt DPAD_DOWN {}
+			execKeyInt APAD_LEFT {}
+			execKeyInt DPAD_LEFT {}
+			execKeyInt APAD_RIGHT {}
+			execKeyInt DPAD_RIGHT {}
+		}
+
+		// This is a dummy itemDef that acts as the central hub for
+		// animation control in the new playercard
+		itemDef
+		{
+			name	anim_controller
+			style	WINDOW_STYLE_SHADER
+			rect	0 0 0 0
+			visible 1
+			decoration
+
+			// Open dropdown
+			state
+			{
+				name	OpenDropDownList
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self * Transparent PLAYER_CARD_SELECTION_FADE_TIME;
+					execnow ui_animate menu_playercard_self (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Default 0;
+					execnow ui_animate menu_playercard_self anim_controller OpenDropDownList2 PLAYER_CARD_SELECTION_FADE_TIME;
+				}
+			}
+			state
+			{
+				name	OpenDropDownList2
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Top PLAYER_CARD_SELECTION_SLIDE_TIME;
+					execnow ui_animate menu_playercard_self anim_controller OpenDropDownList3 PLAYER_CARD_SELECTION_SLIDE_TIME;
+				}
+			}
+			state
+			{
+				name	OpenDropDownList3
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self (PLAYER_CARD_DROPDOWN_LIST_NAME+localVarInt(ui_playercardButton)) Unrolled PLAYER_CARD_SELECTION_UNROLL_TIME;
+					play uin_navigation_menu_sm_open;
+					exec updateListboxPos menu_playercard_self;
+				}
+			}
+
+			// Close dropdown
+			state
+			{
+				name	CloseDropDownList
+				onEnter
+				{
+					setLocalVarInt ui_disable_controls 1;
+					setFocus dummyButton;
+					if ( localVarString( ui_playercardListboxCloseOverride ) != "" )
+					{
+						execnow ui_animate menu_playercard_self (anim_controller) (localVarString( ui_playercardListboxCloseOverride )) 0;
+					}
+					else
+					{
+						execnow ui_animate menu_playercard_self (PLAYER_CARD_DROPDOWN_LIST_NAME+localVarInt(ui_playercardButton)) Default PLAYER_CARD_SELECTION_UNROLL_TIME;
+						execnow ui_animate menu_playercard_self anim_controller CloseDropDownList2 (PLAYER_CARD_SELECTION_UNROLL_TIME+30);
+						play uin_navigation_menu_sm_close;
+					}
+				}
+			}
+			state
+			{
+				name	CloseDropDownList2
+				onEnter
+				{
+					execnow "set ui_in_player_card_popup 0";
+					execnow ui_animate menu_playercard_self (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Default PLAYER_CARD_SELECTION_SLIDE_TIME;
+					execnow ui_animate menu_playercard_self anim_controller CloseDropDownList3 (PLAYER_CARD_SELECTION_SLIDE_TIME+30);
+				}
+			}
+			state
+			{
+				name	CloseDropDownList3
+				onEnter
+				{
+					execnow focusItem (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton));
+					setLocalVarInt ui_disable_controls 0;
+					execnow ui_animate menu_playercard_self * Default PLAYER_CARD_SELECTION_FADE_TIME;
+				}
+			}
+		}
+
+		#define PLAYER_CARD_RECT_STATE( nameArg, rectArg )	\
+				state										\
+				{											\
+					name	nameArg							\
+					rect	rectArg							\
+				}
+
+		#define EMBLEM_EDITOR_BUTTON_ACTION																										\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				execnow assertDWConnection;																										\
+				execNow "emblemgetprofile";																										\
+				execNow emblemSelect 0;																											\
+				open emblem_edit;
+
+		// EMBLEM EDITOR BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	1, "@MENU_EMBLEM_EDITOR_CAPS",
+											EMBLEM_EDITOR_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_EMBLEM_EDITOR_DESC" ) CLEAR_ITEM_NEW( FEATURE_EMBLEM ), 
+											CLEARUIHINT, 
+											!IS_ITEM_LOCKED( FEATURE_EMBLEM ), ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	1, "@MENU_EMBLEM_EDITOR_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_EMBLEM ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_EMBLEM ), ; ) 
+		CHOICE_NEWICON_VIS(		1, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_EMBLEM ) )		) 
+		CHOICE_LOCKEDICON_VIS(	1, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_EMBLEM ) )	) 
+
+		#define PLAYER_CARD_CLANTAG_BUTTON_ACTION														\ 
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				execnow statsetbyname hasclantag 1;																								\
+				execnow changemenuopenslidedirection menu_playercards_clantag MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;								\
+				open menu_playercards_clantag;
+
+		// CLAN TAG BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	2, "@MPUI_CLAN_TAG_CAPS", 
+											setdvar lb_prestige 0; PLAYER_CARD_CLANTAG_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_CLAN_TAG_DESC" ) CLEAR_ITEM_NEW( FEATURE_CLAN_TAG ),
+											CLEARUIHINT,
+											!IS_ITEM_LOCKED( FEATURE_CLAN_TAG ), PLAYER_CARD_RECT_STATE( Top, CHOICE_RECT( 1 ) ) )		
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	2, "@MPUI_CLAN_TAG_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_CLAN_TAG ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_CLAN_TAG ), ; ) 
+		CHOICE_NEWICON_VIS(		2, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_CLAN_TAG ) )		) 
+		CHOICE_LOCKEDICON_VIS(	2, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_CLAN_TAG ) )	) 
+
+		#define CHALLENGES_BUTTON_ACTION																										\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				open menu_playercard_challenges;
+
+		// CHALLENGES BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	4, "@MENU_CHALLENGES_CAPS", 
+											CHALLENGES_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_CHALLENGES_DESC" ) CLEAR_ITEM_NEW( FEATURE_CHALLENGES ), 
+											CLEARUIHINT, 
+											!CHALLENGES_LOCKED, ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	4, "@MENU_CHALLENGES_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_CHALLENGES ) ), 
+											CLEARUIHINT, 
+											CHALLENGES_LOCKED, ; ) 
+		CHOICE_NEWICON_VIS(		4, "menu_mp_lobby_new",		when( ANY_NEW_CHALLENGES )						) 
+		CHOICE_LOCKEDICON_VIS(	4, "menu_mp_lobby_locked",	when( CHALLENGES_LOCKED )	) 
+
+		#define COMBAT_RECORD_BUTTON_ACTION																										\
+				setdvar ui_showFriendsCombatRecord 0;																							\ 
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				open menu_cr_career_summary;
+
+		// COMBAT RECORD BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	5, "@MENU_COMBAT_RECORD_CAPS", 
+											COMBAT_RECORD_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_COMBAT_RECORD_DESC" ) CLEAR_ITEM_NEW( FEATURE_COMBAT_RECORD ), 
+											CLEARUIHINT, 
+											!IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ), ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	5, "@MENU_COMBAT_RECORD_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_COMBAT_RECORD ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ), ; ) 
+		CHOICE_NEWICON_VIS(		5, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_COMBAT_RECORD ) )	) 
+		CHOICE_LOCKEDICON_VIS(	5, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ) )	) 
+
+		#define LEADERBOARDS_BUTTON_ACTION																										\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				setdvar lb_prestige 0;																											\
+				execnow changemenuopenslidedirection menu_playercards_lb MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;									\
+				open menu_playercards_lb;
+				
+		// LEADERBOARDS BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	6, "@MPUI_LEADERBOARDS_CAPS", 
+											LEADERBOARDS_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_LEADERBOARDS_DESC" ),
+											CLEARUIHINT,
+											1, ; )
+
+		#define FILE_SHARE_BUTTON_ACTION																										\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				open menu_fileshare_myshare;
+
+		// FILE SHARE BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	8, "@MENU_FILESHARE_MYSHARE_CAPS", 
+											FILE_SHARE_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_FILE_SHARE_DESC" ), 
+											CLEARUIHINT, 
+											1, ; ) 
+
+		#define RECENT_FILMS_BUTTON_ACTION																										\
+				CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+				close self;																														\
+				open menu_fileshare_myrecentgames;																								
+
+		 // RECENT FILMS BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	9, "@MENU_FILESHARE_MYRECENTGAMES_CAPS", 
+											RECENT_FILMS_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_MY_RECENT_GAMES_DESC" ),
+											CLEARUIHINT,
+											1, ; ) 
+
+		#define COMMUNITY_ACTION																													\
+				if ( canShowContentFromUser( 0 ) )																									\
+				{																																	\
+					CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT ) ;	\
+					close self;																														\
+					open menu_fileshare_community;																									\
+				}																																	\
+				else																																\
+				{																																	\
+					open menu_community_viewwarning;																								\
+				}
+
+		// COMMUNITY BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	10, "@MENU_FILESHARE_COMMUNITY_CAPS", 
+											COMMUNITY_ACTION, 
+											SET_HINT_TEXT( "@MPUI_COMMUNITY_DESC" ), 
+											CLEARUIHINT, 
+											1, ; ) 
+
+		// PRESTIGE BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	12, "@MPUI_PRESTIGE_MODE_CAPS", 
+											open prestige_reset1;, 
+											SET_HINT_TEXT( "@MPUI_PRESTIGE_MODE_DESC" ), 
+											exec "statsetbyname hasprestiged 1"; CLEARUIHINT, 
+											PRESTIGE_AVAIL, ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	12, "@MPUI_PRESTIGE_MODE_CAPS", 
+											SET_HINT_TEXT( "@MPUI_DESC_PRESTIGE2" ), 
+											CLEARUIHINT, 
+											PRESTIGE_AVAIL==0 && PRESTIGE_FINISH==0, ; ) 
+		CHOICE_NEWICON_VIS(		12, "menu_mp_lobby_new",	when( PRESTIGE_AVAIL && GetStatByName( "HASPRESTIGED" ) == 0 )	) 
+		CHOICE_LOCKEDICON_VIS(	12, "menu_mp_lobby_locked",	when( PRESTIGE_AVAIL == 0 && PRESTIGE_FINISH == 0 )				) 
+
+		PLAYER_CARD_COMMON_ITEMS
+
+#define RANKTABLE_COL_MINXP			2
+#define RANKTABLE_COL_XP_TO_NEXT	3
+#define RANKTABLE_COL_MAX_XP		7
+
+#define XP_BAR_X					(CHOICE_X_START+55)
+#define XP_BAR_Y					(FRAME_DEFAULT_HEIGHT/2-32)
+#define XP_BAR_BG_WIDTH				(FRAME_DEFAULT_WIDTH-135)
+#define XP_BAR_HEIGHT				20
+
+#define XP_TO_NEXT_RANK				int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_XP_TO_NEXT ) )
+#define MINXP_FOR_CURR_RANK			int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_MINXP ) )
+#define NEXT_LEVEL					( tablelookup( "mp/ranktable.csv", 0, getDStat( "PlayerStatsList", "RANK" ) + 1, 14 ) )
+
+#define XP_BAR_WIDTH				( ( ( PLAYER_RANKXP - MINXP_FOR_CURR_RANK ) / XP_TO_NEXT_RANK ) * XP_BAR_BG_WIDTH  )
+
+#define XP_NEEDED_TO_LEVEL_UP \
+		locString( "MPUI_AAR_XP_NEEDED_CAPS",int( tableLookup( "mp/rankTable.csv", 0, PLAYER_RANK, RANKTABLE_COL_MAX_XP ) - PLAYER_RANKXP )  )
+
+		/* BACKGROUND FOR XP BAR */
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", BG_BACKCOLOR, 
+									when( CAN_RANK_UP ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"menu_mp_bar_shadow", 1 1 1 0.2, 
+									when( CAN_RANK_UP ), ; ) 
+		/* XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	XP_BAR_X,
+										XP_BAR_Y,
+										( XP_BAR_WIDTH ),
+										XP_BAR_HEIGHT,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"menu_mp_combatrecord_bar", BAR_COLOR, 
+										when( CAN_RANK_UP ), 
+										; ) 
+		/* Tiny arrow at xp bar end */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( XP_BAR_X + XP_BAR_WIDTH - 5 ),
+										(XP_BAR_Y+XP_BAR_HEIGHT),
+										10,
+										10,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"ui_arrow_right", BAR_COLOR,
+										when( CAN_RANK_UP ), 
+										rotation -90; )
+		/* Label for "NEXT LEVEL" */
+		PREPROC_TEXT_DRAW( (XP_BAR_X-55) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_NEXT_LEVEL_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR )
+		/* value for XP NEEDED to next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+5) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, XP_NEEDED_TO_LEVEL_UP, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP ) )
+		/* next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, int( NEXT_LEVEL ),	TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) )
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "1",					TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT ) )
+		/* next level rank icon */
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( NEXT_LEVEL, CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, PLAYER_RANK+1, PLAYER_PRESTIGE+1 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) ) 
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( "1", CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, 0, PLAYER_PRESTIGE+2 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT ) ) 
+
+		HINT_TEXT_ALL( 13, CHOICE_X_START, 8, CHOICE_SIZE_X, dvarString( ui_hint_text ), 1 1 1 1, dvarBool( ui_show_arrow ), ; )
+
+#ifdef CONSOLE
+		NEW_FRAME_BACK_BUTTON_ACTION( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC_ACTION ; )
+#else
+		NEW_FRAME_BACK_BUTTON_ACTION( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC_ACTION ; )
+#endif
+
+		#include "ui/safearea.menu"
+	} 
+
+	menuDef
+	{
+		name					menu_playercard_self_basictraining
+		rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP 
+		control					MENU_CONTROL_OPENER			
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		onOpen	
+		{ 
+			if( dvarbool(ui_selectlobby) )
+			{
+				activateBlur;
+			}
+			play uin_navigation_menu_lg_open;
+			if( !dvarBool( ui_playercard_self_basictraining_open ) ) 
+			{ activateBlur; setdvar ui_playercard_self_basictraining_open "1"; } 
+		}
+		onFocus {	
+					if( !dvarbool(ui_selectlobby) )
+					{
+						activateBlur;
+					}
+				}
+		onClose	
+		{}
+		
+		#undef ON_ESC_ACTION
+		#define ON_ESC_ACTION \
+			CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM, MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM ) ; \
+			CLEARUIHINT; \
+			deactivateBlur; \
+			play uin_navigation_menu_lg_close; \
+			close self; \
+			setdvar ui_playercard_self_basictraining_open 0;
+		
+		onESC	
+		{
+			ON_ESC_ACTION
+		}
+
+		FRAME_DEFAULT
+		FRAME_TITLE_DEFAULT( "@MENU_MY_PLAYERCARD_CAPS", 1 )
+		
+		PLAYER_INFO_VIS( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, 1 )
+
+		// This is a dummy itemDef to disable controls.
+		// Used when animating.
+		itemDef
+		{
+			name	dummyButton
+			type	ITEM_TYPE_BUTTON_NO_TEXT
+			rect	0 0 0 0
+			visible	when( localVarString( "ui_disable_controls" ) == 1 );
+			
+			execKeyInt APAD_UP {}
+			execKeyInt DPAD_UP {}
+			execKeyInt APAD_DOWN {}
+			execKeyInt DPAD_DOWN {}
+			execKeyInt APAD_LEFT {}
+			execKeyInt DPAD_LEFT {}
+			execKeyInt APAD_RIGHT {}
+			execKeyInt DPAD_RIGHT {}
+		}
+
+		// This is a dummy itemDef that acts as the central hub for
+		// animation control in the new playercard
+		itemDef
+		{
+			name	anim_controller
+			style	WINDOW_STYLE_SHADER
+			rect	0 0 0 0
+			visible 1
+			decoration
+
+			// Open dropdown
+			state
+			{
+				name	OpenDropDownList
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self_basictraining * Transparent PLAYER_CARD_SELECTION_FADE_TIME;
+					execnow ui_animate menu_playercard_self_basictraining (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Default 0;
+					execnow ui_animate menu_playercard_self_basictraining anim_controller OpenDropDownList2 PLAYER_CARD_SELECTION_FADE_TIME;
+				}
+			}
+			state
+			{
+				name	OpenDropDownList2
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self_basictraining (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Top PLAYER_CARD_SELECTION_SLIDE_TIME;
+					execnow ui_animate menu_playercard_self_basictraining anim_controller OpenDropDownList3 PLAYER_CARD_SELECTION_SLIDE_TIME;
+				}
+			}
+			state
+			{
+				name	OpenDropDownList3
+				onEnter
+				{
+					execnow ui_animate menu_playercard_self_basictraining (PLAYER_CARD_DROPDOWN_LIST_NAME+localVarInt(ui_playercardButton)) Unrolled PLAYER_CARD_SELECTION_UNROLL_TIME;
+					play uin_navigation_menu_sm_open;
+					exec updateListboxPos menu_playercard_self_basictraining;
+				}
+			}
+
+			// Close dropdown
+			state
+			{
+				name	CloseDropDownList
+				onEnter
+				{
+					setLocalVarInt ui_disable_controls 1;
+					setFocus dummyButton;
+					if ( localVarString( ui_playercardListboxCloseOverride ) != "" )
+					{
+						execnow ui_animate menu_playercard_self_basictraining (anim_controller) (localVarString( ui_playercardListboxCloseOverride )) 0;
+					}
+					else
+					{
+						execnow ui_animate menu_playercard_self_basictraining (PLAYER_CARD_DROPDOWN_LIST_NAME+localVarInt(ui_playercardButton)) Default PLAYER_CARD_SELECTION_UNROLL_TIME;
+						execnow ui_animate menu_playercard_self_basictraining anim_controller CloseDropDownList2 (PLAYER_CARD_SELECTION_UNROLL_TIME+30);
+						play uin_navigation_menu_sm_close;
+					}
+				}
+			}
+			state
+			{
+				name	CloseDropDownList2
+				onEnter
+				{
+					execnow "set ui_in_player_card_popup 0";
+					execnow ui_animate menu_playercard_self_basictraining (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton)) Default PLAYER_CARD_SELECTION_SLIDE_TIME;
+					execnow ui_animate menu_playercard_self_basictraining anim_controller CloseDropDownList3 (PLAYER_CARD_SELECTION_SLIDE_TIME+30);
+				}
+			}
+			state
+			{
+				name	CloseDropDownList3
+				onEnter
+				{
+					execnow focusItem (PLAYER_CARD_BUTTON_NAME+localVarInt(ui_playercardButton));
+					setLocalVarInt ui_disable_controls 0;
+					execnow ui_animate menu_playercard_self_basictraining * Default PLAYER_CARD_SELECTION_FADE_TIME;
+				}
+			}
+		}
+
+		// EMBLEM EDITOR BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	1, "@MENU_EMBLEM_EDITOR_CAPS",
+											EMBLEM_EDITOR_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_EMBLEM_EDITOR_DESC" ) CLEAR_ITEM_NEW( FEATURE_EMBLEM ), 
+											CLEARUIHINT, 
+											!IS_ITEM_LOCKED( FEATURE_EMBLEM ), ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	1, "@MENU_EMBLEM_EDITOR_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_EMBLEM ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_EMBLEM ), ; ) 
+		CHOICE_NEWICON_VIS(		1, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_EMBLEM ) )		) 
+		CHOICE_LOCKEDICON_VIS(	1, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_EMBLEM ) )	) 
+
+		// CLAN TAG BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	2, "@MPUI_CLAN_TAG_CAPS", 
+											setdvar lb_prestige 0; PLAYER_CARD_CLANTAG_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_CLAN_TAG_DESC" ) CLEAR_ITEM_NEW( FEATURE_CLAN_TAG ),
+											CLEARUIHINT,
+											!IS_ITEM_LOCKED( FEATURE_CLAN_TAG ), PLAYER_CARD_RECT_STATE( Top, CHOICE_RECT( 1 ) ) )		
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	2, "@MPUI_CLAN_TAG_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_CLAN_TAG ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_CLAN_TAG ), ; ) 
+		CHOICE_NEWICON_VIS(		2, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_CLAN_TAG ) )		) 
+		CHOICE_LOCKEDICON_VIS(	2, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_CLAN_TAG ) )	) 
+
+#undef CHALLENGES_BUTTON_ACTION																										
+#define CHALLENGES_BUTTON_ACTION																										\
+		CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+		close self;																														\
+		open menu_playercard_challenges;
+
+		// CHALLENGES BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	4, "@MENU_CHALLENGES_CAPS", 
+											CHALLENGES_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_CHALLENGES_DESC" ) CLEAR_ITEM_NEW( FEATURE_CHALLENGES ), 
+											CLEARUIHINT, 
+											!CHALLENGES_LOCKED, ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	4, "@MENU_CHALLENGES_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_CHALLENGES ) ), 
+											CLEARUIHINT, 
+											CHALLENGES_LOCKED, ; ) 
+		CHOICE_NEWICON_VIS(		4, "menu_mp_lobby_new",		when( ANY_NEW_CHALLENGES )						) 
+		CHOICE_LOCKEDICON_VIS(	4, "menu_mp_lobby_locked",	when( CHALLENGES_LOCKED )	) 
+
+#undef COMBAT_RECORD_BUTTON_ACTION																										
+#define COMBAT_RECORD_BUTTON_ACTION																										\
+		setdvar ui_showFriendsCombatRecord 0;																							\ 
+		CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+		close self;																														\
+		open menu_cr_career_summary;
+		
+		// COMBAT RECORD BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	5, "@MENU_COMBAT_RECORD_CAPS", 
+											COMBAT_RECORD_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_COMBAT_RECORD_DESC" ) CLEAR_ITEM_NEW( FEATURE_COMBAT_RECORD ), 
+											CLEARUIHINT, 
+											!IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ), ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	5, "@MENU_COMBAT_RECORD_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_COMBAT_RECORD ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ), ; ) 
+		CHOICE_NEWICON_VIS(		5, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_COMBAT_RECORD ) )	) 
+		CHOICE_LOCKEDICON_VIS(	5, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_COMBAT_RECORD ) )	) 
+
+				
+		// LEADERBOARDS BUTTON
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	6, "@MPUI_LEADERBOARDS_CAPS", 
+											SET_HINT_TEXT( "@MPUI_NOT_APPLICABLE_IN_COMBAT_TRAINING" ), 
+											CLEARUIHINT,
+											1, ; )
+		CHOICE_LOCKEDICON_VIS(	6, "menu_mp_lobby_locked",	1 ) 
+
+#undef FILE_SHARE_BUTTON_ACTION																										
+#define FILE_SHARE_BUTTON_ACTION																										\
+		CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+		close self;																														\
+		open menu_fileshare_myshare;
+		
+		// FILE SHARE BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	8, "@MENU_FILESHARE_MYSHARE_CAPS", 
+											FILE_SHARE_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_FILE_SHARE_DESC" ), 
+											CLEARUIHINT, 
+											1, ; ) 
+
+#undef RECENT_FILMS_BUTTON_ACTION																										
+#define RECENT_FILMS_BUTTON_ACTION																										\
+		CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT );	\
+		close self;																														\
+		open menu_fileshare_myrecentgames;																								
+
+		 // RECENT FILMS BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	9, "@MENU_FILESHARE_MYRECENTGAMES_CAPS", 
+											RECENT_FILMS_BUTTON_ACTION, 
+											SET_HINT_TEXT( "@MPUI_MY_RECENT_GAMES_DESC" ),
+											CLEARUIHINT,
+											1, ; ) 
+#undef COMMUNITY_ACTION																													
+#define COMMUNITY_ACTION																													\
+				if ( canShowContentFromUser( 0 ) )																									\
+				{																																	\
+					CHANGE_MENU_SLIDE_DIRECTION( menu_playercard_self_basictraining, MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT, MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT ) ;	\
+					close self;																														\
+					open menu_fileshare_community;																									\
+				}																																	\
+				else																																\
+				{																																	\
+					open menu_community_viewwarning;																								\
+				}
+		
+		// COMMUNITY BUTTON
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	10, "@MENU_FILESHARE_COMMUNITY_CAPS", 
+											COMMUNITY_ACTION, 
+											SET_HINT_TEXT( "@MPUI_COMMUNITY_DESC" ), 
+											CLEARUIHINT, 
+											1, ; ) 
+		// PRESTIGE BUTTON 
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	12, "@MPUI_PRESTIGE_MODE_CAPS", 
+											open prestige_reset1;, 
+											SET_HINT_TEXT( "@MPUI_PRESTIGE_MODE_DESC" ), 
+											exec "statsetbyname hasprestiged 1"; CLEARUIHINT, 
+											PRESTIGE_AVAIL, ; ) 
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX(	12, "@MPUI_PRESTIGE_MODE_CAPS", 
+											SET_HINT_TEXT( "@MPUI_DESC_PRESTIGE2" ), 
+											CLEARUIHINT, 
+											PRESTIGE_AVAIL==0 && PRESTIGE_FINISH==0, ; ) 
+		CHOICE_NEWICON_VIS(		12, "menu_mp_lobby_new",	when( PRESTIGE_AVAIL && GetStatByName( "HASPRESTIGED" ) == 0 )	) 
+		CHOICE_LOCKEDICON_VIS(	12, "menu_mp_lobby_locked",	when( PRESTIGE_AVAIL == 0 && PRESTIGE_FINISH == 0 )				) 
+
+		PLAYER_CARD_COMMON_ITEMS
+
+		/* BACKGROUND FOR XP BAR */
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"white", BG_BACKCOLOR, 
+									when( CAN_RANK_UP ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX(	XP_BAR_X XP_BAR_Y XP_BAR_BG_WIDTH XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+									"menu_mp_bar_shadow", 1 1 1 0.2, 
+									when( CAN_RANK_UP ), ; ) 
+		/* XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	XP_BAR_X,
+										XP_BAR_Y,
+										( XP_BAR_WIDTH ),
+										XP_BAR_HEIGHT,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"menu_mp_combatrecord_bar", BAR_COLOR, 
+										when( CAN_RANK_UP ), 
+										; ) 
+		/* Tiny arrow at xp bar end */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( XP_BAR_X + XP_BAR_WIDTH - 5 ),
+										(XP_BAR_Y+XP_BAR_HEIGHT),
+										10,
+										10,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,
+										"ui_arrow_right", BAR_COLOR,
+										1, 
+										rotation -90; )
+		/* Label for "NEXT LEVEL" */
+		PREPROC_TEXT_DRAW( (XP_BAR_X-55) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_NEXT_LEVEL_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR )
+		/* value for XP NEEDED to next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+5) (XP_BAR_Y+4) 10 XP_BAR_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, XP_NEEDED_TO_LEVEL_UP, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP ) )
+		/* next level */
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, int( NEXT_LEVEL ),	TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) )
+		PREPROC_TEXT_DRAW_VIS( (XP_BAR_X+XP_BAR_BG_WIDTH+3) (XP_BAR_Y+2) 17 17 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "1",					TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT ) )
+		/* next level rank icon */
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( NEXT_LEVEL, CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, PLAYER_RANK+1, PLAYER_PRESTIGE+1 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) ) 
+		RANK_ICON_ADV(	(XP_BAR_X+XP_BAR_BG_WIDTH+6+getTextWidth( "1", CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )), (XP_BAR_Y+2), HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 
+						tablelookup( "mp/rankIconTable.csv", 0, 0, PLAYER_PRESTIGE+2 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT ) ) 
+
+
+		HINT_TEXT_ALL( 13, CHOICE_X_START, 8, CHOICE_SIZE_X, dvarString( ui_hint_text ), 1 1 1 1, dvarBool( ui_show_arrow ), ; )
+
+#ifdef CONSOLE
+		NEW_FRAME_BACK_BUTTON( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT )
+#else
+		NEW_FRAME_BACK_BUTTON_ACTION( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC_ACTION )
+#endif
+
+		#include "ui/safearea.menu"
+	} 
+
+
+#define CAN_JOIN_SESSION \
+		( FRIEND_JOINABLE == IsPlayerJoinable( dvarString( "selectedPlayerXuid" ) ) )
+		
+#define CAN_AUTOJOIN_SESSION \
+		( FRIEND_AUTOJOINABLE == IsPlayerJoinable( dvarString( "selectedPlayerXuid" ) ) )
+
+#define CAN_INVITE_TO_GAME \
+		( IsPlayerInvitable( dvarString( "selectedPlayerXuid" ) ) && ( inLobby() || inPrivateParty() ) )
+
+#define CAN_SEND_FRIEND_REQUEST	\
+		( getxuid() != dvarstring( "selectedPlayerXuid" ) && !isfriendfromxuid() )
+	
+#define CAN_MUTE_PLAYER	\
+		( getMutedStatus(dvarString( "selectedPlayerXuid" ) ) == 0 )
+
+#define COMBAT_RECORD_LOCKED \
+		( GetDisplayLevelByXuid( dvarString( "selectedPlayerXuid" ) ) <= GetItemUnlockLevel( GetItemIndex( FEATURE_COMBAT_RECORD ) ) )
+
+#define CAN_KICK_PLAYER \
+		( ( ( !InLobby() && !IsInGame() ) || \
+		 dvarBool( xblive_privatematch ) || dvarBool( xblive_theater ) || dvarBool( xblive_basictraining ) ) \
+		&& ( dvarBool( party_host ) || issuperuser() ) && !dvarBool( party_iamhost ) )
+
+#define IS_IN_GAME \
+		( IsInGame() )
+
+#undef ON_ESC_ACTION
+#define ON_ESC_ACTION                                                                                     \
+			if( dvarBool(ui_friendsListOpen) )                                                            \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow showmenu menu_friends;                                                            \
+			}                                                                                             \
+			elseif( dvarBool(ui_playerListOpen) )                                                         \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow showmenu menu_players;                                                            \
+			}                                                                                             \
+			elseif( dvarBool(ui_xboxLivePartyListOpen) )                                                  \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow openmenu menu_xboxLiveParty;                                                      \
+			}                                                                                             \
+			elseif( dvarBool(ui_leaderboardOpen) )                                                        \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow openmenu (dvarString("leaderboard_menu_name"));                                   \
+			}                                                                                             \
+			elseif( dvarBool(ui_ingamePlayersOpen) )													  \
+			{																							  \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow showmenu players;																  \
+			}																							  \
+			elseif( dvarBool(ui_aarScoreboardOpen) )													  \
+			{																							  \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow showmenu menu_aar_scoreboard;													  \
+			}																							  \
+			elseif( dvarBool(ui_aarWagerScoreboardOpen) )												  \
+			{																							  \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow showmenu menu_aar_wager_scoreboard;												  \
+			}																							  \
+			elseif( dvarBool(ui_nemesisPlayercardOpen) )                                                  \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT; \
+				execnow openmenu menu_aar_summary;                                                        \
+				execNow set ui_nemesisPlayercardOpen 0;                                                   \
+			}                                                                                             \
+			else                                                                                          \
+			{                                                                                             \
+				execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM; \
+				execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;  \
+				deactivateBlur;                                                                           \
+			}                                                                                             \
+			setDvar ui_clearFeederWithoutReset "0";                                                       \
+			play uin_navigation_menu_lg_close;                                                            \
+			close menu_playercard;                                                                        \
+			CLEARUIHINT;
+			
+#undef  CHOICE_SIZE_Y
+#define CHOICE_SIZE_Y				(NEW_FRAME_BUTTON_HEIGHT+2)	
+#undef	CHOICE_X_START
+#define CHOICE_X_START	 			(FRAME_CHOICE_X_START-1)
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START	 			(FRAME_CHOICE_Y_START-4)
+
+	menuDef   
+	{
+		name					menu_playercard
+		rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		control					MENU_CONTROL_OPENER
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		onOpen
+		{
+			if( dvarbool(ui_selectlobby) )
+			{
+				activateBlur;
+			}
+			CLEARUIHINT;
+			play uin_navigation_menu_lg_open;
+			execNow set ui_playercardOpen 1;
+			execnow readFileShare;
+			// This tests if we have to reset the cursor position ( ie. button focus on menu open )
+			if( dvarBool( "ui_clearFeederWithoutReset" ) )
+			{
+				execNow raiseFeederEvent ClearWithoutReset;
+			}
+			else
+			{
+				execNow raiseFeederEvent Clear;
+				setDvar ui_clearFeederWithoutReset "1";
+			}
+			execNow raiseFeederEvent Populate;
+		}
+		onClose	
+		{
+			play CHOICE_FOCUS_SOUND; 
+			execNow set ui_playercardOpen 0;
+		}
+		onFocus { 
+					if( !dvarbool(ui_selectlobby) )
+					{
+						activateBlur;
+					}
+				} 
+		onESC 
+		{ 
+			ON_ESC_ACTION
+		}
+
+		FRAME_DEFAULT
+		FRAME_TITLE_DEFAULT( GetPlayerCardTitle( dvarString("selectedFriendName") ), 1 )
+		
+		FRIEND_INFO_VIS( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, 1 )
+
+		HINT_TEXT_ALL( 13, CHOICE_X_START, 8, CHOICE_SIZE_X, dvarString( ui_hint_text ), 1 1 1 1, dvarBool( ui_show_arrow ), ; )
+
+#ifdef PC
+		#undef	CHOICE_TEXTSIZE
+		#define	CHOICE_TEXTSIZE				TEXTSIZE_SMALL
+		#undef CHOICE_TEXTFONT
+		#define CHOICE_TEXTFONT				UI_FONT_NORMAL
+		#undef CHOICE_TEXTSTYLE
+		#define CHOICE_TEXTSTYLE			ITEM_TEXTSTYLE_NORMAL
+#endif //#ifdef PC
+		
+		itemDef
+		{		
+			DYNAMIC_MENU_COMMON_FIELDS
+			backgroundItemListbox		"white"  // omit this if you don't want button background transparency
+			rect CHOICE_X_START CHOICE_Y_START CHOICE_SIZE_X 275 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+
+			menuItemsDef
+			{
+				maxRows 15
+				
+				// THESE INCLUDE BACKGROUND, HIGHLIGHT AND SELECT BUTTON. DO NOT OMIT THESE ( THE BUTTONS MAY NOT DISPLAY PROPERLY BECAUSE OF COLUMN MISMATCH ).
+				DYNAMIC_MENU_COMMON_COLUMNS 
+
+				menuColDef
+				{
+					type		MENU_ITEM_TYPE_LOC_TEXT
+					rect		0 0 CHOICE_SIZE_X CHOICE_SIZE_Y ITEM_ALIGN_LEFT ITEM_ALIGN_MIDDLE
+					maxChars	50
+				}
+			}
+
+			onEvent InviteToGame			{	
+												if( CAN_INVITE_TO_GAME )
+												{ 
+													if( dvarBool( ui_friendsListOpen ) )
+													{
+														execNow sendInvite ( dvarstring( selectedPlayerXuid ) ) 0;
+													}
+													elseif( dvarBool( ui_playerListOpen ) || dvarBool( ui_ingamePlayersOpen ) )
+													{
+														execNow sendInvite ( dvarstring( selectedPlayerXuid ) ) 1;
+													}
+													else
+													{
+														execNow sendInvite ( dvarstring( selectedPlayerXuid ) ) 0;
+													}
+												}		
+
+											}
+			onEvent SendFriendRequest		{	if( CAN_SEND_FRIEND_REQUEST )
+												{
+													execNow xaddfriend ( dvarstring( selectedPlayerXuid ) );
+												}	
+											}
+			onEvent CombatRecord			{	
+												if( !COMBAT_RECORD_LOCKED )
+												{
+													execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT; 
+													execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;
+													if( getxuid() == dvarstring( selectedPlayerXuid ) )
+													{
+														close self;
+														setdvar ui_showFriendsCombatRecord "0";
+														open menu_cr_career_summary;
+													}
+													else
+													{
+														setdvar ui_showFriendsCombatRecord "1";
+														execnow getServiceRecord ( dvarstring( selectedPlayerXuid ) );
+													}
+												}
+											}
+			onEvent JoinSessionPlayers		{	if( CAN_JOIN_SESSION )
+												{
+													if( IsInGame() )
+													{
+														setDvar ui_keep_friends_bg_up "0";
+														execnow set ui_show_friends_list_bg 0;
+														execnow ui_animate class friends_list_bg default 20;
+													}
+													exec JoinsessionInProgress ( dvarString( selectedPlayerXuid ) );
+													showmenu menu_players;
+													close self;
+													setDvar ui_playerListOpen "0";
+													setdvar invite_visible "1"; 
+													exec set menu_xboxlive_buttons_visible 1;
+													close menu_players;
+												}
+											}
+			onEvent JoinSessionFriends		{	
+												if ( CAN_AUTOJOIN_SESSION ) 
+												{
+													execNow joinSessionInProgress ( dvarString( selectedPlayerXuid ) );
+												}	
+												elseif ( CAN_JOIN_SESSION )
+												{ 
+													if( IsInGame() )
+													{
+														setDvar ui_keep_friends_bg_up "0";
+														execnow set ui_show_friends_list_bg 0;
+														execnow ui_animate class friends_list_bg default 20;
+													}
+													execNow JoinsessionInProgress ( dvarstring( selectedPlayerXuid ) );
+													showmenu menu_friends;
+													closeImmediate self;													
+													setDvar ui_friendsListOpen "0";
+													setdvar invite_visible "1"; 
+													exec set menu_xboxlive_buttons_visible 1;
+													close menu_friends;
+												}
+											}
+			onEvent ToggleMute				{   exec mp_toggleMute( dvarString( selectedPlayerXuid ) ) }	
+			onEvent KickPlayer				{   close menu_playercard_lobby; getKickPlayerQuestion; }	
+			onEvent ChangeCombatRecordHint	{  
+												if( !COMBAT_RECORD_LOCKED )
+												{
+													SET_HINT_TEXT( "@MPUI_COMBAT_RECORD_DESC" )
+												}
+												else
+												{
+													SET_HINT_TEXT( ( GetCombatRecordLockedString(dvarString("selectedFriendName")) ) )
+												}
+											}	
+			onEvent RecentGames				{
+												if(  canShowContentFromUser( dvarstring( "selectedPlayerXuid" ) ) )
+												{	
+													execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT; 
+													execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;
+													close self;
+													open menu_fileshare_recentgames;
+												}
+												else
+												{
+													open menu_recentgames_viewwarning;
+												}
+											}
+			onEvent ReportUser				{
+												execnow openmenu menu_reportuser;
+											}	
+			onEvent	FileShare				
+			{
+				if( canShowContentFromUser( dvarstring( "selectedPlayerXuid" ) ) )
+				{
+					execnow changemenucloseslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT; 
+					execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;
+					close self;
+					open menu_fileshare_share;
+				}
+				else
+				{
+					open menu_fileshare_viewwarning;
+				}
+			}
+			onEvent ClearHint	{  
+													CLEARUIHINT;
+								}
+			onEvent Clear						{ execNow clearFeeder; }
+			onEvent ClearWithoutReset			{ execNow clearFeederWithoutResetCursor; }
+			// Adding buttons to the menu according to the conditions specified. 
+			onEvent Populate
+			{
+				if( isInGame() ) /* playercard in-game */
+				{		
+					if( dvarBool( ui_friendsListOpen ) ) 
+					{								//onAction event	//onFocus Event			//disable Button Condition  //Text on button
+						execNow addToFeederExtended InviteToGame		ClearHint				(!CAN_INVITE_TO_GAME)		MENU_INVITE_TO_GAME_CAPS;
+						execNow addToFeederExtended JoinSessionFriends	ClearHint				(!CAN_JOIN_SESSION)			MENU_JOIN_IN_PROGRESS_CAPS;
+					}
+					elseif( dvarBool( ui_playerListOpen ))
+					{
+						execNow addToFeederExtended InviteToGame		ClearHint				(!CAN_INVITE_TO_GAME)		MENU_INVITE_TO_GAME_CAPS;
+						execNow addToFeederExtended JoinSessionPlayers	ClearHint				(!CAN_JOIN_SESSION)			MENU_JOIN_IN_PROGRESS_CAPS;
+					}
+					elseif( dvarBool( ui_ingamePlayersOpen ) || dvarBool(ui_aarScoreboardOpen) || dvarBool(ui_aarWagerScoreboardOpen) )
+					{
+						execNow addToFeederExtended SendFriendRequest	ClearHint				(!CAN_SEND_FRIEND_REQUEST)	MENU_SEND_FRIEND_REQUEST_CAPS;
+						execNow if ( CAN_MUTE_PLAYER )		addToFeederExtended ToggleMute	ClearHint 0 	MENU_MUTE_CAPS;
+						execNow if ( !CAN_MUTE_PLAYER )		addToFeederExtended ToggleMute	ClearHint 0 	MENU_UNMUTE_CAPS;
+						execNow if ( CAN_KICK_PLAYER )		addToFeederExtended KickPlayer	ClearHint 0 	MENU_KICK_PLAYER_CAPS;
+#ifndef PC
+						execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+						execNow	addToFeederExtended	ReportUser			ClearHint					0							MENU_REPORT_USER_CAPS;	
+					}
+					else
+					{
+						execNow addToFeederExtended SendFriendRequest	ClearHint				(!CAN_SEND_FRIEND_REQUEST)	MENU_SEND_FRIEND_REQUEST_CAPS;
+					}				
+				}
+				elseif( dvarBool( ui_playerListOpen ) || dvarBool( ui_xboxLivePartyListOpen ) )		/* playercard for anyone selected in the recently met player list */
+				{								
+					execNow	addToFeederExtended	SendFriendRequest	ClearHint					(!CAN_SEND_FRIEND_REQUEST)	MENU_SEND_FRIEND_REQUEST_CAPS;
+					execNow	addToFeederExtended InviteToGame		ClearHint					(!CAN_INVITE_TO_GAME)		MENU_INVITE_TO_GAME_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	CombatRecord		ChangeCombatRecordHint		COMBAT_RECORD_LOCKED		MENU_COMBAT_RECORD_CAPS;					
+					execNow	addToFeederExtended FileShare			ClearHint					0							MENU_FILESHARE_CAPS;
+					execNow	addToFeederExtended RecentGames			ClearHint					0							MENU_FILESHARE_RECENTGAMES_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	ReportUser			ClearHint					0							MENU_REPORT_USER_CAPS;	
+				}
+				elseif( dvarBool( ui_friendsListOpen ) )	/* playercard for anyone selected in the friends list */
+				{
+					execNow	addToFeederExtended InviteToGame		ClearHint					(!CAN_INVITE_TO_GAME)		MENU_INVITE_TO_GAME_CAPS;
+					
+					if ( CAN_AUTOJOIN_SESSION ) 
+					{
+						execNow addToFeederExtended JoinSessionFriends	ClearHint				(!CAN_AUTOJOIN_SESSION)		MENU_AUTOJOIN_CAPS;
+					}	
+					else
+					{ 
+						execNow addToFeederExtended JoinSessionFriends	ClearHint				(!CAN_JOIN_SESSION)			MENU_JOIN_IN_PROGRESS_CAPS;
+					}	
+									
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	CombatRecord		ChangeCombatRecordHint		COMBAT_RECORD_LOCKED		MENU_COMBAT_RECORD_CAPS;					
+					execNow	addToFeederExtended FileShare			ClearHint					0							MENU_FILESHARE_CAPS;
+					execNow	addToFeederExtended RecentGames			ClearHint					0							MENU_FILESHARE_RECENTGAMES_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	ReportUser			ClearHint					0							MENU_REPORT_USER_CAPS;
+				}
+				elseif( dvarBool( ui_leaderboardOpen ) || dvarbool( ui_nemesisPlayercardOpen ) )   /* playercard for anyone selected in the leaderboards or nemesis in the after action report */
+				{
+					execNow	addToFeederExtended	SendFriendRequest	ClearHint					(!CAN_SEND_FRIEND_REQUEST)	MENU_SEND_FRIEND_REQUEST_CAPS;
+					execNow	addToFeederExtended InviteToGame		ClearHint					(!CAN_INVITE_TO_GAME)		MENU_INVITE_TO_GAME_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	CombatRecord		ChangeCombatRecordHint		COMBAT_RECORD_LOCKED		MENU_COMBAT_RECORD_CAPS;					
+					execNow	addToFeederExtended FileShare			ClearHint					0							MENU_FILESHARE_CAPS;
+					execNow	addToFeederExtended RecentGames			ClearHint					0							MENU_FILESHARE_RECENTGAMES_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	ReportUser			ClearHint					0							MENU_REPORT_USER_CAPS;
+				}
+				else /* playercard for anyone selected in lobby players list */
+				{
+					execNow	addToFeederExtended	SendFriendRequest	ClearHint					(!CAN_SEND_FRIEND_REQUEST)	MENU_SEND_FRIEND_REQUEST_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	CombatRecord		ChangeCombatRecordHint		COMBAT_RECORD_LOCKED		MENU_COMBAT_RECORD_CAPS;					
+					execNow	addToFeederExtended FileShare			ClearHint					0							MENU_FILESHARE_CAPS;
+					execNow	addToFeederExtended RecentGames			ClearHint					0							MENU_FILESHARE_RECENTGAMES_CAPS;
+#ifndef PC
+					execNow	addToFeeder			noop																		"";		
+#endif //#ifndef PC
+					execNow	addToFeederExtended	ReportUser			ClearHint					0							MENU_REPORT_USER_CAPS;
+					
+					execNow if ( CAN_MUTE_PLAYER )		addToFeederExtended ToggleMute	ClearHint 0 	MENU_MUTE_CAPS;
+					execNow if ( !CAN_MUTE_PLAYER )		addToFeederExtended ToggleMute	ClearHint 0 	MENU_UNMUTE_CAPS;
+					execNow if ( CAN_KICK_PLAYER )		addToFeederExtended KickPlayer	ClearHint 0 	MENU_KICK_PLAYER_CAPS;
+				}
+			}
+			onfocus						{	play CHOICE_FOCUS_SOUND; DYNAMIC_MENU_INIT( menu_playercard ) }		
+			onListboxSelectionChange	{	play CHOICE_FOCUS_SOUND; }
+			doubleclick					{	play CHOICE_FOCUS_SOUND;		
+											execNow raiseFeederEvent; 	
+											
+										}
+		}
+		
+		FRIENDS_PLAYER_CARD_COMMON_ITEMS 
+
+#ifdef CONSOLE
+		NEW_FRAME_BACK_BUTTON_ACTION( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC_ACTION )
+#else
+		NEW_FRAME_BACK_BUTTON_ACTION(FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC_ACTION )
+#endif
+		
+		#include "ui/safearea.menu"
+	}
+} 
+
+#include "ui_mp/popupstyle.inc"	
+#include "ui/choices_setup_popmenu.menu"
+	
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( unmute_error_popup_live, setFocus unmute_error_popup_live2;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_UNMUTE_ERROR", 1 )
+	SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_UNMUTE_ERROR_FROM_LIVE", 1 )
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_CANCEL",			close self,							1, name unmute_error_popup_live_2	)
+}
+
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		1
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( unmute_error_popup_friends_only, ;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_UNMUTE_ERROR", 1 )
+	SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_UNMUTE_ERROR_FRIENDS_ONLY", 1 )
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+}
+
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( unmute_error_popup_nobody, ;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_UNMUTE_ERROR", 1 )
+	SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_UNMUTE_ERROR_NOBODY", 1 )
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )
+}
+
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_viewwarning, ;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_FILESHARE_ACCESSERROR", 1 )  
+	SYSTEM_POPUP_SUBTITLE_VIS( "@PLATFORM_FILESHARE_ACCESSERROR_MSG", 1 )  
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )  
+} 
+
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_community_viewwarning, ;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_COMMUNITY_ACCESSERROR", 1 )  
+	SYSTEM_POPUP_SUBTITLE_VIS( "@PLATFORM_FILESHARE_ACCESSERROR_MSG", 1 )  
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )  
+} 
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_recentgames_viewwarning, ;, ;, 1 )
+	priority		MENU_PRI_ONTOP
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_RECENTGAMES_ACCESSERROR", 1 )  
+	SYSTEM_POPUP_SUBTITLE_VIS( "@PLATFORM_FILESHARE_ACCESSERROR_MSG", 1 )  
+	
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; )  
+} 
+
+
+
+
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		5
+
+//Report User Dialog
+menuDef
+{	
+	SYSTEM_POPUP_SETUP_VIS( "menu_reportuser", ;, close self;, 1 )
+
+	SYSTEM_POPUP_TITLE_VIS( locString( "@MENU_REPORT_USER_CAPS" ) + ":", 1 )
+	SYSTEM_POPUP_SUBTITLE_VIS( dvarString( "selectedFriendName" ), 1 )
+
+	#define REPORT_USER( offence )												\
+			execNow reportUser (dvarString("selectedPlayerXuid")) offence 1;	\
+			close self;
+					
+	FRAME_CHOICE_BUTTON_FOCUS_VIS_EX( 1, "@MENU_REPORT_USER_OFFENSIVE_CAPS",		REPORT_USER( "offensive" ),			setLocalVarString ui_info "@MENU_REPORT_USER_OFFENSIVE_MSG";,			;, 1, ; )
+	FRAME_CHOICE_BUTTON_FOCUS_VIS_EX( 2, "@MENU_REPORT_USER_OFFENSIVE_EMBLEM_CAPS",	REPORT_USER( "offensive_emblem" ),	setLocalVarString ui_info "@MENU_REPORT_USER_OFFENSIVE_EMBLEM_MSG";,	;, 1, ; )
+	FRAME_CHOICE_BUTTON_FOCUS_VIS_EX( 3, "@MENU_REPORT_USER_CHEATER_CAPS",			REPORT_USER( "cheater" ),			setLocalVarString ui_info "@MENU_REPORT_USER_CHEATER_MSG";,				;, 1, ; )	
+	FRAME_CHOICE_BUTTON_FOCUS_VIS_EX( 4, "@MENU_REPORT_USER_BOOSTER_CAPS",			REPORT_USER( "booster" ),			setLocalVarString ui_info "@MENU_REPORT_USER_BOOSTER_MSG";,				;, 1, ; )		
+	
+	HINT_TEXT_ALL( 5, CHOICE_X_START, 0, CHOICE_SIZE_X, localVarString( ui_info ), 1 1 1 1, 1, ; )
+
+	SYSTEM_POPUP_BACK_BUTTON
+}
+

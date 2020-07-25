@@ -1,0 +1,2127 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/stats_info.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/cac_viewer.inc"
+
+#define AAR_HEIGHT					NEW_FRAME_DEFAULT_HEIGHT
+#define AAR_WIDTH					( (AAR_HEIGHT * FRAME_ASPECT_RATIO) )
+
+#undef	HIGHLIGHT_COLOR
+#define HIGHLIGHT_COLOR				0.3 0.35 0.55 0.25
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/overlaybg.inc"
+#include "ui_mp/popup_player_info.inc"
+#include "ui_mp/fileshare.inc"
+#include "ui_mp/tab_slider.inc"
+#include "ui_mp/item_animate.inc"
+
+#undef	CHOICE_HORIZONTAL_ALIGN 
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER 
+#undef  CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+
+#define AAR_AWARD_IMAGE_COLOR		0.8 0.68 0.47 0.6
+#define AAR_AWARD_IMAGE_COLOR_GREY	1 1 1 0.3
+
+#undef	CHOICE_TEXTSTYLE 
+#define CHOICE_TEXTSTYLE			ITEM_TEXTSTYLE_NORMAL
+
+#define AAR_BODY_X_START			( -AAR_WIDTH / 2 + 15 )
+#define	AAR_BODY_Y_START			( -AAR_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( AAR_HEIGHT ) )
+
+#define AAR_COLOR_YELLOW			0.98 0.83 0.25 1	
+
+#define CHOICE_TAB_TEXTSIZE			TEXTSIZE_DEFAULT
+#define TAB_1_TEXT					( locString( "@MPUI_SUMMARY_CAPS" ) )
+#define TAB_2_TEXT					( locString( "@MPUI_AWARDS_CAPS" ) )
+#define TAB_3_TEXT					( locString( "@MENU_SCOREBOARD_CAPS" ) )
+
+#define WAGER_TAB_1_TEXT		( locString( "@MPUI_SUMMARY_CAPS" ) )
+#define WAGER_TAB_2_TEXT		( locString( "@MENU_SCOREBOARD_CAPS" ) )
+
+#define TAB_BG_PAD					5
+
+#define TAB_1_WIDTH					( getTextWidth( TAB_1_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_2_WIDTH					( getTextWidth( TAB_2_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define TAB_3_WIDTH					( getTextWidth( TAB_3_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+
+#define WAGER_TAB_1_WIDTH		( getTextWidth( WAGER_TAB_1_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+#define WAGER_TAB_2_WIDTH		( getTextWidth( WAGER_TAB_2_TEXT, CHOICE_TEXTFONT, TEXTSIZE_SMALL ) + (TAB_BG_PAD*2) )
+
+#define TAB_HEIGHT					15
+
+#define AAR_TAB_1_X					4
+#define AAR_TAB_2_X					( AAR_TAB_1_X + TAB_1_WIDTH )
+#define AAR_TAB_3_X					( AAR_TAB_2_X + TAB_2_WIDTH )
+
+#define AAR_WAGER_TAB_1_X		AAR_TAB_1_X
+#define AAR_WAGER_TAB_2_X		( AAR_WAGER_TAB_1_X + WAGER_TAB_1_WIDTH )
+
+#define AAR_TAB_Y					( ( -AAR_HEIGHT / 2 ) + NEW_FRAME_HEADER_HEIGHT - TAB_HEIGHT )
+
+#undef	CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR			NEW_FRAME_COMMON_TEXT_COLOR
+
+#ifdef CONSOLE 
+#define PREPROC_TEXT_DRAW_ADV_VIS_AAR( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs, pageNumber, targetMenuNumber ) \ 
+	PREPROC_TEXT_DRAW_ADV_VIS_EX( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs )
+
+#define PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs, pageNumber, targetMenuNumber ) \ 
+	PREPROC_TEXT_DRAW_ADV_VIS_EX( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs )
+#else  // #ifdef CONSOLE
+
+#define PREPROC_TEXT_DRAW_ADV_VIS_AAR( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs, pageNumber, targetMenuNumber ) \
+		PREPROC_TEXT_DRAW_ADV_ALL_AAR( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, CHOICE_TEXTFONT, CHOICE_TEXTSTYLE, pvis, extraArgs, pageNumber, targetMenuNumber ) 
+		
+#define PREPROC_TEXT_DRAW_ADV_ALL_AAR( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pfont, pstyle, pvis, extraArgs, pageNumber, targetMenuNumber ) \
+		itemDef																						\
+		{																							\
+			type			ITEM_TYPE_BUTTON														\
+			rect			0 0 0 0 pHorizAlign pVertAlign											\
+			exp				rect X( px )															\
+			exp				rect Y( py )															\
+			exp				rect W( pw )															\
+			exp				rect H( ph )															\
+			textalign		palign																	\
+			textalignx		palignx																	\
+			textaligny		paligny																	\
+			textstyle		pstyle																	\
+			textfont		pfont																	\
+			textscale		psize																	\
+			forecolor		pcolor																	\
+			exp				text( ptext );															\
+			visible			pvis																	\
+			action																					\
+			{																						\
+				if( pageNumber == 1 )																\
+				{																					\
+					closeImmediate menu_aar_summary;												\
+				}																					\
+				elseif( pageNumber == 2 )															\
+				{																					\
+					if( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_PERSONAL_BESTS )		\
+					{ closeImmediate menu_aar_awards_personal_bests; }								\
+					elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_STATS_MILESTONES )	\
+					{ closeImmediate menu_aar_awards_stats_milestones; }							\
+					elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_CONTRACTS )		\
+					{ closeImmediate menu_aar_awards_contracts; }									\
+				}																					\
+				elseif( pageNumber == 3 )															\
+				{																					\
+					closeImmediate menu_aar_scoreboard;												\
+				}																					\
+				if( targetMenuNumber == 1 )															\
+				{																					\
+					openImmediate menu_aar_summary;													\
+				}																					\
+				elseif( targetMenuNumber == 2 )														\
+				{																					\
+					if( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_PERSONAL_BESTS )		\
+					{ openImmediate menu_aar_awards_personal_bests; }								\
+					elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_STATS_MILESTONES ) \
+					{ openImmediate menu_aar_awards_stats_milestones; }								\
+					elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_CONTRACTS )		\
+					{ openImmediate menu_aar_awards_contracts; }									\
+				}																					\
+				elseif( targetMenuNumber == 3 )														\
+				{																					\
+					openImmediate menu_aar_scoreboard;												\
+				}																					\
+				play CHOICE_FOCUS_SOUND;															\
+			}																						\
+			mouseEnter																				\
+			{																						\
+				play CHOICE_FOCUS_SOUND;															\
+			}																						\
+			extraArgs																				\
+		}
+		
+#define PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pvis, extraArgs, pageNumber, targetMenuNumber ) \
+		PREPROC_TEXT_DRAW_ADV_ALL_AAR_WAGER( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, CHOICE_TEXTFONT, CHOICE_TEXTSTYLE, pvis, extraArgs, pageNumber, targetMenuNumber ) 
+
+#define PREPROC_TEXT_DRAW_ADV_ALL_AAR_WAGER( px, py, pw, ph, pHorizAlign, pVertAlign, ptext, psize, palignx, paligny, palign, pcolor, pfont, pstyle, pvis, extraArgs, pageNumber, targetMenuNumber ) \ 
+		itemDef																						\
+		{																							\
+			type			ITEM_TYPE_BUTTON														\
+			rect			0 0 0 0 pHorizAlign pVertAlign											\
+			exp				rect X( px )															\
+			exp				rect Y( py )															\
+			exp				rect W( pw )															\
+			exp				rect H( ph )															\
+			textalign		palign																	\
+			textalignx		palignx																	\
+			textaligny		paligny																	\
+			textstyle		pstyle																	\
+			textfont		pfont																	\
+			textscale		psize																	\
+			forecolor		pcolor																	\
+			exp				text( ptext );															\
+			visible			pvis																	\
+			action																					\
+			{																						\
+				if( pageNumber == 1 )																\
+				{																					\
+					closeImmediate menu_wager_aar_summary;											\
+				}																					\
+				elseif( pageNumber == 2 )															\
+				{																					\
+					closeImmediate menu_aar_wager_scoreboard;										\
+				}																					\
+				if( targetMenuNumber == 1 )															\
+				{																					\
+					openImmediate menu_wager_aar_summary;											\
+				}																					\
+				elseif( targetMenuNumber == 2 )														\
+				{																					\
+					openImmediate menu_aar_wager_scoreboard;										\
+				}																					\
+				play CHOICE_FOCUS_SOUND;															\
+			}																						\
+			mouseEnter																				\
+			{																						\
+				play CHOICE_FOCUS_SOUND;															\
+			}																						\
+			extraArgs																				\
+		}
+
+#endif // #ifdef CONSOLE
+
+#define AAR_TAB_HEADERS( pageNumber )																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_1_X ),								\
+										AAR_TAB_Y,														\
+										TAB_1_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( pageNumber != 1 );, TAB_MOUSEOVER_HIGHLIGHT;, pageNumber, 1 )	\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_1_X ),								\
+										AAR_TAB_Y,														\
+										TAB_1_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_ORANGE_RGB 1, when( pageNumber == 1 );, ;, pageNumber, 1 )\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_2_X ),									\
+										AAR_TAB_Y,														\
+										TAB_2_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( pageNumber != 2 );, TAB_MOUSEOVER_HIGHLIGHT;, pageNumber, 2 )	\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_2_X ),								\
+										AAR_TAB_Y,														\
+										TAB_2_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_ORANGE_RGB 1, when( pageNumber == 2 );, ;, pageNumber, 2 )\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_3_X ),									\
+										AAR_TAB_Y,														\
+										TAB_3_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_3_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( pageNumber != 3 );, TAB_MOUSEOVER_HIGHLIGHT;, pageNumber, 3 )	\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR(	( -AAR_WIDTH / 2 + AAR_TAB_3_X ),								\
+										AAR_TAB_Y,														\
+										TAB_3_WIDTH,													\
+										TAB_HEIGHT,														\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,					\
+										TAB_3_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,		\
+										NEW_FRAME_ORANGE_RGB 1, when( pageNumber == 3 );, ;, pageNumber, 3 )
+
+#define AAR_WAGER_TAB_HEADERS( pageNumber )																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER(	( -AAR_WIDTH / 2 + AAR_WAGER_TAB_1_X ),						\
+										AAR_TAB_Y,															\
+										WAGER_TAB_1_WIDTH,													\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,						\
+										WAGER_TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( pageNumber != 1 );, TAB_MOUSEOVER_HIGHLIGHT;, pageNumber, 1  )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER(	( -AAR_WIDTH / 2 + AAR_WAGER_TAB_1_X ),						\
+										AAR_TAB_Y,															\
+										WAGER_TAB_1_WIDTH,													\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,						\
+										WAGER_TAB_1_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_ORANGE_RGB 1, when( pageNumber == 1 );, ;, pageNumber, 1  ) \
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER(	( -AAR_WIDTH / 2 + AAR_WAGER_TAB_2_X ),						\
+										AAR_TAB_Y,															\
+										WAGER_TAB_2_WIDTH,													\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,						\
+										WAGER_TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_GRAY_TEXT_COLOR, when( pageNumber != 2 );, TAB_MOUSEOVER_HIGHLIGHT;, pageNumber, 2  )		\
+		PREPROC_TEXT_DRAW_ADV_VIS_AAR_WAGER(	( -AAR_WIDTH / 2 + AAR_WAGER_TAB_2_X ),						\
+										AAR_TAB_Y,															\
+										WAGER_TAB_2_WIDTH,													\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_CENTER, VERTICAL_ALIGN_CENTER,						\
+										WAGER_TAB_2_TEXT, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										NEW_FRAME_ORANGE_RGB 1, when( pageNumber == 2 );, ;, pageNumber, 2  )
+
+#define AAR_TAB_BG( px, pw, selected )																		\
+		itemDef																						\
+		{																							\
+			style           WINDOW_STYLE_SHADER_FRAMED												\
+			frame           16 0.2 FRAME_OPEN_BOTTOM												\
+			rect            0 AAR_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( ( -AAR_WIDTH / 2 + px ) )										\
+			exp				rect W(	pw )															\
+			background      "menu_mp_tab_frame_inner"												\
+			forecolor       0.5 0.5 0.5 0.5															\
+			visible         when( selected )														\
+			decoration																				\
+		}																							\
+		itemDef																						\
+		{																							\
+			style           WINDOW_STYLE_SHADER_FRAMED												\
+			frame           16 0.2 FRAME_OPEN_BOTTOM												\
+			rect            0 AAR_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER	\
+			exp				rect X( ( -AAR_WIDTH / 2 + px ) )										\
+			exp				rect W(	pw )															\
+			background      "menu_mp_tab_frame_inner"												\
+			forecolor       1 1 1 1																	\
+			visible         when( !selected )														\
+			decoration																				\
+		}
+
+
+#define AAR_VIEW_AWARDS_PERSONAL_BESTS 0
+#define AAR_VIEW_AWARDS_STATS_MILESTONES 1
+#define AAR_VIEW_AWARDS_CONTRACTS 2
+
+#define OPEN_PREVIOUS_MENU( currMenu, menu ) \
+		if( currMenu == menu_aar_scoreboard ) \
+		{ \
+			if( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_PERSONAL_BESTS ) \
+			{ openImmediate menu_aar_awards_personal_bests; } \
+			elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_STATS_MILESTONES ) \
+			{ openImmediate menu_aar_awards_stats_milestones; } \
+			elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_CONTRACTS ) \
+			{ openImmediate menu_aar_awards_contracts; } \
+		} \
+		else \
+		{ \
+			openImmediate menu; \
+		} 
+
+#define OPEN_NEXT_MENU( currMenu, menu ) \
+		if( currMenu == menu_aar_summary ) \
+		{ \
+			if( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_PERSONAL_BESTS ) \
+			{ openImmediate menu_aar_awards_personal_bests; } \
+			elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_STATS_MILESTONES ) \
+			{ openImmediate menu_aar_awards_stats_milestones; } \
+			elseif ( dvarInt(ui_aar_current_view_num) == AAR_VIEW_AWARDS_CONTRACTS ) \
+			{ openImmediate menu_aar_awards_contracts; } \
+		} \
+		else \
+		{ \
+			openImmediate menu; \
+		}
+
+#define CHANGE_MENU_ACTION( currMenu, prevMenu, nextMenu ) \
+		execKeyInt DPAD_LEFT { \
+			closeImmediate currMenu; \
+			OPEN_PREVIOUS_MENU( currMenu, prevMenu ) \
+		} \
+		execKeyInt DPAD_RIGHT { \
+			closeImmediate currMenu; \
+			OPEN_NEXT_MENU( currMenu, nextMenu ) \
+		} \
+		execKeyInt APAD_LEFT { \
+			closeImmediate currMenu; \
+			OPEN_PREVIOUS_MENU( currMenu, prevMenu ) \
+		} \
+		execKeyInt APAD_RIGHT { \
+			closeImmediate currMenu; \
+			OPEN_NEXT_MENU( currMenu, nextMenu ) \
+		} \
+		PC_TAB_SWITCH_ACTIONS( currMenu, prevMenu, nextMenu )
+
+#define GET_AAR_STAT( statName ) \ 
+		getDStat( "AfterActionReportStats", statName )
+		
+#define GET_AAR_STAT_WITH_INDEX( statName, statIndex ) \
+		getDStat( "AfterActionReportStats", statName, statIndex )
+
+#define SUMMARY_X_START					( -AAR_WIDTH / 2 + 25 )
+#define SUMMARY_DESC_Y_START			(AAR_BODY_Y_START+20)
+
+#define SUMMARY_XP_BAR_Y_START			(SUMMARY_DESC_Y_START+250)
+
+#define SUMMARY_XP_BAR_WIDTH			(AAR_WIDTH - 160)
+
+#define PROGRESS_BAR_SPEED				1000	//milliseconds
+#define CP_COUNTUP_SPEED				1000	//milliseconds
+
+#define BG_WIDTH						230
+#define BG_WIDTH_RIGHT_OFFSET			(BG_WIDTH-67)
+
+#define RIGHT_BOX_WIDTH					250
+#define AWARDS_BOX_HEIGHT 				120
+#define AWARD_SIZE						80
+
+#define SUMMARY_RIGHT_X_START			(SUMMARY_X_START+260)
+
+#define SUMMARY_RIGHT_DESC_Y_START		(SUMMARY_DESC_Y_START+50)
+
+#define SUMMARY_RIGHT_DESC_WIDTH		RIGHT_BOX_WIDTH
+
+#define NEMESIS_INFO_Y_START			(SUMMARY_DESC_Y_START+145)
+
+#define NEMESIS_VIS_CONDITION			( GET_AAR_STAT( "NEMESISXUID" ) != 0 )
+
+#define BAR_FIXED						SUMMARY_XP_BAR_WIDTH*((getDStat( "PlayerStatsList", "RANKXP" )-int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 2)))/int(tablelookup("mp/ranktable.csv",0,getDStat( "PlayerStatsList", "RANK" ),3)))
+#define BAR_WIDTH						BAR_FIXED*min( ((milliseconds()-dvarInt(ui_time_marker))/PROGRESS_BAR_SPEED), 1 )
+#define ANIMATE_BAR						(dvarInt(ui_aar_xp_bar_width_multiplier) * BAR_WIDTH)
+
+#define REQUIRED_XP						int(getDStat( "PlayerStatsList", "RANKXP" )-int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 2)))
+#define ANIMATE_NUM						(dvarInt(ui_aar_xp_bar_width_multiplier)*int(min( REQUIRED_XP, REQUIRED_XP*((milliseconds()-dvarInt(ui_time_marker))/PROGRESS_BAR_SPEED) )))
+
+#define XP_STRING						string( dvarInt(ui_aar_xp_bar_width_multiplier) * int(min(GET_AAR_STAT( "XPEARNED" ), (GET_AAR_STAT( "XPEARNED" ) * ((milliseconds()-dvarInt(ui_time_marker))/PROGRESS_BAR_SPEED) ) )) )
+#define CP_INT							( dvarInt(ui_aar_cp_multiplier) * int(min(GET_AAR_STAT( "CPEARNED" ), (GET_AAR_STAT( "CPEARNED" ) * ((milliseconds()-dvarInt(ui_cp_time_marker))/CP_COUNTUP_SPEED) ) )) )
+
+#define REQUIRED_XP_STRING				(int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 3 ))-ANIMATE_NUM)
+
+#define AAR_ESC_ACTION( menuName )															\
+		deactivateblur;			\
+		if (IsInGame())																			\
+		{																						\
+			hideMenu "pausedbkgnd";																\
+		}																						\
+		play uin_navigation_menu_lg_close;													\
+		execnow changemenucloseslidedirection menuName MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;	\
+		close self;
+
+#ifdef CONSOLE
+#define CLOSE_BUTTON( menuName ) \
+		itemDef \
+		{ \
+			type			ITEM_TYPE_BUTTON \
+			rect			(AAR_WIDTH/2-8) ( AAR_HEIGHT / 2 + 18 ) 0 0 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN  \
+			text			"@PLATFORM_CLOSE_AAR" \
+			textfont		UI_FONT_NORMAL \
+			textscale		TEXTSIZE_DEFAULT \ 
+			textalign		ITEM_ALIGN_BOTTOM_RIGHT \ 
+			visible			1 \  
+			decoration \ 
+			execkeyint BUTTON_A \
+			{ \
+				AAR_ESC_ACTION( menuName ) \
+			} \
+		}
+#else // #ifdef CONSOLE
+#define CLOSE_BUTTON( menuName ) \
+		NEW_FRAME_BUTTON_PC_LEFT_OFFSET( AAR_WIDTH, AAR_HEIGHT, 0, "@MENU_CLOSE", AAR_ESC_ACTION( menuName ), when(!dvarBool(ui_playercardOpen)) )
+#endif // #ifdef CONSOLE
+{
+	menuDef
+	{
+		name					menu_aar_summary
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		onOpen	
+		{
+			activateBlur;
+			if (IsInGame())
+			{
+				showMenu "pausedbkgnd";
+			}			
+			if( dvarBool(ui_aar_animate_xp_bar) )
+			{
+				setdvar ui_aar_cp_multiplier "0";
+				setdvar ui_aar_xp_bar_width_multiplier "0";
+			}
+			setdvar ui_hide_eog_menu "1";
+		}
+		onFocus
+		{ 
+			 if( dvarBool(ui_aar_animate_xp_bar) )
+			 {
+				ITEM_ANIMATE( menu_aar_summary, anim_controller, countUpNumbers, 50 )	
+				execNow set ui_aar_animate_xp_bar 0;
+			 }
+		}
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_summary )
+		}
+		
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_AFTER_ACTION_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_TAB_1_X, TAB_1_WIDTH, 1 ) 
+		AAR_TAB_BG( AAR_TAB_2_X, TAB_2_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_3_X, TAB_3_WIDTH, 0 ) 
+
+		AAR_TAB_HEADERS( 1 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+		// This is a dummy itemDef that acts as the central hub for
+		// animation control 
+		itemDef
+		{
+			name	anim_controller
+			style	WINDOW_STYLE_SHADER
+			rect	0 0 0 0
+			visible 1
+			decoration
+
+
+			state
+			{
+				name	countUpNumbers
+				onEnter
+				{
+					if ( GET_AAR_STAT( "CPEARNED" ) > 0 )
+					{
+						play uin_aar_cp_fill;
+						exec "setdvartotime ui_cp_time_marker";
+						setdvar ui_aar_cp_multiplier "1";
+						changeState animateXpBar CP_COUNTUP_SPEED;
+					}
+					else
+					{
+						changeState animateXpBar 0;
+					}
+				}
+			}			
+			state
+			{
+				name	animateXpBar
+				onEnter
+				{
+					if( BAR_FIXED > 0 )
+					{
+						play uin_aar_xp_fill;
+					}
+					exec "setdvartotime ui_time_marker"; 	// animation start marker
+					exec set ui_aar_xp_bar_width_multiplier "1";
+				}
+			}
+		}
+
+		/* Label for "TOTAL CURRENCY EARNED" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CURRENCY_EARNED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* TOTAL CURRENCY EARNED */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", CP_INT ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN_RGB 1, 1 ) 
+
+		/* Label for "TOTAL XP EARNED" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+20) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_TOTALXP_PRE_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* TOTAL XP EARNED */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+20) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								"+"+XP_STRING,
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_YELLOW_RGB 1, 1 ) 
+
+		/* BG FOR SCORE */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+40) BG_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "SCORE" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+45) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_MATCH_XP_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* SCORE */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+45) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "SCORE" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 					
+		/* Label for "MATCH BONUS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+65) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_MATCHBONUS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* MATCH BONUS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+65) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "MATCHBONUS" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 	
+		/* BG FOR OTHER BONUSES */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+80) BG_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "OTHER BONUSES" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+85) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_OTHER_BONUSES_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* OTHER BONUSES */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+85) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "MISCBONUS" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 	
+
+		/* Label for "AWARDS" */
+		PREPROC_TEXT_DRAW_VIS(	SUMMARY_RIGHT_X_START SUMMARY_DESC_Y_START 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_AWARDS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		
+		/* BG FOR AWARDS */
+		PREPROC_SHADER_DRAW( SUMMARY_RIGHT_X_START (SUMMARY_DESC_Y_START+15) RIGHT_BOX_WIDTH AWARDS_BOX_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY )
+		
+		/* AWARD IMAGES */
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE/2-AWARD_SIZE) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	"menu_mp_lobby_aar_award_best",			AAR_AWARD_IMAGE_COLOR_GREY, when( GetAfterActionReportAwardsInfo( 0 ) <= 0 ), ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,				"menu_mp_lobby_aar_award_challenge",	AAR_AWARD_IMAGE_COLOR_GREY, when( GetAfterActionReportAwardsInfo( 1 ) <= 0 ), ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,				"menu_mp_lobby_aar_award_ccontract",	AAR_AWARD_IMAGE_COLOR_GREY, when( GetAfterActionReportAwardsInfo( 2 ) <= 0 && !dvarBool( "xblive_basictraining" ) ), ; )
+
+		/* AWARD IMAGES WHEN YOU ACTUALLY HAVE ONE OR MORE AWARD */
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE/2-AWARD_SIZE) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	"menu_mp_lobby_aar_award_best",			AAR_AWARD_IMAGE_COLOR, when( GetAfterActionReportAwardsInfo( 0 ) > 0 ), ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,				"menu_mp_lobby_aar_award_challenge",	AAR_AWARD_IMAGE_COLOR, when( GetAfterActionReportAwardsInfo( 1 ) > 0 ), ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,				"menu_mp_lobby_aar_award_ccontract",	AAR_AWARD_IMAGE_COLOR, when( GetAfterActionReportAwardsInfo( 2 ) > 0 && !dvarBool( "xblive_basictraining" ) ), ; )
+
+		/* AWARD CAPTIONS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-13) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+								"@MPUI_AAR_PERSONAL_BESTS_TITLE_CAPS",
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_BOTTOM_CENTER, CHOICE_TEXTCOLOR, 1 )
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-13) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+								"@MPUI_AAR_CHALLENGES_TITLE_CAPS",
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_BOTTOM_CENTER, CHOICE_TEXTCOLOR, 1 )
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-13) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+								"@MPUI_AAR_CONTRACTS_TITLE_CAPS",
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_BOTTOM_CENTER, CHOICE_TEXTCOLOR, when( !dvarBool( "xblive_basictraining" ) ) )
+								
+		/* AWARD VALUES */
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+								GetAfterActionReportAwardsInfo( 0 ),
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 0 ) > 0 ), ; )
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetAfterActionReportAwardsInfo( 1 ), 
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 1 ) > 0 ), ; )
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetAfterActionReportAwardsInfo( 2 ), 
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 2 ) > 0 && !dvarBool( "xblive_basictraining" ) ), ; )
+
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,
+								GetAfterActionReportAwardsInfo( 0 ),
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 0 ) <= 0 ), ; )
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetAfterActionReportAwardsInfo( 1 ), 
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 1 ) <= 0 ), ; )
+		PREPROC_TEXT_DRAW_ALL(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetAfterActionReportAwardsInfo( 2 ), 
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GetAfterActionReportAwardsInfo( 2 ) <= 0 && !dvarBool( "xblive_basictraining" ) ), ; )
+
+		/* --------------------------------------------------------RIGHT SIDE SUMMARY START------------------------------------------------------------------- */
+
+		/* BG FOR KILLS/DEATHS RATIO */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+120) BG_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "KILLS/DEATHS RATIO" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+125) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILL_DEATH_RATIO_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* KILLS/DEATHS RATIO */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+125) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								getFloatAsFormattedString( ( GET_AAR_STAT( "KILLS" ) / max(GET_AAR_STAT( "DEATHS" ), 1) ), 2 ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 				
+		/* Label for "KILLS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+145) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILLS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* KILLS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+145) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "KILLS" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 		
+		/* BG FOR DEATHS */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+160) BG_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "DEATHS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+165) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_DEATHS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* DEATHS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+165) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "DEATHS" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 		
+		/* Label for "BEST KILL STREAK" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+185) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_BEST_KILLSTREAK_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BEST KILL STREAK */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+185) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "BESTKILLSTREAK" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 	
+		/* BG FOR HEADSHOTS */
+		PREPROC_SHADER_DRAW( SUMMARY_X_START (SUMMARY_DESC_Y_START+200) BG_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		/* Label for "HEADSHOTS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+205) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_HEADSHOTS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* HEADSHOTS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+BG_WIDTH_RIGHT_OFFSET) (SUMMARY_DESC_Y_START+205) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								GET_AAR_STAT( "HEADSHOTS" ),
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, 1 ) 
+
+
+		/* Label for "NEMESIS" */
+		PREPROC_TEXT_DRAW_VIS(	SUMMARY_RIGHT_X_START (NEMESIS_INFO_Y_START+3) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_NEMESIS_TITLE_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG FOR NEMESIS */
+		PREPROC_SHADER_DRAW( SUMMARY_RIGHT_X_START (NEMESIS_INFO_Y_START+15) SUMMARY_RIGHT_DESC_WIDTH 61 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+	
+		/* EMBLEM FOR NEMESIS */
+		itemDef 
+		{ 
+			type            ITEM_TYPE_OWNERDRAW 
+			ownerdraw       UI_PLAYER_EMBLEM 
+			rect            (SUMMARY_RIGHT_X_START+4) (NEMESIS_INFO_Y_START+19) 53 53 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN 
+			exp             ownerdata( string( GET_AAR_STAT( "NEMESISXUID" ) ) ); 
+			visible         when( NEMESIS_VIS_CONDITION ) 
+			decoration 
+		} 
+
+		/* NEMESIS GAMERTAG */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+65) (NEMESIS_INFO_Y_START+19) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+							GET_AAR_STAT( "NEMESISNAME" ), 
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION) ) 
+		
+		#define NEMESIS_BUTTON_ACTION																		\
+			if( NEMESIS_VIS_CONDITION )																		\
+			{																								\
+				execNow set selectedPlayerXuid ( string( GET_AAR_STAT( "NEMESISXUID" ) ) );					\
+				execnow set selectedFriendName ( GET_AAR_STAT( "NEMESISNAME" ) );							\
+				execNow set ui_nemesisPlayercardOpen 1;														\
+				execNow set ui_friendsListOpen 0;															\
+				execNow set ui_playerListOpen 0;															\
+				execnow changemenucloseslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+				execnow changemenuopenslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;	\
+				execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+				close menu_aar_summary;																		\
+				open menu_playercard;																		\
+			}
+			
+		/* VIEW PLAYERCARD BUTTON */
+		SIMPLE_CHOICE_BUTTON_ALL( "NemesisButton", (SUMMARY_RIGHT_X_START+65) (NEMESIS_INFO_Y_START+53) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+			"@PLATFORM_VIEW_NEMESIS_PLAYERCARD", UI_FONT_NORMAL, TEXTSIZE_SMALL, ITEM_ALIGN_MIDDLE_CENTER, 
+			when( NEMESIS_VIS_CONDITION ), 
+			NEMESIS_BUTTON_ACTION )
+
+		
+		execkeyint BUTTON_Y 
+		{ 
+			NEMESIS_BUTTON_ACTION
+		}
+
+		
+		#define XP_TEXT_WIDTH				65
+		#define NEXT_LEVEL					( tablelookup( "mp/ranktable.csv", 0, getDStat( "PlayerStatsList", "RANK" ) + 1, 14 ) )
+
+		/* NEMESIS RANK */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+XP_TEXT_WIDTH) (NEMESIS_INFO_Y_START+36) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								(GET_AAR_STAT( "nemesisRank" )+1), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION ) ) 
+		/* NEMESIS RANK ICON */
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+XP_TEXT_WIDTH+20) (NEMESIS_INFO_Y_START+38) 16 16 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, tablelookup( "mp/rankIconTable.csv", 0, GET_AAR_STAT( "NEMESISRANK" ), GET_AAR_STAT( "NEMESISRANKICON" ) + 1 ), 1 1 1 1, when( NEMESIS_VIS_CONDITION && GET_AAR_STAT( "NEMESISRANK" ) > 0 ), ; )
+		/* Label for "KILLS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+160) (NEMESIS_INFO_Y_START+36) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILLS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION ) ) 
+		/* NEMESIS KILLS  */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+230) (NEMESIS_INFO_Y_START+36) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_AAR_STAT( "nemesisKills" ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION ) ) 
+		/* Label for "KILLED BY" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+160) (NEMESIS_INFO_Y_START+53) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_KILLED_BY_PRE_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION ) ) 
+		/* KILLED BY */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+230) (NEMESIS_INFO_Y_START+53) 62 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GET_AAR_STAT( "nemesisKilledBy" ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( NEMESIS_VIS_CONDITION ) ) 
+
+		/* BACKGROUND FOR XP BAR */
+		PREPROC_SHADER_DRAW_VIS_EX(	(SUMMARY_X_START+XP_TEXT_WIDTH) SUMMARY_XP_BAR_Y_START SUMMARY_XP_BAR_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									"white", BG_BACKCOLOR,	
+									when( CAN_RANK_UP ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX(	(SUMMARY_X_START+XP_TEXT_WIDTH) SUMMARY_XP_BAR_Y_START SUMMARY_XP_BAR_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+									"menu_mp_bar_shadow", 1 1 1 0.2,	
+									when( CAN_RANK_UP ), ; ) 
+		/* XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(SUMMARY_X_START+XP_TEXT_WIDTH), 
+										SUMMARY_XP_BAR_Y_START,
+										(ANIMATE_BAR),
+										20,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+										"menu_mp_combatrecord_bar", BAR_COLOR,
+										when( CAN_RANK_UP ), 
+										name xp_bar; ) 
+		/* Tiny arrow at xp bar end */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( -5 + (SUMMARY_X_START+XP_TEXT_WIDTH) + ANIMATE_BAR),
+										(SUMMARY_XP_BAR_Y_START+18),
+										10,
+										10,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+										"ui_arrow_right", BAR_COLOR,
+										when( CAN_RANK_UP );,
+										rotation -90; name xp_bar; )
+		/* Label for "NEXT LEVEL" */
+		PREPROC_TEXT_DRAW( SUMMARY_X_START SUMMARY_XP_BAR_Y_START SUMMARY_XP_BAR_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_NEXT_LEVEL_CAPS", TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR )
+		/* value for XP NEEDED to next level */
+		PREPROC_TEXT_DRAW_VIS( (SUMMARY_X_START+XP_TEXT_WIDTH+10) SUMMARY_XP_BAR_Y_START SUMMARY_XP_BAR_WIDTH 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, locString( "MPUI_AAR_XP_NEEDED_CAPS", REQUIRED_XP_STRING ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP ) )
+		/* next level */
+		PREPROC_TEXT_DRAW_VIS( (SUMMARY_X_START+SUMMARY_XP_BAR_WIDTH+XP_TEXT_WIDTH+3) (SUMMARY_XP_BAR_Y_START+2) 15 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, int( NEXT_LEVEL ),	TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT==0 ) )
+		PREPROC_TEXT_DRAW_VIS( (SUMMARY_X_START+SUMMARY_XP_BAR_WIDTH+XP_TEXT_WIDTH+3) (SUMMARY_XP_BAR_Y_START+2) 15 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "1",					TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, when( CAN_RANK_UP && PRESTIGE_NEXT ) )
+		/* next level rank icon */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(SUMMARY_X_START+SUMMARY_XP_BAR_WIDTH+XP_TEXT_WIDTH+6+getTextWidth( NEXT_LEVEL, CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )),
+										(SUMMARY_XP_BAR_Y_START+2),
+										15,
+										15,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+										tablelookup( "mp/rankIconTable.csv", 0, getDStat( "PlayerStatsList", "RANK" )+1, getDStat( "PlayerStatsList", "PLEVEL" )+1 ), 1 1 1 1,
+										when( CAN_RANK_UP && PRESTIGE_NEXT==0 ),
+										; )
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(SUMMARY_XP_BAR_X_START+SUMMARY_XP_BAR_WIDTH+6+getTextWidth( "1", CHOICE_TEXTFONT, TEXTSIZE_DEFAULT )),
+										(SUMMARY_XP_BAR_Y_START+2),
+										15,
+										15,
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 
+										tablelookup( "mp/rankIconTable.csv", 0, 0, getDStat( "PlayerStatsList", "PLEVEL" )+2 ), 1 1 1 1,
+										when( CAN_RANK_UP && PRESTIGE_NEXT ),
+										; )
+
+		CHANGE_MENU_ACTION( menu_aar_summary, menu_aar_scoreboard, menu_aar_awards_personal_bests ) 
+
+		/* PLACE IN FILE SHARE BUTTON */
+		#define BUTTON_SPACING 20
+		#define FILE_SHARE_BUTTON_OFFSET ( getTextWidth( locString( "@MENU_CLOSE" ), UI_FONT_NORMAL, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+		#define FILE_SHARE_BUTTON_ACTION \
+			if ( getDStat( "AfterActionReportStats", "demoFileID" ) != "0" ) \
+			{ \
+				execnow fileShareGetLastPlayedGame; \
+				open menu_fileshare_aar_loading; \
+			}
+			
+		//NEW_FRAME_BUTTON_PC_LEFT_OFFSET( AAR_WIDTH, AAR_HEIGHT, FILE_SHARE_BUTTON_OFFSET, "@PLATFORM_FILESHARE_PLACEGAMEINMYFILESHARE", 
+		//	FILE_SHARE_BUTTON_ACTION, 
+		//	when( getDStat( "AfterActionReportStats", "demoFileID" ) != "0" ) )
+
+// 		execKeyInt BUTTON_X
+// 		{
+// 			FILE_SHARE_BUTTON_ACTION
+// 		}
+
+		CLOSE_BUTTON( menu_aar_summary )
+		
+		#include "ui/safearea.menu"
+	}
+
+	menuDef
+	{
+		name					menu_aar_awards_personal_bests
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		onOpen	
+		{
+			execNow set ui_aar_current_view_num AAR_VIEW_AWARDS_PERSONAL_BESTS;
+			setdvar ui_hide_eog_menu "1";
+		}
+		onFocus { activateBlur; }
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_awards_personal_bests )
+		}
+		
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_AFTER_ACTION_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_TAB_1_X, TAB_1_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_2_X, TAB_2_WIDTH, 1 )
+		AAR_TAB_BG( AAR_TAB_3_X, TAB_3_WIDTH, 0 )  
+
+		AAR_TAB_HEADERS( 2 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+#ifdef CONSOLE	
+		/* TITLE */ 
+		PREPROC_TEXT_DRAW(	(-AAR_WIDTH / 2) (AAR_BODY_Y_START-5) AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locString( "@PLATFORM_TABBED_MENU_TITLE", "@MPUI_AAR_PERSONAL_BESTS_TITLE_CAPS" ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR )  
+#else 
+		SIMPLE_CHOICE_BUTTON_ARROWS_CENTERED( "aar_awards_personal_bests_title", 0, AAR_BODY_Y_START, 180, "@MPUI_AAR_PERSONAL_BESTS_TITLE_CAPS",
+			1, execkeyhandler BUTTON_RSHLDR, execkeyhandler BUTTON_LSHLDR )
+#endif
+
+#define TOTAL_AAR_AWARDS_VIEWS 3
+#define CURRENT_AAR_AWARDS_VIEW 1
+
+		/* CURRENT VIEW NUMBER */ 
+		PREPROC_TEXT_DRAW_VIS(	(AAR_BODY_X_START+500) (AAR_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", CURRENT_AAR_AWARDS_VIEW, TOTAL_AAR_AWARDS_VIEWS ),  TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, 1 )  
+
+#define AAR_PERSONAL_BESTS_X_START (AAR_BODY_X_START+5)
+#define AAR_PERSONAL_BESTS_Y_START (AAR_BODY_Y_START+30)
+
+#define AAR_PERSONAL_BESTS_BG_WIDTH		170
+#define AAR_PERSONAL_BESTS_BG_HEIGHT	285
+
+#define MAX_PERSONALBESTS_DISPLAYED 3
+
+#define PERSONAL_BEST_INFO( index, visArg )																																																															\
+		/* IMAGE FOR PERSONAL BEST */																																																																\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+13+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_WIDTH/11),																																																\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																							\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																							\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,  																																																			\
+										"menu_mp_lobby_aar_award_best", AAR_AWARD_IMAGE_COLOR_GREY,																																																					\
+										when( GetPersonalBestDelta( index ) <= 0 && visArg );,																																																		\
+										; )			\
+		/* IMAGE FOR PERSONAL BEST WHEN YOU HAVE BEATEN YOUR PERSONAL BEST */																																																																\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+13+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_WIDTH/11),																																																\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																							\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																							\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,  																																																			\
+										"menu_mp_lobby_aar_award_best", AAR_AWARD_IMAGE_COLOR,																																																				\
+										when( GetPersonalBestDelta( index ) > 0 && visArg );,																																																											\
+										; )		\
+		/* NEW PERSONAL BEST VALUE, VISIBLE WHEN YOU HAVE BEATEN YOUR PERSONAL BEST */																																																			\
+		PREPROC_TEXT_DRAW_ADV_ALL(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),		\
+									(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-100),																																										\
+									AAR_PERSONAL_BESTS_BG_WIDTH,																																																									\
+									1,																																																																\
+									CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																					\
+									GetPersonalBestValue( index ),																																																									\
+									TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1, CHOICE_TEXTFONT, ITEM_TEXTSTYLE_NORMAL,																																								\
+									when( GetPersonalBestDelta( index ) > 0 && visArg );,																																																			\
+									; )																																																																\
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE BEATEN YOUR PERSONAL BEST AND PREFIX IS NOT NULL */																																																				\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																								\
+										40,																																																															\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																				\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT_WITH_PREFIX", "STATS_TYPE_"+GetPersonalBestPrefix( index ), "STATS_PERSONALBEST_"+GetPersonalBestName( index ) ),																												\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_ORANGE_RGB 1,																																															\
+										when( GetPersonalBestDelta( index ) > 0 && GetPersonalBestPrefix( index ) != "NULL" && visArg );,																																																		\
+										autowrapped )																																																												\
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE BEATEN YOUR PERSONAL BEST */																																																				\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																								\
+										40,																																																															\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																				\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT", "STATS_PERSONALBEST_"+GetPersonalBestName( index ) ),																												\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_ORANGE_RGB 1,																																															\
+										when( GetPersonalBestDelta( index ) > 0 && GetPersonalBestPrefix( index ) == "NULL" && visArg );,																																																		\
+										autowrapped )																																																												\
+		/* LABEL FOR "NEW!", VISIBLE WHEN YOU HAVE BEATEN YOUR PERSONAL BEST */																																																		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+80),																																									\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																								\
+										1,																																																															\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																				\
+										"@STATS_NEW_CAPS",																																																									\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_ORANGE_RGB 1,																																																		\
+										when( GetPersonalBestDelta( index ) > 0 && visArg );,																																																		\
+										autowrapped )																																																												\
+		/* VALUE VISIBLE WHEN YOU HAVE TIED YOUR PERSONAL BEST */																																																						\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-100),																																																\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																							\
+										1,																																																															\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																				\
+										GetPersonalBestValue( index ),																																																								\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR,																																															\
+										when( GetPersonalBestDelta( index ) == 0 && visArg );,																																																		\
+										; )																																																															\
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE TIED YOUR PERSONAL BEST AND PREFIX IS NOT NULL*/																																																													\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT_WITH_PREFIX", "STATS_TYPE_"+GetPersonalBestPrefix( index ), "STATS_PERSONALBEST_"+GetPersonalBestName( index ) ),																																				\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR,																																																							\
+										when( GetPersonalBestDelta( index ) == 0 && GetPersonalBestPrefix( index ) != "NULL" && visArg );,																																																										\
+										autowrapped )	\
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE TIED YOUR PERSONAL BEST */																																																													\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT", "STATS_PERSONALBEST_"+GetPersonalBestName( index ) ),																																				\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR,																																																							\
+										when( GetPersonalBestDelta( index ) == 0 && GetPersonalBestPrefix( index ) == "NULL" && visArg );,																																																										\
+										autowrapped )																																																																				\
+		/* LABEL FOR "TIED", VISIBLE WHEN YOU HAVE BEATEN YOUR PERSONAL BEST */																																																										\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										"@STATS_TIED_PERSONAL_BEST_CAPS",																																																																\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR,																																																							\
+										when( GetPersonalBestDelta( index ) == 0 && visArg );,																																																										\
+										autowrapped )																																																																				\
+		/* LABEL FOR "CLOSE", VISIBLE WHEN YOU HAVE COME CLOSE TO BEATING YOUR PERSONAL BEST */																																																										\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										"@STATS_CLOSE_PERSONAL_BEST_CAPS",																																																																\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR,																																																							\
+										when( GetPersonalBestDelta( index ) < 0 && visArg );,																																																										\
+										autowrapped )																																																																				\
+		/* VALUE FOR "GOT", VISIBLE WHEN YOU HAVE COME CLOSE TO BEATING YOUR PERSONAL BEST */																																																										\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-100),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																															\
+										1,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										GetPersonalBestValue( index ),																																																																\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR,																																																					\
+										when( GetPersonalBestDelta( index ) < 0 && visArg );,																																																										\
+										; )																																																																							\
+		/* VALUE FOR "NEED", VISIBLE WHEN YOU HAVE COME CLOSE TO BEATING YOUR PERSONAL BEST */																																																										\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-60),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																															\
+										20,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										locString("STATS_PERSONAL_BEST_NEEDED_VALUE_CAPS", ( GetPersonalBestValue( index ) - GetPersonalBestDelta( index ) ) ),																																																								\
+										TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_LT_GREY_RGB 1,																																																						\
+										when( GetPersonalBestDelta( index ) < 0 && visArg );,																																																										\
+										; )																																																																							\
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE COME CLOSE TO BEATING YOUR PERSONAL BEST AND PREFIX IS NOT NULL*/																																																								\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT_WITH_PREFIX", "STATS_TYPE_"+GetPersonalBestPrefix( index ), "STATS_PERSONALBEST_" + GetPersonalBestName( index ) ),																																			\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR,																																																							\
+										when( GetPersonalBestDelta( index ) < 0 && GetPersonalBestPrefix( index ) != "NULL" && visArg );,																																																										\
+										autowrapped ) \
+		/* NEW PERSONAL BEST NAME, VISIBLE WHEN YOU HAVE COME CLOSE TO BEATING YOUR PERSONAL BEST */																																																								\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumPersonalBests(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),									\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																								\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																																\
+										40,																																																																							\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																												\
+										locString( "STATS_PERSONALBESTS_AAR_TEXT", "STATS_PERSONALBEST_"+GetPersonalBestName( index ) ),																																			\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR,																																																							\
+										when( GetPersonalBestDelta( index ) < 0 && GetPersonalBestPrefix( index ) == "NULL" && visArg );,																																																										\
+										autowrapped ) 
+			
+		PERSONAL_BEST_INFO( 0, ( GetNumPersonalBests() > 0 ) )
+		PERSONAL_BEST_INFO( 1, ( GetNumPersonalBests() > 1 ) )
+		PERSONAL_BEST_INFO( 2, ( GetNumPersonalBests() > 2 ) )
+
+		PREPROC_TEXT_DRAW_VIS(	(-AAR_WIDTH / 2) 0 AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+								"@MPUI_AAR_NO_NEW_PERSONAL_BESTS", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 
+								CHOICE_TEXTCOLOR, when( GetNumPersonalBests() == 0 ) )  
+
+		execKeyInt BUTTON_LSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_contracts;
+		} 
+		execKeyInt BUTTON_RSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_stats_milestones;
+		} 
+
+		CHANGE_MENU_ACTION( menu_aar_awards_personal_bests, menu_aar_summary, menu_aar_scoreboard ) 
+	
+		CLOSE_BUTTON( menu_aar_awards_personal_bests )
+		
+		#include "ui/safearea.menu"
+	}
+
+	menuDef
+	{
+		name					menu_aar_awards_stats_milestones
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		onOpen	
+		{
+			execNow set ui_aar_current_view_num AAR_VIEW_AWARDS_STATS_MILESTONES;
+			setdvar ui_hide_eog_menu "1";
+		}
+		onFocus { activateBlur; }
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_awards_stats_milestones )
+		}
+		
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_AFTER_ACTION_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_TAB_1_X, TAB_1_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_2_X, TAB_2_WIDTH, 1 ) 
+		AAR_TAB_BG( AAR_TAB_3_X, TAB_3_WIDTH, 0 ) 
+
+		AAR_TAB_HEADERS( 2 ) 
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+#ifdef CONSOLE	
+		/* TITLE */ 
+		PREPROC_TEXT_DRAW(	(-AAR_WIDTH / 2) (AAR_BODY_Y_START-5) AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locString( "@PLATFORM_TABBED_MENU_TITLE", "@MPUI_AAR_CHALLENGES_TITLE_CAPS" ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR )  
+#else 
+		SIMPLE_CHOICE_BUTTON_ARROWS_CENTERED( "aar_awards_stats_milestones_title", 0, AAR_BODY_Y_START, 180, "@MPUI_AAR_CHALLENGES_TITLE_CAPS",
+			1, execkeyhandler BUTTON_RSHLDR, execkeyhandler BUTTON_LSHLDR )	
+#endif
+
+#undef TOTAL_AAR_AWARDS_VIEWS 
+#define TOTAL_AAR_AWARDS_VIEWS 3
+#undef CURRENT_AAR_AWARDS_VIEW 
+#define CURRENT_AAR_AWARDS_VIEW 2
+
+		/* CURRENT VIEW NUMBER */ 
+		PREPROC_TEXT_DRAW_VIS(	(AAR_BODY_X_START+500) (AAR_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", CURRENT_AAR_AWARDS_VIEW, TOTAL_AAR_AWARDS_VIEWS ),  TEXTSIZE_SMALL, 
+							0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, 1 )  
+
+
+#define STATS_MILESTONE_INFO( index, visArg )																																																															\
+		/* IMAGE FOR STATS MILESTONE */																																																																	\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+13+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumStatsMilestones(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_WIDTH/11),																																																	\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																																																					\
+										"menu_mp_lobby_aar_award_challenge", AAR_AWARD_IMAGE_COLOR,																																																										\
+										when( visArg ),																																																													\
+										; )					\
+		/* LABEL FOR "NEW!", VISIBLE WHEN YOU HAVE A NEW STATS MILESTONE */ \																																																						\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumStatsMilestones(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+80),																																																							\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																								\
+										1,																																																															\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																				\
+										"@STATS_NEW_CAPS",																																																											\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_ORANGE_RGB 1,																																														\
+										when( visArg );,																																																											\	
+										autowrapped )																																																												\
+		/* NEW STATS MILESTONE VALUE */																																																																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumStatsMilestones(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),		\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-100),																																																	\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																									\
+										1,																																																																\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																					\
+										GetStatsMilestoneValue( index ),																																																								\
+										TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1,																																															\
+										when( visArg );,																																																												\
+										; )																																																																\
+		/* NEW STATS MILESTONE NAME */																																																																	\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumStatsMilestones(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),		\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_HEIGHT-80),																																																	\
+										AAR_PERSONAL_BESTS_BG_WIDTH,																																																									\
+										20,																																																																\
+										CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,																																																					\
+										GetStatsMilestoneName( index ),																																																									\
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_ORANGE_RGB 1,																																																\
+										when( visArg );,																																																												\
+										; ) 
+
+		STATS_MILESTONE_INFO( 0, ( GetNumStatsMilestones() > 0 ) )
+		STATS_MILESTONE_INFO( 1, ( GetNumStatsMilestones() > 1 ) )
+		STATS_MILESTONE_INFO( 2, ( GetNumStatsMilestones() > 2 ) )
+
+		PREPROC_TEXT_DRAW_VIS(	(-AAR_WIDTH / 2) 0 AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_AAR_NO_NEW_STATS_MILESTONES", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( GetNumStatsMilestones() == 0 || GET_AAR_STAT("PRIVATEMATCH") ) )  
+
+		execKeyInt BUTTON_LSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_personal_bests;
+		} 
+		execKeyInt BUTTON_RSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_contracts;
+		} 
+
+		CHANGE_MENU_ACTION( menu_aar_awards_stats_milestones, menu_aar_summary, menu_aar_scoreboard ) 
+
+		CLOSE_BUTTON( menu_aar_awards_stats_milestones )
+		
+		#include "ui/safearea.menu"
+	}
+	
+#define AAR_SCOREBOARD_COLUMN_SPACING 70
+#define AAR_SCOREBOARD_COLUMN_4_X 420
+#define AAR_SCOREBOARD_COLUMN_3_X ( AAR_SCOREBOARD_COLUMN_4_X - AAR_SCOREBOARD_COLUMN_SPACING )
+#define AAR_SCOREBOARD_COLUMN_2_X ( AAR_SCOREBOARD_COLUMN_3_X - AAR_SCOREBOARD_COLUMN_SPACING )
+#define AAR_SCOREBOARD_COLUMN_1_X ( AAR_SCOREBOARD_COLUMN_2_X - 50 )
+#define AAR_SCOREBOARD_COLUMN_SCORE_X ( AAR_SCOREBOARD_COLUMN_1_X - 50 )
+	
+#define AAR_DBLCLICK_ACTION( menuName )															\
+				play CHOICE_FOCUS_SOUND;																																\
+				execnow set selectedPlayerXuid ( getfeederdata( "xuid" ) );																								\
+				execnow set selectedFriendName ( getfeederdata( "name" ) );																								\
+				if( (getfeederdata( "xuid" ) != getXuid()) && (getfeederdata( "xuid" ) != 0) )																			\
+				{																																						\
+					hideMenu self;																																		\
+					if (IsInGame())																																		\
+					{																																					\
+						showMenu "pausedbkgnd";																															\
+					}																																					\
+					execnow changemenuopenslidedirection menu_playercard MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;															\
+					execNow openMenu menu_playercard;																													\
+				}
+
+#define AAR_SCOREBOARD_LISTBOX( scoreboard_name, feederId, x, y, w, h, visArg, extraArgs, menuName ) \
+		itemDef \
+		{ \
+			name						scoreboard_name \
+			type						ITEM_TYPE_LISTBOX \
+			feeder						feederId \
+			rect						x y w h HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER \
+			origin						0 0 \
+			elementwidth				30 \
+			elementheight				17 \
+			elementtype					LISTBOX_TEXT \
+			textstyle					ITEM_TEXTSTYLE_NORMAL \
+			textfont					UI_FONT_NORMAL \
+			textscale					TEXTSIZE_SMALL \
+			forecolor					1 1 1 1 \
+			focusColor					1 1 1 1 \
+			disableColor				1 1 1 1 \
+			elementHighlightColor		0 0 0 1 \
+			noBlinkingHighlight \
+			visible						visArg \
+			userarea 10		-1	0	(w-16)	19	24	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_NEMESIS_BG */	\
+							-1	0	40		19	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_RANK_BG */		\
+							3	0	50		16	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_RANK */		\
+							16	1	16		16	32  ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_RANK_ICON */	\
+							50	0	100		16	32	ITEM_ALIGN_LEFT  ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_NAME */		\
+							AAR_SCOREBOARD_COLUMN_SCORE_X	0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_SCORE */		\
+							AAR_SCOREBOARD_COLUMN_1_X		0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_1 */			\
+							AAR_SCOREBOARD_COLUMN_2_X		0	100	16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_2 */			\
+							AAR_SCOREBOARD_COLUMN_3_X		0	100 16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_3 */			\
+							AAR_SCOREBOARD_COLUMN_4_X		0	100 16	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_MIDDLE				/* SCOREBOARD_COLUMN_4 */			\
+			\
+			doubleclick \
+			{ \
+				AAR_DBLCLICK_ACTION( menuName ) \
+			} \
+			\
+			extraArgs \			
+		}
+
+	menuDef
+	{
+		name					menu_aar_awards_contracts
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		onOpen	
+		{
+			execNow set ui_aar_current_view_num AAR_VIEW_AWARDS_CONTRACTS;
+			setdvar ui_hide_eog_menu "1";
+		}
+		onFocus { activateBlur; }
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_awards_contracts )
+		}
+		
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_AFTER_ACTION_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_TAB_1_X, TAB_1_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_2_X, TAB_2_WIDTH, 1 ) 
+		AAR_TAB_BG( AAR_TAB_3_X, TAB_3_WIDTH, 0 ) 
+
+		AAR_TAB_HEADERS( 2 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+#ifdef CONSOLE	
+		/* TITLE */ 
+		PREPROC_TEXT_DRAW(	(-AAR_WIDTH / 2) (AAR_BODY_Y_START-5) AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locString( "@PLATFORM_TABBED_MENU_TITLE", "@MPUI_AAR_CONTRACTS_TITLE_CAPS" ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR )  
+#else 
+		SIMPLE_CHOICE_BUTTON_ARROWS_CENTERED( "aar_awards_contracts_title", 0, AAR_BODY_Y_START, 180, "@MPUI_AAR_CONTRACTS_TITLE_CAPS",
+			1, execkeyhandler BUTTON_RSHLDR, execkeyhandler BUTTON_LSHLDR )
+#endif
+
+#undef TOTAL_AAR_AWARDS_VIEWS 
+#define TOTAL_AAR_AWARDS_VIEWS 3
+#undef CURRENT_AAR_AWARDS_VIEW 
+#define CURRENT_AAR_AWARDS_VIEW 3
+
+		/* CURRENT VIEW NUMBER */ 
+		PREPROC_TEXT_DRAW_VIS(	(AAR_BODY_X_START+500) (AAR_BODY_Y_START+10) 280 28 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							locstring( "MPUI_COMBAT_RECORD_VIEW_NUMBER", CURRENT_AAR_AWARDS_VIEW, TOTAL_AAR_AWARDS_VIEWS ),  TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_LEFT, CHOICE_TEXTCOLOR, 1 )  
+
+#define CONTRACT_INFO( index, visArg ) \
+		/* IMAGE FOR CONTRACT WHEN COMPLETE */																																																																	\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+13+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_WIDTH/11),																																																	\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																																																					\
+										"menu_mp_lobby_aar_award_ccontract", AAR_AWARD_IMAGE_COLOR,																																																										\
+										when( IsContractComplete( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ),																																																													\
+										; )					\
+		/* IMAGE FOR CONTRACT */																																																																	\
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( (AAR_PERSONAL_BESTS_X_START+13+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ),	\
+										(AAR_PERSONAL_BESTS_Y_START+AAR_PERSONAL_BESTS_BG_WIDTH/11),																																																	\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										(AAR_PERSONAL_BESTS_BG_HEIGHT/2),																																																								\
+										CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,																																																					\
+										"menu_mp_lobby_aar_award_ccontract", AAR_AWARD_IMAGE_COLOR_GREY,																																																										\
+										when( !IsContractComplete( GetIndexForNthActiveContract( index+1 ) ) && visArg ),																																																													\
+										; )					\
+		/* CONTRACT NAME */ \
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+							(AAR_PERSONAL_BESTS_Y_START), \
+							AAR_PERSONAL_BESTS_BG_WIDTH, \
+							20, \
+							CHOICE_HORIZONTAL_ALIGN, \
+							CHOICE_VERTICAL_ALIGN,  \
+							GetContractName( GetIndexForNthActiveContract( index+1 ) ), \
+							TEXTSIZE_DEFAULT, 0, 0, \
+							ITEM_ALIGN_MIDDLE_CENTER,  \
+							NEW_FRAME_COMMON_TEXT_COLOR, when( visArg ); autowrapped, ; ) \
+		/* CONTRACT REWARD TEXT */ \
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+							(AAR_PERSONAL_BESTS_Y_START+170), \
+							AAR_PERSONAL_BESTS_BG_WIDTH, 20, \
+							CHOICE_HORIZONTAL_ALIGN, CHOICE_VERTICAL_ALIGN,  \
+							GetContractRewardText( GetIndexForNthActiveContract( index+1 ), 1 ),  \
+							TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1,  \
+							when( IsContractComplete( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ); autowrapped, ; ) \		
+		/* CONTRACT DESC */ \
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+							(AAR_PERSONAL_BESTS_Y_START+230), \
+							AAR_PERSONAL_BESTS_BG_WIDTH, \
+							40, \
+							CHOICE_HORIZONTAL_ALIGN, \
+							CHOICE_VERTICAL_ALIGN,  \
+							GetContractDesc( GetIndexForNthActiveContract( index+1 ) ), \
+							TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, NEW_FRAME_LT_GREY_RGB 1, when( visArg ); autowrapped, ; ) \
+		/* CONTRACT PROGRESS TEXT ( TIME LEFT )*/ \
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+									(AAR_PERSONAL_BESTS_Y_START+195), \
+									AAR_PERSONAL_BESTS_BG_WIDTH, \
+									20, \
+									CHOICE_HORIZONTAL_ALIGN, \
+									CHOICE_VERTICAL_ALIGN, \
+									secondsAsTime( GetContractCombatTimeLeft( GetIndexForNthActiveContract( index+1 ) ) ), \
+									TEXTSIZE_DEFAULT, 0, 0, \
+									ITEM_ALIGN_MIDDLE_CENTER, \
+									NEW_FRAME_COMMON_TEXT_COLOR, \
+									when( IsContractInProgress( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ), ; ) \ 
+		/* CONTRACT PROGRESS TEXT ( ACTUAL PROGRESS ) */ \ 
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+									(AAR_PERSONAL_BESTS_Y_START+170), AAR_PERSONAL_BESTS_BG_WIDTH, \
+									20, \
+									CHOICE_HORIZONTAL_ALIGN, \
+									CHOICE_VERTICAL_ALIGN,  \
+									locString("MPUI_CONTRACT_PROGRESS_SHORT", GetContractProgress( GetIndexForNthActiveContract( index+1 ) ), GetContractRequiredCount( GetIndexForNthActiveContract( index+1 ) ), int( ( GetContractProgress( GetIndexForNthActiveContract( index+1 ) ) ) * 100 / ( GetContractRequiredCount( GetIndexForNthActiveContract( index+1 ) ) ) ) ), \
+									TEXTSIZE_SUBTITLE, 0, 0, \
+									ITEM_ALIGN_MIDDLE_CENTER, \
+									NEW_FRAME_COMMON_TEXT_COLOR, \
+									when( IsContractInProgress( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ), ; ) \
+		/* CONTRACT STATUS WHEN IN PROGRESS */ \
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+									(AAR_PERSONAL_BESTS_Y_START+80), \
+									AAR_PERSONAL_BESTS_BG_WIDTH, \
+									20, \
+									CHOICE_HORIZONTAL_ALIGN, \
+									CHOICE_VERTICAL_ALIGN,  \
+									"@MENU_IN_PROGRESS_CAPS", TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR, when( IsContractInProgress( GetIndexForNthActiveContract( index+1 ) ) && visArg ), ; ) \
+		/* CONTRACT STATUS WHEN COMPLETED */ \ 
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+									(AAR_PERSONAL_BESTS_Y_START+80), \
+									AAR_PERSONAL_BESTS_BG_WIDTH, \
+									20, \
+									CHOICE_HORIZONTAL_ALIGN,\ 
+									CHOICE_VERTICAL_ALIGN,  \
+									"@MPUI_AAR_CONTRACT_COMPLETE_CAPS", TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_ORANGE_RGB 1, when( IsContractComplete( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ), ; ) \ 
+		/* CONTRACT STATUS WHEN EXPIRED */ \ 
+		PREPROC_TEXT_DRAW_ADV_VIS_EX( ( (AAR_PERSONAL_BESTS_X_START+(AAR_PERSONAL_BESTS_BG_WIDTH+10)*( ( MAX_PERSONALBESTS_DISPLAYED - min( GetNumActiveContracts(), MAX_PERSONALBESTS_DISPLAYED ) ) / ( MAX_PERSONALBESTS_DISPLAYED - 1 ) ) + ( index * (AAR_PERSONAL_BESTS_BG_WIDTH+10) ) ) ), \
+									(AAR_PERSONAL_BESTS_Y_START+80), \
+									AAR_PERSONAL_BESTS_BG_WIDTH, \
+									20, \
+									CHOICE_HORIZONTAL_ALIGN, \
+									CHOICE_VERTICAL_ALIGN, \
+									"@MPUI_CONTRACT_EXPIRED_CAPS", TEXTSIZE_SUBTITLE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, NEW_FRAME_COMMON_TEXT_COLOR, when( IsContractExpired( GetIndexForNthActiveContract( index+1 ) ) > 0 && visArg ), ; ) 
+
+		CONTRACT_INFO( 0, ( GetNumActiveContracts() > 0 && !dvarBool( "xblive_basictraining" ) ) )
+		CONTRACT_INFO( 1, ( GetNumActiveContracts() > 1 && !dvarBool( "xblive_basictraining" ) ) )
+		CONTRACT_INFO( 2, ( GetNumActiveContracts() > 2 && !dvarBool( "xblive_basictraining" ) ) )
+
+#define NO_ACTIVE_CONTRACTS \
+		(GetIndexForActiveContract(0) == -1 && GetIndexForActiveContract(1) == -1 && GetIndexForActiveContract(2) == -1)
+
+		PREPROC_TEXT_DRAW_VIS(	(-AAR_WIDTH / 2) 0 AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_AAR_NO_NEW_CONTRACTS", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( NO_ACTIVE_CONTRACTS && !dvarBool( "xblive_basictraining" ) ) ) 
+
+		/* Dont show contract info for basic training */
+		PREPROC_TEXT_DRAW_VIS(	(-AAR_WIDTH / 2) 0 AAR_WIDTH 15 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,  
+							"@MPUI_NOT_APPLICABLE_IN_COMBAT_TRAINING", TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( dvarBool( "xblive_basictraining" ) ) ) 
+
+
+		execKeyInt BUTTON_LSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_stats_milestones;
+		} 
+		execKeyInt BUTTON_RSHLDR 
+		{ 
+			closeImmediate self;
+			openImmediate menu_aar_awards_personal_bests;
+		} 
+
+		execkeyint BUTTON_A
+		{
+			AAR_ESC_ACTION( menu_aar_awards_contracts )
+		}
+	
+		CHANGE_MENU_ACTION( menu_aar_awards_contracts, menu_aar_summary, menu_aar_scoreboard ) 
+
+		CLOSE_BUTTON( menu_aar_awards_contracts )
+		
+		#include "ui/safearea.menu"
+	}
+
+	menuDef
+	{
+		name					menu_aar_scoreboard
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		#ifdef PC
+		onOpen
+		{	
+			setdvar ui_hide_eog_menu "1";
+			setdvar ui_aarScoreboardOpen "1";
+		}
+		#endif
+		onFocus
+		{ 
+			activateBlur;
+			setFocus scoreboard_listbox;
+		}
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+			setdvar ui_aarScoreboardOpen "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_scoreboard )
+		}
+
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_AFTER_ACTION_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_TAB_1_X, TAB_1_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_2_X, TAB_2_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_TAB_3_X, TAB_3_WIDTH, 1 ) 
+
+		AAR_TAB_HEADERS( 3 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+		/* LABEL FOR COLUMN "SCORE" */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_SCORE_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_SCORE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 1 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_1_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 0 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 2 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_2_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 1 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 3 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_3_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 2 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 4 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_4_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 3 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+
+		/* SCOREBOARD */
+		AAR_SCOREBOARD_LISTBOX( scoreboard_listbox, FEEDER_AAR_SCOREBOARD, (AAR_BODY_X_START+5), (AAR_BODY_Y_START+5), (AAR_WIDTH-40+16), (AAR_HEIGHT-65), 1, ;, menu_aar_scoreboard )
+
+		CHANGE_MENU_ACTION( menu_aar_scoreboard, menu_aar_awards_personal_bests, menu_aar_summary ) 
+		
+		CLOSE_BUTTON( menu_aar_scoreboard )
+		
+		#include "ui/safearea.menu"
+	}
+	
+	menuDef
+	{
+		name					menu_aar_wager_scoreboard
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		#ifdef PC
+		onOpen
+		{	
+			setdvar ui_hide_eog_menu "1";
+			setdvar ui_aarWagerScoreboardOpen "1";
+		}
+		#endif
+		onFocus
+		{ 
+			activateBlur;
+			setFocus scoreboard_listbox;
+		}
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+			setdvar ui_aarWagerScoreboardOpen "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_aar_wager_scoreboard )
+		}
+
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_EARNINGS_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_WAGER_TAB_1_X, WAGER_TAB_1_WIDTH, 0 ) 
+		AAR_TAB_BG( AAR_WAGER_TAB_2_X, WAGER_TAB_2_WIDTH, 1 ) 
+
+		AAR_WAGER_TAB_HEADERS( 2 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+		/* LABEL FOR COLUMN "SCORE" */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_SCORE_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, "@MPUI_SCORE_CAPS", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 1 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_1_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 0 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 2 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_2_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 1 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 3 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_3_X) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 2 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+		/* LABEL FOR COLUMN 4 */
+		PREPROC_TEXT_DRAW( (AAR_BODY_X_START+7+AAR_SCOREBOARD_COLUMN_4_X-16) (AAR_BODY_Y_START-15) 100 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, locString( "@"+getScoreboardColumnHeader( 3 )+"_CAPS" ), TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, CHOICE_TEXTCOLOR ) 
+
+		/* SCOREBOARD */
+		AAR_SCOREBOARD_LISTBOX( scoreboard_listbox, FEEDER_AAR_SCOREBOARD, (AAR_BODY_X_START+5), (AAR_BODY_Y_START+5), (AAR_WIDTH-40+16), (AAR_HEIGHT-65), 1, ;, menu_aar_wager_scoreboard )
+
+		CHANGE_MENU_ACTION( menu_aar_wager_scoreboard, menu_wager_aar_summary, menu_wager_aar_summary ) 
+		
+		CLOSE_BUTTON( menu_aar_wager_scoreboard )
+		
+		#include "ui/safearea.menu"
+	}
+	
+	#undef  SUMMARY_DESC_Y_START
+	#define SUMMARY_DESC_Y_START	(AAR_BODY_Y_START+7)
+	
+	#define WEAPON_WIDTH		180
+	#define WEAPON_HEIGHT		90
+	#define YOUR_TOP_WEAPON_Y 	(SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+25)
+	#define AWARD_TEXT_SIZE		(AWARD_SIZE)
+	
+	#define WAGER_AWARD_IMAGES( itemArg, xArg, iconArg ) \
+		PREPROC_SHADER_DRAW_VIS_EX( (xArg-(AWARD_SIZE*1.8)/2+4) (SUMMARY_DESC_Y_START+25+AWARD_SIZE/2-(AWARD_SIZE*1.8)/2) (AWARD_SIZE*1.8) (AWARD_SIZE*1.8) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_medal_burst_yellow", 1 1 1 0.7, when( GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ) > 0 );, rotation 45; ) \
+		PREPROC_SHADER_DRAW_VIS_EX( (xArg-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, iconArg, 1 1 1 0.1, when( GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ) <= 0 );, ; ) \
+		PREPROC_SHADER_DRAW_VIS_EX( (xArg-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, iconArg, AAR_AWARD_IMAGE_COLOR, when( GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ) > 0 );, ; ) \
+		PREPROC_TEXT_DRAW_ALL(	(xArg-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ), TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ) <= 0 );, ; ) \
+		PREPROC_TEXT_DRAW_ALL(	(xArg-AWARD_SIZE/2) (SUMMARY_DESC_Y_START+25) AWARD_SIZE AWARD_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ), TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, UI_FONT_BIG, ITEM_TEXTSTYLE_NORMAL, when( GET_AAR_STAT_WITH_INDEX( "wagerAwards", itemArg-1 ) > 0 );, ; )
+	
+	#define WAGER_AWARD_TEXT1( textArg, gametypeArg ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 0 ) <= 0 ) );, autowrapped; ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 0 ) > 0 ) );, autowrapped; )
+	#define WAGER_AWARD_TEXT2( textArg, gametypeArg ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 1 ) <= 0 ) ), autowrapped; ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 1 ) > 0 ) ), autowrapped; )
+	#define WAGER_AWARD_TEXT3( textArg, gametypeArg ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 2 ) <= 0 ) );, autowrapped; ) \
+		PREPROC_TEXT_DRAW_VIS_EX(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE-AWARD_TEXT_SIZE/2) (SUMMARY_DESC_Y_START+AWARDS_BOX_HEIGHT+15-40) AWARD_TEXT_SIZE 40 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, \
+								textArg, \
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, when( ( GetWagerGametypeNameFromEnum( GET_AAR_STAT("gametype") ) == gametypeArg ) && ( GET_AAR_STAT_WITH_INDEX( "wagerAwards", 2 ) > 0 ) );, autowrapped; )
+			
+	menuDef
+	{
+		name					menu_wager_aar_summary
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		priority				MENU_PRI_ONTOP
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		control					MENU_CONTROL_OPENER
+		onOpen	
+		{
+			activateBlur; 
+			setdvar ui_hide_eog_menu "1";
+		}
+		onFocus
+		{
+		}
+		onClose	
+		{
+			deactivateBlur; 
+			setdvar ui_hide_eog_menu "0";
+		}
+		onESC	
+		{
+			AAR_ESC_ACTION( menu_wager_aar_summary )
+		}
+		
+		NEW_FRAME( AAR_WIDTH, AAR_HEIGHT )
+		NEW_FRAME_TITLE( AAR_WIDTH, AAR_HEIGHT, "@MPUI_EARNINGS_REPORT_CAPS", 1 )
+
+		AAR_TAB_BG( AAR_WAGER_TAB_1_X, WAGER_TAB_1_WIDTH, 1 ) 
+		AAR_TAB_BG( AAR_WAGER_TAB_2_X, WAGER_TAB_2_WIDTH, 0 ) 
+		AAR_WAGER_TAB_HEADERS( 1 )
+
+		PLAYER_INFO_VIS( AAR_WIDTH, AAR_HEIGHT, 1 )
+
+		// This is a dummy itemDef that acts as the central hub for
+		// animation control 
+		itemDef
+		{
+			name	anim_controller
+			style	WINDOW_STYLE_SHADER
+			rect	0 0 0 0
+			visible 1
+			decoration
+		}
+		
+		// Placement medals
+		#define PLACEMENT_MEDAL_SIZE 64
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_X_START+85) (SUMMARY_DESC_Y_START+28) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_first", 1 1 1 1, when( GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) == 1 ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_X_START+85) (SUMMARY_DESC_Y_START+28) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_second", 1 1 1 1, when( GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) == 2 ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_X_START+85) (SUMMARY_DESC_Y_START+28) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_third", 1 1 1 1, when( GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) == 3 ), ; ) 
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_X_START+85) (SUMMARY_DESC_Y_START+28) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_icon_wager_fourth", 1 1 1 1, when( GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) > 3 ), ; ) 
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+85-0.5) (SUMMARY_DESC_Y_START+28) PLACEMENT_MEDAL_SIZE PLACEMENT_MEDAL_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ), 
+								TEXTSIZE_LARGEST, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 0.3, when( GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) > 3 ); ) 
+		
+		/* Label for "YOU PLACED XTH!" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+115) (SUMMARY_DESC_Y_START) 1 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MPUI_YOU_PLACED_CAPS", "@MPUI_ORDINAL_CAPS_"+GetWagerPlaceForMatchScoreboard( GetIndexIntoMatchScoreboard() ) ), 
+								TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* Label for "CURRENCY EARNED" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+108) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CURRENCY_EARNED_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* CURRENCY */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+220) (SUMMARY_DESC_Y_START+108) 1 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", GetWagerWinningsFromMatchScoreboard( GetIndexIntoMatchScoreboard() ) ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN_RGB 1, when( GetWagerWinningsFromMatchScoreboard( GetIndexIntoMatchScoreboard() ) > 0 ) )
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+220) (SUMMARY_DESC_Y_START+108) 1 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", GetWagerWinningsFromMatchScoreboard( GetIndexIntoMatchScoreboard() ) ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREY_RGB 1, when( GetWagerWinningsFromMatchScoreboard( GetIndexIntoMatchScoreboard() ) <= 0 ) ) 
+		/* Label for "CAREER WINNINGS" */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+10) (SUMMARY_DESC_Y_START+125) 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CAREER_WINNINGS_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* CAREER WINNINGS */
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+220) (SUMMARY_DESC_Y_START+125) 1 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", GetDStat( "PlayerStatsList", "LIFETIME_EARNINGS" ) ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREEN_RGB 1, when( GetDStat( "PlayerStatsList", "LIFETIME_EARNINGS" ) > 0 ) )
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_X_START+220) (SUMMARY_DESC_Y_START+125) 1 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN , 0 0, 
+								locString( "@MENU_POINTS", GetDStat( "PlayerStatsList", "LIFETIME_EARNINGS" ) ),
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_RIGHT, NEW_FRAME_GREY_RGB 1, when( GetDStat( "PlayerStatsList", "LIFETIME_EARNINGS" ) <= 0 ) )
+								
+		itemDef
+		{
+			type						ITEM_TYPE_LISTBOX
+			feeder						FEEDER_AAR_SCOREBOARD_WAGER
+			rect						SUMMARY_X_START (YOUR_TOP_WEAPON_Y+10) BG_WIDTH (AWARDS_BOX_HEIGHT+5) HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			origin						0 0
+			elementwidth				30
+			elementheight				20
+			elementtype					LISTBOX_TEXT
+			textstyle					ITEM_TEXTSTYLE_NORMAL
+			textfont					UI_FONT_NORMAL
+			textscale					TEXTSIZE_SMALL
+			textAligny					-2
+			forecolor					0 0 0 0.1
+			focusColor					NEW_FRAME_ORANGE_RGB 1
+			disableColor				1 1 1 1
+			noBlinkingHighlight
+			noscrollbars
+			visible						1
+			decoration
+			userarea 9		0	2	230 20	24	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_NEMESIS_BG */
+							10	2	50  20	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* NOT USED: SCOREBOARD_COLUMN_RANK_BG */
+							10	2	50  20	10	ITEM_ALIGN_LEFT	 ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_RANK */
+							23	3	16	16	32  ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* NOT USED: SCOREBOARD_COLUMN_RANK_ICON */
+							35	2	100	20	32	ITEM_ALIGN_LEFT  ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_NAME */
+							120	2	100	20	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* SCOREBOARD_COLUMN_SCORE */
+							320	0	100	20	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* NOT USED: SCOREBOARD_COLUMN_KILLS */
+							370	0	100	20	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* NOT USED: SCOREBOARD_COLUMN_ASSISTS */
+							420	0	100 20	10	ITEM_ALIGN_RIGHT ITEM_ALIGN_TOP					/* NOT USED: SCOREBOARD_COLUMN_DEATHS */
+		} 
+
+		/* --------------------------------------------------------RIGHT SIDE SUMMARY START------------------------------------------------------------------- */
+		
+		/* Label for "AWARDS" */
+		PREPROC_TEXT_DRAW_VIS(	SUMMARY_RIGHT_X_START SUMMARY_DESC_Y_START 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_AWARDS_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG FOR AWARDS */
+		PREPROC_SHADER_DRAW( SUMMARY_RIGHT_X_START (SUMMARY_DESC_Y_START+15) RIGHT_BOX_WIDTH AWARDS_BOX_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,	"white", NEW_FRAME_TRANSPARENCY )
+		
+		/* AWARD IMAGES */
+		WAGER_AWARD_IMAGES( 1, (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-AWARD_SIZE), "menu_mp_lobby_aar_wager01" )
+		WAGER_AWARD_IMAGES( 2, (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2), "menu_mp_lobby_aar_wager02" )
+		WAGER_AWARD_IMAGES( 3, (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2+AWARD_SIZE), "menu_mp_lobby_aar_wager03" )
+		
+		/* ONE IN THE CHAMBER AWARD TEXT */
+		WAGER_AWARD_TEXT1( "@MPUI_STABS_CAPS", "oic" )
+		WAGER_AWARD_TEXT2( "@MPUI_LONGSHOTS_CAPS", "oic" )
+		WAGER_AWARD_TEXT3( "@MPUI_KILL_STREAK_CAPS", "oic" )
+		
+		/* STICKS AND STONES AWARD TEXT */
+		WAGER_AWARD_TEXT1( "@MPUI_TOMAHAWKS_CAPS", "hlnd" )
+		WAGER_AWARD_TEXT2( "@MPUI_STICKS_CAPS", "hlnd" )
+		WAGER_AWARD_TEXT3( "@MPUI_KILL_STREAK_CAPS", "hlnd" )
+		
+		/* GUN GAME AWARD TEXT */
+		WAGER_AWARD_TEXT1( "@MPUI_STABS_CAPS", "gun" )
+		WAGER_AWARD_TEXT2( "@MPUI_HEADSHOTS_CAPS", "gun" )
+		WAGER_AWARD_TEXT3( "@MPUI_KILL_STREAK_CAPS", "gun" )
+		
+		/* SHARPSHOOTER AWARD TEXT */
+		WAGER_AWARD_TEXT1( "@MPUI_X2KILLS_CAPS", "shrp" )
+		WAGER_AWARD_TEXT2( "@MPUI_HEADSHOTS_CAPS", "shrp" )
+		WAGER_AWARD_TEXT3( "@MPUI_KILL_STREAK_CAPS", "shrp" )
+
+		/* Label for "YOUR TOP WEAPON" */
+		PREPROC_TEXT_DRAW_VIS(	SUMMARY_RIGHT_X_START YOUR_TOP_WEAPON_Y 60 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_YOUR_TOP_WEAPON_CAPS", 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, CHOICE_TEXTCOLOR, 1 ) 
+		/* BG FOR "YOUR TOP WEAPON" */
+		PREPROC_SHADER_DRAW( SUMMARY_RIGHT_X_START (YOUR_TOP_WEAPON_Y+15) RIGHT_BOX_WIDTH AWARDS_BOX_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "white", NEW_FRAME_TRANSPARENCY ) 
+		
+#define TOP_WEAPON_ITEM_REF ( GetItemRef( GET_AAR_STAT( "topWeaponItemIndex" ) ) )
+#define IS_SPECIAL_TOP_WEAPON ( ( TOP_WEAPON_ITEM_REF == "killstreak_minigun" ) || \
+								( TOP_WEAPON_ITEM_REF == "killstreak_m202_flash" ) || \
+								( TOP_WEAPON_ITEM_REF == "hatchet" ) )
+		/* YOUR TOP WEAPON */
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-WEAPON_WIDTH*1.4/2) (YOUR_TOP_WEAPON_Y+15) (WEAPON_WIDTH*1.4) (WEAPON_HEIGHT*1.4) CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "hud_notification_medal_backing", NEW_FRAME_RED_RGB 0.3, when( IS_SPECIAL_TOP_WEAPON || ( GetItemImage( GET_AAR_STAT( "topWeaponItemIndex" ) ) != "" ) );, ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-WEAPON_WIDTH/2) (YOUR_TOP_WEAPON_Y+15+15) WEAPON_WIDTH WEAPON_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, GetItemImage( GET_AAR_STAT( "topWeaponItemIndex" ) ), 1 1 1 1, when( !IS_SPECIAL_TOP_WEAPON && ( GetItemImage( GET_AAR_STAT( "topWeaponItemIndex" ) ) != "" ) );, ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-WEAPON_HEIGHT/2) (YOUR_TOP_WEAPON_Y+15+15) WEAPON_HEIGHT WEAPON_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, GetItemImage( GET_AAR_STAT( "topWeaponItemIndex" ) ), 1 1 1 1, when( TOP_WEAPON_ITEM_REF == "hatchet" );, ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-WEAPON_WIDTH/2) (YOUR_TOP_WEAPON_Y+15+15) WEAPON_WIDTH WEAPON_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_weapons_minigun", 1 1 1 1, when( TOP_WEAPON_ITEM_REF == "killstreak_minigun" );, ; )
+		PREPROC_SHADER_DRAW_VIS_EX( (SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2-WEAPON_WIDTH/2) (YOUR_TOP_WEAPON_Y+15+15) WEAPON_WIDTH WEAPON_HEIGHT CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, "menu_mp_weapons_grim_reaper", 1 1 1 1, when( TOP_WEAPON_ITEM_REF == "killstreak_m202_flash" );, ; )
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2) (YOUR_TOP_WEAPON_Y+15+5) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								toUpper( locString( "@"+GetItemName( GET_AAR_STAT( "topWeaponItemIndex" ) ) ) ), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+		PREPROC_TEXT_DRAW_VIS(	(SUMMARY_RIGHT_X_START+RIGHT_BOX_WIDTH/2) (YOUR_TOP_WEAPON_Y+15+AWARDS_BOX_HEIGHT-7) 1 1 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								locString( "@MPUI_KILLS_CAPS" )+"    "+GET_AAR_STAT( "topWeaponKills" ), 
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_BOTTOM_CENTER, CHOICE_TEXTCOLOR, 1 ) 
+
+		/* PLACE IN FILE SHARE BUTTON */
+		#undef	BUTTON_SPACING
+		#undef	FILE_SHARE_BUTTON_OFFSET
+		#undef	FILE_SHARE_BUTTON_ACTION
+		
+		#define BUTTON_SPACING 20
+		#define FILE_SHARE_BUTTON_OFFSET ( getTextWidth( locString( "@MENU_CLOSE" ), UI_FONT_NORMAL, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+		#define FILE_SHARE_BUTTON_ACTION \
+			if ( getDStat( "AfterActionReportStats", "demoFileID" ) != "0" ) \
+			{ \
+				execnow fileShareGetLastPlayedGame; \
+				open menu_fileshare_aar_wager_loading; \
+			}
+			
+// 		NEW_FRAME_BUTTON_PC_LEFT_OFFSET( AAR_WIDTH, AAR_HEIGHT, FILE_SHARE_BUTTON_OFFSET, "@PLATFORM_FILESHARE_PLACEGAMEINMYFILESHARE", 
+// 			FILE_SHARE_BUTTON_ACTION, 
+// 			when( getDStat( "AfterActionReportStats", "demoFileID" ) != "0" ) )
+// 
+// 		execKeyInt BUTTON_X
+// 		{
+// 			FILE_SHARE_BUTTON_ACTION
+// 		}
+		
+		CHANGE_MENU_ACTION( menu_wager_aar_summary, menu_aar_wager_scoreboard, menu_aar_wager_scoreboard ) 
+
+		CLOSE_BUTTON( menu_wager_aar_summary )
+		
+		#include "ui/safearea.menu"
+	}
+
+#include "ui_mp/popupstyle.inc"
+#include "ui/choices_setup_popmenu.menu"
+
+#define AAR_CLOSE_ACTION_FOR_FILSHARE \
+	execnow changemenucloseslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+	execnow changemenuopenslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;	\
+	execnow changemenuopenslidedirection menu_fileshare_aar_transfer MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+	close menu_aar_summary;	\
+	open menu_fileshare_aar_transfer;
+
+FILESHARE_LOADER( menu_fileshare_aar_loading, isTaskInProgress( "LiveFileShareGetMetaByID" ), getDStat( "AfterActionReportStats", "demoFileID" ) != "0", AAR_CLOSE_ACTION_FOR_FILSHARE, open menu_fileshare_aar_transfer_error; )
+
+#define AAR_WAGER_CLOSE_ACTION_FOR_FILESHARE																	\
+		execnow changemenucloseslidedirection menu_wager_aar_summary MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;		\
+		execnow changemenuopenslidedirection menu_wager_aar_summary MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;			\
+		execnow changemenuopenslidedirection menu_fileshare_aar_wager_transfer MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+		close menu_wager_aar_summary;																			\
+		open menu_fileshare_aar_wager_transfer;
+
+FILESHARE_LOADER( menu_fileshare_aar_wager_loading, isTaskInProgress( "LiveFileShareGetMetaByID" ), getDStat( "AfterActionReportStats", "demoFileID" ) != "0", AAR_WAGER_CLOSE_ACTION_FOR_FILESHARE, open menu_fileshare_aar_transfer_error; )
+
+#define AAR_FILESHARE_EXTRAARGS	\
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED	\
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED	\
+	openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT	\
+	closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT
+
+FILESHARE_SLOT_SELECTOR_EX ( menu_fileshare_aar_transfer, execNow fileShareTransferLastUploaded ( getFeederData( "menu_fileshare_aar_transfer", "fileShareSlots", "slot" ) ); open menu_aar_summary;, ;, open menu_aar_summary;, AAR_FILESHARE_EXTRAARGS )
+FILESHARE_SLOT_SELECTOR_EX ( menu_fileshare_aar_wager_transfer, execNow fileShareTransferLastUploaded ( getFeederData( "menu_fileshare_aar_wager_transfer", "fileShareSlots", "slot" ) ); open menu_wager_aar_summary;, ;, open menu_wager_aar_summary;, AAR_FILESHARE_EXTRAARGS )
+
+menuDef
+{
+	SYSTEM_POPUP_SETUP_VIS( menu_fileshare_aar_transfer_error, ;, ;, 1 )
+	execkeyint BUTTON_START { }
+	onEsc { close self; }
+
+	SYSTEM_POPUP_TITLE_VIS( "@MENU_ERROR", 1 )
+	SYSTEM_POPUP_SUBTITLE_VIS( "@MENU_FILESHARE_FILENOTFOUND", 1 )
+
+	FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self;, 1, ; ) 
+}
+
+
+	// Redefinitions for MEDIUM_POPUP_SETUP popups
+	#undef	POPUP_WIDTH
+	#define	POPUP_WIDTH								MEDIUM_POPUP_WIDTH		
+	#undef	POPUP_HEIGHT
+	#define	POPUP_HEIGHT							MEDIUM_POPUP_HEIGHT
+	#undef	CHOICE_SIZE_X			
+	#define CHOICE_SIZE_X							CONFIRM_PURCHASE_SIZE_X
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START							POPUP_Y_START_TOP
+	#undef	PLAYER_INFO_ALIGN
+	#define PLAYER_INFO_ALIGN						// Purposely set to nothing. The popup setup macro sets the alignment. If items within it set their own aligment, they end up offset incorrectly.
+	#undef	PLAYER_INFO_X_START
+	#define	PLAYER_INFO_X_START( frameWidth )		( frameWidth - PLAYER_INFO_WIDTH - PLAYER_INFO_PAD )
+	#undef	PLAYER_INFO_Y_START
+	#define	PLAYER_INFO_Y_START( frameHeight )		( PLAYER_INFO_PAD * 2 )
+	#undef	BG_BACKCOLOR
+	#define BG_BACKCOLOR							POPUP_BACKCOLOR
+	// Redefinitions for MEDIUM_POPUP_SETUP popups
+
+
+	#undef ONOPEN_PC
+	#ifdef PC
+		// on PC the AAR opens from script, and the menu that is opened first is "menu_aar_unlocks_weapons"
+		#define ONOPEN_PC execnow CompareStatsVsStableBuffer;
+	#else
+		#define ONOPEN_PC
+	#endif
+
+	#define UNLOCK_WEAPON_ONOPEN_ACTION																									\
+			ONOPEN_PC																												\
+			setLocalVarBool	ui_centerPopup 1;																							\
+			execNow set ui_aar_current_view_num AAR_VIEW_AWARDS_PERSONAL_BESTS;															\
+			execNow set ui_aar_animate_xp_bar 1;																						\
+			if( GetNumWeaponUnlocks() < 1 )																								\
+			{																															\
+				closeImmediate self;																									\
+				if( GetNumFeatureUnlocks() > 0 )																						\
+				{																														\
+					open menu_aar_unlocks_features;																						\
+				}																														\
+			}																															\
+			else																														\
+			{																															\
+				execNow set ui_aar_num_weapon_unlocks (GetNumWeaponUnlocks());															\ 
+				execNow set ui_aar_curr_unlocked_weapon 0;																				\
+				execNow set ui_aar_curr_unlocked_weapon_index ( GetUnlockedWeaponItemIndex( (dvarInt(ui_aar_curr_unlocked_weapon)) ) );	\
+			}
+
+	#define UNLOCK_WEAPON_ONESC_ACTION			\
+			setLocalVarBool	ui_centerPopup 0;	\
+			play uin_navigation_sys_close;		\
+			close self;							\
+			if( GetNumFeatureUnlocks() > 0 )	\
+			{									\
+				open menu_aar_unlocks_features;	\
+			}
+
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "menu_aar_unlocks_weapons", UNLOCK_WEAPON_ONOPEN_ACTION, UNLOCK_WEAPON_ONESC_ACTION, POPUP_GLOW_RED, 1, 1 )
+		priority				MENU_PRI_ONTOP
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		closeSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		control					MENU_CONTROL_OPENER
+		
+		onFocus
+		{
+ 			if( dvarInt(ui_aar_num_weapon_unlocks) > 0 ) 
+ 			{
+ 				play uin_aar_unlock;
+ 			}
+		}
+		onClose 
+		{ 
+			if( IN_MP_FRONTEND )				
+			{
+				deactivateBlur;		
+			}
+			CENTER_POPUP_ON_CLOSE	
+			setLocalVarBool	ui_centerPopup 0; 
+			if( GetNumFeatureUnlocks() < 1 )
+			{
+				if ( !dvarBool(xblive_wagermatch) )
+				{
+					execnow changemenuopenslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;
+					open menu_aar_summary;
+				}
+				else
+				{
+					open menu_wager_aar_summary;
+				}
+			}
+		} 
+
+#define BUTTON_A_ACT \
+			execNow set ui_aar_num_weapon_unlocks (dvarInt(ui_aar_num_weapon_unlocks)-1); \
+			if( dvarInt(ui_aar_num_weapon_unlocks) == 0 ) \
+			{ \
+				close self; \
+				if( GetNumFeatureUnlocks() > 0 ) \
+				{ \
+					open menu_aar_unlocks_features; \
+				} \
+			} \
+			else \
+			{ \
+				play uin_aar_unlock; \
+				execNow set ui_aar_curr_unlocked_weapon (dvarInt(ui_aar_curr_unlocked_weapon)+1); \
+				execNow set ui_aar_curr_unlocked_weapon_index ( GetUnlockedWeaponItemIndex( (dvarInt(ui_aar_curr_unlocked_weapon)) ) ); \
+			}
+
+		execkeyInt BUTTON_A
+		{
+			BUTTON_A_ACT
+		}
+		execKeyInt BUTTON_B { ; }	// Do nothing
+
+
+//		#ifdef PC
+//		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_OK", close self; execKeyHandler BUTTON_A;, 1, ; )
+//		#endif
+
+		MEDIUM_POPUP_TITLE_VIS( "@MPUI_NEW_WEAPON_UNLOCKED_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+
+		#define UNLOCK_WEAPON_WIDTH		( 200 )
+		
+		/* WEAPON IMAGE */
+		PREPROC_SHADER_DRAW( (MEDIUM_POPUP_WIDTH/4) CHOICE_Y( 2 ) UNLOCK_WEAPON_WIDTH ( UNLOCK_WEAPON_WIDTH / 2 ), getItemImage( GetUnlockedWeaponItemIndex( (dvarInt(ui_aar_curr_unlocked_weapon) ) ) ), 1 1 1 1 ) 
+		
+		/* WEAPON NAME */
+		PREPROC_TEXT_DRAW_VIS( POPUP_SIDE_PAD CHOICE_Y( 7 ) ( MEDIUM_POPUP_WIDTH - ( POPUP_SIDE_PAD * 2 ) ) CHOICE_SIZE_Y, 0 0, "@"+getItemName( GetUnlockedWeaponItemIndex( (dvarInt(ui_aar_curr_unlocked_weapon) ) ) ), TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, 1 1 1 1, 1 ) 
+
+#ifdef CONSOLE
+		// Button prompts
+		PREPROC_BUTTON_DRAW_VIS( 0 MEDIUM_POPUP_HEIGHT MEDIUM_POPUP_WIDTH CHOICE_SIZE_Y, 0 0, "@PLATFORM_AFTER_ACTION_REPORT_CAPS",	TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( ((dvarInt(ui_aar_curr_unlocked_weapon)+1) >= GetNumWeaponUnlocks()) && GetNumFeatureUnlocks() == 0 );, BUTTON_A_ACT )
+		PREPROC_BUTTON_DRAW_VIS( 0 MEDIUM_POPUP_HEIGHT MEDIUM_POPUP_WIDTH CHOICE_SIZE_Y, 0 0, "@PLATFORM_NEXT_CAPS",					TEXTSIZE_DEFAULT, 4, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( ((dvarInt(ui_aar_curr_unlocked_weapon)+1) < GetNumWeaponUnlocks()) || ( GetNumFeatureUnlocks() > 0 ) );, BUTTON_A_ACT )
+#else // #ifdef CONSOLE
+		GENERIC_POPUP_BUTTON_X( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 0, "@PLATFORM_AFTER_ACTION_REPORT_CAPS",
+			BUTTON_A_ACT,
+			when( ((dvarInt(ui_aar_curr_unlocked_weapon)+1) >= GetNumWeaponUnlocks()) && GetNumFeatureUnlocks() == 0 ); )
+			
+		GENERIC_POPUP_BUTTON_X( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 0, "@PLATFORM_NEXT_CAPS",
+			BUTTON_A_ACT,
+			when( ((dvarInt(ui_aar_curr_unlocked_weapon)+1) < GetNumWeaponUnlocks()) || ( GetNumFeatureUnlocks() > 0 ) ); )
+#endif // #else // #ifdef CONSOLE
+	}
+
+
+	#define UNLOCK_FEATURE_ONOPEN_ACTION										\
+			setLocalVarBool	ui_centerPopup 1;									\
+			execNow set ui_aar_num_feature_unlocks (GetNumFeatureUnlocks());	\
+			execNow set ui_aar_curr_unlocked_feature 0;							\
+			play uin_navigation_sys_open;
+
+	#define UNLOCK_FEATURE_ONESC_ACTION			\
+			setLocalVarBool	ui_centerPopup 0;	\
+			play uin_navigation_sys_close;		\
+			close self; 
+	
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( "menu_aar_unlocks_features", UNLOCK_FEATURE_ONOPEN_ACTION, UNLOCK_FEATURE_ONESC_ACTION, POPUP_GLOW_BLUE, 1, 1 )
+		priority				MENU_PRI_ONTOP
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		closeSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		control					MENU_CONTROL_OPENER
+					
+		onFocus
+		{
+			if( dvarInt(ui_aar_num_feature_unlocks) > 0 ) 
+			{
+				play uin_aar_unlock;
+			}
+		} 
+		onClose 
+		{ 
+			if( IN_MP_FRONTEND )
+			{					
+				deactivateBlur;	
+			}	 
+			CENTER_POPUP_ON_CLOSE 
+			setLocalVarBool	ui_centerPopup 0; 
+			if ( !dvarBool(xblive_wagermatch) )
+			{
+				execnow changemenuopenslidedirection menu_aar_summary MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;
+				open menu_aar_summary;
+			}
+			else
+			{
+				open menu_wager_aar_summary;
+			}
+		} 
+
+#undef BUTTON_A_ACT
+#define BUTTON_A_ACT \
+			execNow set ui_aar_num_feature_unlocks (dvarInt(ui_aar_num_feature_unlocks)-2); \
+			if( dvarInt(ui_aar_num_feature_unlocks) <= 0 ) \
+			{ \
+				close self; \
+			} \
+			else \
+			{ \
+				play uin_aar_unlock; \
+				execNow set ui_aar_curr_unlocked_feature (dvarInt(ui_aar_curr_unlocked_feature)+2); \
+			}
+
+		execkeyInt BUTTON_A
+		{
+			BUTTON_A_ACT
+		}
+		execKeyInt BUTTON_B { ; }	// Do nothing
+
+
+//		#ifdef PC
+//		FRAME_CHOICE_BUTTON_VIS_EX( 8, "@MENU_OK", close self; execKeyHandler BUTTON_A;, 1, ; )
+//		#endif
+
+		MEDIUM_POPUP_TITLE_VIS( "@MPUI_NEW_FEATURE_UNLOCKED_CAPS", 1 )
+		PLAYER_INFO_VIS( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 1 )
+
+		/* UNLOCKED FEATURE 1 */
+		PREPROC_TEXT_DRAW_VIS(	(MEDIUM_POPUP_WIDTH/7) 70 (MEDIUM_POPUP_WIDTH*5/7) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@"+GetItemName(GetUnlockedFeatureItemIndex(dvarInt(ui_aar_curr_unlocked_feature))), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 
+								when( dvarInt(ui_aar_curr_unlocked_feature) < GetNumFeatureUnlocks() ) ) 
+		
+		/* UNLOCKED FEATURE 1 DESCRIPTION */
+		PREPROC_TEXT_DRAW_VIS_EX(	(MEDIUM_POPUP_WIDTH/7) 92 (MEDIUM_POPUP_WIDTH*5/7) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+									"@"+GetItemDesc(GetUnlockedFeatureItemIndex(dvarInt(ui_aar_curr_unlocked_feature))), 
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 
+									when( dvarInt(ui_aar_curr_unlocked_feature) < GetNumFeatureUnlocks() ), autowrapped ) 
+
+		/* UNLOCKED FEATURE 2 */
+		PREPROC_TEXT_DRAW_VIS(	(MEDIUM_POPUP_WIDTH/7) 139 (MEDIUM_POPUP_WIDTH*5/7) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@"+GetItemName(GetUnlockedFeatureItemIndex(dvarInt(ui_aar_curr_unlocked_feature)+1)), 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 
+								when( (dvarInt(ui_aar_curr_unlocked_feature)+1) < GetNumFeatureUnlocks() ) ) 
+		
+		/* UNLOCKED FEATURE 2 DESCRIPTION */
+		PREPROC_TEXT_DRAW_VIS_EX(	(MEDIUM_POPUP_WIDTH/7) 161 (MEDIUM_POPUP_WIDTH*5/7) 20 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+									"@"+GetItemDesc(GetUnlockedFeatureItemIndex(dvarInt(ui_aar_curr_unlocked_feature)+1)), 
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, 
+									when( (dvarInt(ui_aar_curr_unlocked_feature)+1) < GetNumFeatureUnlocks() ), autowrapped ) 
+
+#ifdef CONSOLE
+		// Button prompts
+		PREPROC_BUTTON_DRAW_VIS( 0 MEDIUM_POPUP_HEIGHT MEDIUM_POPUP_WIDTH CHOICE_SIZE_Y, 0 0, "@PLATFORM_AFTER_ACTION_REPORT_CAPS",	TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( (dvarInt(ui_aar_curr_unlocked_feature)+2) >= GetNumFeatureUnlocks() ) ;, BUTTON_A_ACT )
+		PREPROC_BUTTON_DRAW_VIS( 0 MEDIUM_POPUP_HEIGHT MEDIUM_POPUP_WIDTH CHOICE_SIZE_Y, 0 0, "@PLATFORM_NEXT_CAPS",					TEXTSIZE_DEFAULT, 4, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( (dvarInt(ui_aar_curr_unlocked_feature)+2) < GetNumFeatureUnlocks() );, BUTTON_A_ACT )
+#else // #ifdef CONSOLE
+		GENERIC_POPUP_BUTTON_X( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 0, "@PLATFORM_AFTER_ACTION_REPORT_CAPS",
+			BUTTON_A_ACT,
+			when( (dvarInt(ui_aar_curr_unlocked_feature)+2) >= GetNumFeatureUnlocks() ); )
+			
+		GENERIC_POPUP_BUTTON_X( MEDIUM_POPUP_WIDTH, MEDIUM_POPUP_HEIGHT, 0, "@PLATFORM_NEXT_CAPS",
+			BUTTON_A_ACT,
+			when( (dvarInt(ui_aar_curr_unlocked_feature)+2) < GetNumFeatureUnlocks() ); )
+#endif // #else // #ifdef CONSOLE
+	}
+}

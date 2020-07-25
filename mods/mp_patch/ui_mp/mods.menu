@@ -1,0 +1,162 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+
+#define CHOICE_GROUP				"mods"
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui/framestyle.inc"
+#include "ui/frame.inc"
+
+#define MOD_NAME_X				40
+#define MOD_NAME_Y					( FRAME_CHOICE_Y_START - 7 )
+#define MOD_NAME_HEIGHT				30
+#define MOD_NAME_SIZE				MOD_IMAGE_WIDTH MOD_NAME_HEIGHT
+
+#define MOD_IMAGE_X					MOD_NAME_X
+#define MOD_IMAGE_Y					(MOD_NAME_Y + MOD_NAME_HEIGHT + 15)
+#define MOD_IMAGE_ASPECT_RATIO		1.0
+#define MOD_IMAGE_WIDTH				180
+#define MOD_IMAGE_HEIGHT			(MOD_IMAGE_WIDTH * MOD_IMAGE_ASPECT_RATIO)
+#define MOD_IMAGE_SIZE				MOD_IMAGE_WIDTH MOD_IMAGE_HEIGHT
+
+#define MOD_DESC_X					MOD_NAME_X
+#define MOD_DESC_Y					(MOD_IMAGE_Y + MOD_IMAGE_HEIGHT + 15)
+#define MOD_DESC_SIZE				MOD_IMAGE_WIDTH 60
+
+#undef	DEFAULT_SLIDE_IN_SPEED
+#define DEFAULT_SLIDE_IN_SPEED		180
+
+#undef	DEFAULT_SLIDE_OUT_SPEED
+#define DEFAULT_SLIDE_OUT_SPEED		180
+
+#undef ON_ESC
+#define ON_ESC							\
+	deactivateBlur;						\
+	play uin_navigation_menu_lg_close;	\
+	close self;
+
+#define MOD_DESC_DISPLAY( titleText, imageMat, descText, visArg )																		\
+			PREPROC_TEXT_DRAW_ALL(	MOD_NAME_X MOD_NAME_Y MOD_NAME_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,		\
+									titleText,																									\
+									TEXTSIZE_TITLE, 0, 0, ITEM_ALIGN_TOP_CENTER, 1 1 1 1, UI_FONT_EXTRABIG, ITEM_TEXTSTYLE_NORMAL,				\
+									when( visArg );, ; )																						\
+			PREPROC_SHADER_DRAW_VIS_EX( MOD_IMAGE_X MOD_IMAGE_Y MOD_IMAGE_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER,	\
+										imageMat, 1 1 1 1,																						\
+										when( visArg );,																						\
+										; )																										\
+			PREPROC_TEXT_DRAW_VIS_EX(	MOD_DESC_X MOD_DESC_Y MOD_DESC_SIZE HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0,	\
+										descText,																								\
+										TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, 1 1 1 1,													\
+										when( visArg );, autowrapped )
+
+menuDef
+{
+	name					select_mod
+	rect					0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+	focuscolor				COLOR_FOCUSED
+	style					WINDOW_STYLE_FILLED
+	soundloop 				MENU_MUSIC
+	openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+	closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+	openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+	closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+	onOpen	
+	{
+		activateBlur;
+		play uin_navigation_menu_lg_open;
+		setdvar invite_visible "0"; 
+		setFocus mod_selection;
+	}
+	onFocus { }
+	onClose
+	{
+		deactivateBlur;
+		setdvar invite_visible "1";
+	}
+	onESC
+	{
+		ON_ESC
+	}
+
+	FRAME_DEFAULT
+
+	FRAME_TITLE_DEFAULT( "@MENU_MODS_CAPS", 1 )
+	FRAME_SUBTITLE_DEFAULT( "^3" + (locString( "@MENU_MODS_LOADED_CAPS" ) + dvarString( fs_game ) ) + "^7", when(dvarString( fs_game ) != "") )
+	
+	#define MOD_IMAGE						"playlist_custom"
+	#define MOD_NAME						dvarString( ui_mod_name )
+	#define MOD_DESC						dvarString( ui_mod_desc )
+
+	MOD_DESC_DISPLAY( MOD_NAME, MOD_IMAGE, MOD_DESC, 1 )
+
+	// gametype selection ===========================================
+	itemDef 
+	{
+		name						mod_selection
+		type						ITEM_TYPE_LISTBOX
+		feeder						FEEDER_MODS
+		rect						(FRAME_CHOICE_X_START-1) ( FRAME_CHOICE_Y_START - 3 ) (FRAME_BUTTON_WIDTH+18) 308 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+		elementwidth				30
+		elementheight				19
+		noBlinkingHighlight
+		textfont					CHOICE_TEXTFONT
+		textscale					CHOICE_TEXTSIZE
+		forecolor					CHOICE_TEXTCOLOR
+		focusColor					COLOR_TITLE
+		disablecolor				FRAME_GREY_RGB 1
+		textstyle					ITEM_TEXTSTYLE_NORMAL
+		modal
+		usePaging
+		visible						1
+		//				x							y	w						h		len		horzAlign			vertAlign
+		userarea	2	0							0	(FRAME_BUTTON_WIDTH+1)	19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* BACKGROUND		*/
+						17							0	FRAME_BUTTON_WIDTH		19		32		ITEM_ALIGN_LEFT		ITEM_ALIGN_MIDDLE	/* NAME				*/
+
+		onfocus 					{ play CHOICE_FOCUS_SOUND; }
+		onListboxSelectionChange	
+		{
+			play CHOICE_FOCUS_SOUND; 
+			execnow set ui_mod_name ( getmodinfo( "modName" ) );
+			execnow set ui_mod_desc ( getmodinfo( "modDescr" ) );
+		}
+		doubleclick
+		{
+			play CHOICE_ACTION_SOUND;
+			open load_mod_confirm_popmenu
+		}
+	}
+
+	#undef BUTTON_SPACING
+	#define BUTTON_SPACING 20
+	#define RESET_BUTTON_OFFSET ( getTextWidth( locString( "@PLATFORM_BACK" ), CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) + 8 + BUTTON_SPACING )
+	
+#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT_ACTION( ON_ESC )
+#else //#ifdef PC
+	FRAME_BACK_BUTTON_DEFAULT
+#endif //#ifdef PC
+
+	#include "ui/safearea.menu"
+}
+
+// POPUPS
+#include "ui_mp/popupstyle.inc"	
+#include "ui/choices_setup_popmenu.menu"
+
+#undef	POPUP_BUTTON_COUNT
+#define	POPUP_BUTTON_COUNT		2
+
+{
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( load_mod_confirm_popmenu, setFocus loadmod_confirm_popmenu2, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( "@MENU_MOD_CONFIRM", 1 )
+		SYSTEM_POPUP_SUBTITLE_VIS( dvarString( "ui_mod_name" ), 1 )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES",	close self; uiScript RunMod;, 1, ;						)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO",	close self,	1, name loadmod_confirm_popmenu_2	)
+	}
+}

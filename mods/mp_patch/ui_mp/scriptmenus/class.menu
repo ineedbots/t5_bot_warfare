@@ -1,0 +1,620 @@
+#include "ui/menudef.h"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/friendslist.inc"
+
+// Pause menu background... separate menu so that it can draw behind the objective menu
+menuDef
+{
+	name			"pausedbkgnd"
+	fullScreen		0
+	rect			0 0 640 480
+	focusColor		COLOR_FOCUSED
+	blurWorld		4.8
+	visible 		1
+
+	#define SINGLE_PLAYER	1
+	#include "ui_mp/ingamebg.inc"
+}
+
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X					200
+
+#define BACKGROUND_COLOR_GRAY_RGB		0.62 0.70 0.70
+
+#ifdef PC	
+	#undef  CHOICE_X_START
+	#define CHOICE_X_START				30
+	#undef  CHOICE_Y_START
+	#define CHOICE_Y_START				-60
+	#define CHOICE_SEP_1				5
+#else
+	#undef  CHOICE_X_START
+	#define CHOICE_X_START				30
+	#undef  CHOICE_Y_START
+	#define CHOICE_Y_START				-30
+	#define CHOICE_SEP_1				3
+#endif
+
+#ifdef CONSOLE
+	#define CUSTOM_MATCH					( dvarbool( systemlink ) || dvarbool( xblive_privatematch ) )
+	#define NOT_CUSTOM_MATCH				( !dvarbool( systemlink ) && !dvarbool( xblive_privatematch ) )
+	#define RANKEDGAME						(dvarBool( onlinegame ) && !dvarBool( xblive_privatematch ))
+	#define ISHOST							(dvarBool( sv_running ))
+	#define TEAMGAME						( team( name ) != "TEAM_FREE")
+	#define NOTTEAMGAME						( team( name ) == "TEAM_FREE" )
+	#define ALLOW_VOTE						( !dvarbool( xblive_basictraining ) && !dvarbool( xblive_wagermatch ) && dvarbool( ui_allowvote ) )
+	#define IN_PREGAME						( dvarbool( ui_pregame ) )
+#else
+	#define CUSTOM_MATCH					( dvarbool( systemlink ) || dvarbool( xblive_privatematch ) )
+	#define NOT_CUSTOM_MATCH				( !dvarbool( systemlink ) && !dvarbool( xblive_privatematch ) )
+	#define RANKEDGAME						( dvarbool( ui_ranked ) )
+	#define ISHOST							( dvarBool( sv_running ) )
+	#define TEAMGAME						( team( name ) != "TEAM_FREE")
+	#define NOTTEAMGAME						( team( name ) == "TEAM_FREE" )
+	#define ALLOW_VOTE						( !dvarbool( xblive_basictraining ) && !dvarbool( xblive_wagermatch ) && dvarbool( ui_allowvote ) )
+	#define IN_PREGAME						( dvarbool( ui_pregame ) )
+#endif
+
+// ------------------ preprocessing function definitions ------------------
+#define PAD_LEFT					\
+		execKeyInt DPAD_LEFT		\
+		{							\
+			focusFirst;				\
+			show selection_left;	\
+			hide selection_right;	\
+		}							\
+		execKeyInt APAD_LEFT		\
+		{							\
+			focusFirst;				\
+			show selection_left;	\
+			hide selection_right;	\
+		} 
+
+#include "ui_mp/menustyle.inc"
+#include "ui_mp/choices_setup_teams.menu"
+
+#undef	CHOICE_FOCUS_SOUND
+#define CHOICE_FOCUS_SOUND				"uin_navigation_over"
+
+#undef	CHOICE_GROUP
+#define CHOICE_GROUP					"class"
+
+#undef	CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_LEFT
+
+#undef	CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN			VERTICAL_ALIGN_CENTER
+
+#undef	BUTTON_BG_X_START
+#define BUTTON_BG_X_START				30
+#undef	BUTTON_BG_Y_START	
+#define	BUTTON_BG_Y_START				42
+
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+
+#define MAP_BACKGROUND_WIDTH			229
+#define MAP_BACKGROUND_HEIGHT			228
+
+#ifdef CONSOLE
+#define MAP_BG_Y_START					-110
+#else // #ifdef CONSOLE
+#define MAP_BG_Y_START					-120
+#endif // #else #ifdef CONSOLE
+
+#define	MAP_BG_X_START					(-MAP_BACKGROUND_WIDTH - 30)
+
+
+/* Grey color box which serve as the background for the map image and the contracts menu */
+#define MAP_BACKGROUND	\
+		PREPROC_SHADER_DRAW( MAP_BG_X_START MAP_BG_Y_START MAP_BACKGROUND_WIDTH MAP_BACKGROUND_HEIGHT HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_CENTER, "white", BG_BACKCOLOR )
+		
+#define CHOICE_TAB_TEXTSIZE				TEXTSIZE_DEFAULT
+#define TAB_1_TEXT						(locString( "@MENU_TAB_MAP_CAPS" ))
+#define TAB_2_TEXT						(locString( "@MENU_TAB_CONTRACTS_CAPS" ))
+
+#define TAB_BG_PAD						5
+#define TAB_1_WIDTH						( getTextWidth( TAB_1_TEXT, CHOICE_TEXTFONT, CHOICE_TAB_TEXTSIZE ) + (TAB_BG_PAD*2) )
+#define TAB_2_WIDTH						( getTextWidth( TAB_2_TEXT, CHOICE_TEXTFONT, CHOICE_TAB_TEXTSIZE ) + (TAB_BG_PAD*2) )
+#define TAB_HEIGHT						18
+
+#define MAP_LIST_TAB_1_X				( MAP_BG_X_START + TAB_BG_PAD )
+#define MAP_LIST_TAB_2_X				( MAP_LIST_TAB_1_X + TAB_1_WIDTH )
+
+#define MAP_LIST_TAB_Y					( MAP_BG_Y_START - TAB_HEIGHT )
+
+#define MAP_HEADERSTEXT																						\
+		/* highlighted header */																			\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_LIST_TAB_1_X,													\
+										MAP_LIST_TAB_Y,														\
+										TAB_1_WIDTH,														\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,						\
+										TAB_1_TEXT, CHOICE_TAB_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										1 1 1 1,															\
+										when( dvarInt( showMap ) == 1 );, ; )								\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_LIST_TAB_1_X,													\
+										MAP_LIST_TAB_Y,														\
+										TAB_1_WIDTH,														\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,						\
+										TAB_1_TEXT, CHOICE_TAB_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										BACKGROUND_COLOR_GRAY_RGB .25,										\
+										when( dvarInt( showMap ) == 0 );, ; )								\
+		/* non highlighted header */																		\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_LIST_TAB_2_X,													\
+										MAP_LIST_TAB_Y,														\
+										TAB_2_WIDTH,														\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,						\
+										TAB_2_TEXT, CHOICE_TAB_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										1 1 1 1,															\
+										when( dvarInt( showMap ) == 0 && RANKEDGAME );, ; )					\
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	MAP_LIST_TAB_2_X,													\
+										MAP_LIST_TAB_Y,														\
+										TAB_2_WIDTH,														\
+										TAB_HEIGHT,															\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,						\
+										TAB_2_TEXT, CHOICE_TAB_TEXTSIZE, 0, 0, ITEM_ALIGN_MIDDLE_CENTER,	\
+										BACKGROUND_COLOR_GRAY_RGB .25,										\
+										when( dvarInt( showMap ) == 1 && RANKEDGAME );, ; )										
+
+#define MAP_LIST_TAB_1_ACTION	\
+	if( RANKEDGAME )			\
+	{							\
+		setDvar showMap 1;		\
+	}
+	
+#define MAP_LIST_TAB_2_ACTION	\
+	if( RANKEDGAME )			\
+	{							\
+		setDvar showMap 0;		\
+	}
+
+#define MAP_HEADERSBUTTONS																\
+		TAB_ACTION_BUTTON_ADV(			MAP_LIST_TAB_1_X,								\
+										MAP_LIST_TAB_Y,									\
+										TAB_1_WIDTH,									\
+										TAB_HEIGHT,										\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,	\
+										MAP_LIST_TAB_1_ACTION, when( dvarInt( showMap ) == 0 && RANKEDGAME );, ; )					\
+		TAB_ACTION_BUTTON_ADV(			MAP_LIST_TAB_2_X,								\
+										MAP_LIST_TAB_Y,									\
+										TAB_2_WIDTH,									\
+										TAB_HEIGHT,										\
+										HORIZONTAL_ALIGN_RIGHT, VERTICAL_ALIGN_CENTER,	\
+										MAP_LIST_TAB_2_ACTION, when( dvarInt( showMap ) == 1 && RANKEDGAME );, ; )					\
+	
+/* Tab for Map */
+#define MAP_TAB_1_BG																					\
+		itemDef																							\
+		{																								\
+			style           WINDOW_STYLE_SHADER_FRAMED													\
+			frame           5 0.5 FRAME_OPEN_BOTTOM														\
+			rect            0 MAP_LIST_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_CENTER	\
+			exp				rect X( MAP_LIST_TAB_1_X )													\
+			exp				rect W(	TAB_1_WIDTH )														\
+			background      "menu_mp_lobby_frame_circle"												\
+			forecolor       BG_BACKCOLOR																\
+			visible         when( dvarInt(showMap) == 1 );												\
+			decoration																					\
+		}
+
+/* Tab for contracts */
+#define MAP_TAB_2_BG																					\
+		itemDef																							\
+		{																								\
+			style           WINDOW_STYLE_SHADER_FRAMED													\
+			frame           5 0.5 FRAME_OPEN_BOTTOM														\
+			rect            0 MAP_LIST_TAB_Y 0 TAB_HEIGHT HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_CENTER	\
+			exp				rect X( MAP_LIST_TAB_2_X )													\
+			exp				rect W(	TAB_2_WIDTH )														\
+			background      "menu_mp_lobby_frame_circle"												\
+			forecolor       BG_BACKCOLOR																\
+			visible         when( dvarInt(showMap) == 0 && RANKEDGAME );								\
+			decoration																					\
+		}	
+
+	menuDef
+	{
+		name			"class"
+		focuscolor		COLOR_FOCUSED
+		style			WINDOW_STYLE_EMPTY
+#ifdef CONSOLE
+		rect			0 0 640 480
+		blurWorld		7.0
+#else
+		rect			0 0 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+#endif
+
+
+#define ON_ESC scriptMenuResponse "back";
+		onOpen
+		{
+			if ( IsSplitscreen() )
+			{
+				close self;
+				open "class_splitscreen";
+			}
+			else
+			{
+				focusFirst;
+				hide selection_right;
+				setDvar showMap 1;
+			}
+			showMenu "pausedbkgnd"
+		}
+		onClose
+		{
+			hideMenu "pausedbkgnd"
+		}
+		onFocus
+		{
+			focusFirst;
+		}
+		onEsc 
+		{
+			ON_ESC
+		}
+		
+		#ifndef PC
+		execkeyint BUTTON_START
+		{
+			ON_ESC
+		}
+		#endif
+
+		execkeyint BUTTON_X
+		{
+			if( RANKEDGAME )
+			{
+				if( dvarInt(showMap) == 0 )
+				{
+					setDvar showMap 1;
+				}
+				else
+				{
+					setDvar showMap 0;
+				}
+			}
+		}
+		
+		PAD_LEFT
+		MAP_BACKGROUND
+		MAP_TAB_1_BG
+		MAP_TAB_2_BG
+
+#ifdef CONSOLE
+		#include "ui_mp/ingamebg.inc"
+#endif
+
+		// -------- GAME TYPE NAME AND DESCRIPTION --------
+		#define MAPNAME tableLookup( "mp/mapstable.csv", 0, dvarString( mapname ), 3 )
+
+		CHOICE_MENU_TITLE_ALIGN_VIS( ( "@" + MAPNAME + "_CAPS" ), HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP, ITEM_ALIGN_MIDDLE_LEFT, 1 )
+		
+		#undef	BUTTON_BG_Y_START	
+		#define	BUTTON_BG_Y_START				70
+
+		CHOICE_MENU_TITLE_ALIGN_VIS( toUpper( gametypename() ), HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP, ITEM_ALIGN_MIDDLE_LEFT, 1 )
+		
+		PREPROC_TEXT_DRAW_VIS_EX(	BUTTON_BG_X_START (BUTTON_BG_Y_START+35) 230 60 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_TOP, 0 0,
+									( gametypedescription() ),
+									TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1,
+									1, autowrapped )
+		// Team icon
+		#define ICON_SIZE			92
+		#define ICON_X_START		( MAP_BG_X_START + MAP_BACKGROUND_WIDTH - ICON_SIZE )
+		#define ICON_RECT			ICON_X_START 20 ICON_SIZE ICON_SIZE HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_TOP
+		PREPROC_SHADER_DRAW_VIS_EX( ICON_RECT, ( dvarString( "g_TeamIcon_Allies" ) ),	1 1 1 1, when( TEAM_IS_MARINES );,	; )	
+		PREPROC_SHADER_DRAW_VIS_EX( ICON_RECT, ( dvarString( "g_TeamIcon_Axis" ) ),		1 1 1 1, when( TEAM_IS_OPFOR );,	; )	
+		
+		//=========================================================
+		//===================== MENU SELECTION ====================
+		//=========================================================
+
+		#define IS_WAGER_MODE			( dvarInt( "xblive_wagermatch" ) == 1 )
+		#define IS_CUSTOM_MODE			( dvarInt( "custom_class_mode" ) == 1 )
+		#define IS_BAREBONES_MODE		( dvarInt( "barebones_class_mode" ) == 1 )
+	
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_barebones",	( IS_BAREBONES_MODE ),																				; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_custom",	( IS_CUSTOM_MODE ),																					; )
+		
+#ifdef CONSOLE
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_wager",		( IS_WAGER_MODE && MAY_CHOOSE_CLASS && !IS_CUSTOM_MODE ),											; )
+#endif // CONSOLE		
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_marines",	( TEAM_IS_MARINES && MAY_CHOOSE_CLASS && !IS_WAGER_MODE && !IS_CUSTOM_MODE && !IS_BAREBONES_MODE ),	; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_opfor",		( TEAM_IS_OPFOR && MAY_CHOOSE_CLASS && !IS_WAGER_MODE && !IS_CUSTOM_MODE && !IS_BAREBONES_MODE ),	; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	scriptMenuResponse "changeclass_opfor",		( dvarInt( scr_oldschool ) == 1 && !IS_WAGER_MODE && !IS_CUSTOM_MODE && !IS_BAREBONES_MODE ),		; )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 1, "@MPUI_CHOOSE_CLASS_BUTTON_CAPS",	;, ;, ( dvarInt( scr_oldschool ) == 1 ),	; )
+	
+#ifdef CONSOLE	
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CHANGE_TEAM_BUTTON_CAPS",		scriptMenuResponse "changeteam",			( MAY_CHOOSE_TEAM ),																				; )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 2, "@MPUI_CHANGE_TEAM_BUTTON_CAPS",	;, ;, ( MAY_NOT_CHOOSE_TEAM ),				; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MENU_OPTIONS_CAPS",	close self; open ingameoptions,			1,																													; )
+		
+#define CAN_LEAVE_GAME ( !isVisibilityBitSet( BIT_ROUND_END_KILLCAM ) && !isVisibilityBitSet( BIT_FINAL_KILLCAM ) )
+		
+#ifdef PUBLIC_BETA
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_END_GAME_CAPS",	open popup_endgame,						( RANKEDGAME == 0 && ISHOST && CAN_LEAVE_GAME ),																						; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegameandparty,			( RANKEDGAME == 0 && (ISHOST == 0) && (InPrivateParty() && !PrivatePartyHost() && PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),		; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegame,					( RANKEDGAME == 0 && (ISHOST == 0) && (!InPrivateParty() || PrivatePartyHost() || !PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),	; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_LEAVE_GAME_CAPS",	open popup_endgame_ranked,				( RANKEDGAME && ISHOST && CAN_LEAVE_GAME && ( !HostMigrationWaitingForPlayers() ) ),																							; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegameandparty_ranked,	( RANKEDGAME && ISHOST == 0 && (InPrivateParty() && !PrivatePartyHost() && PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),			; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegame_ranked,			( RANKEDGAME && ISHOST == 0 && (!InPrivateParty() || PrivatePartyHost() || !PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),			; )
+#else // #ifdef PUBLIC_BETA
+		//..............................................
+		// Dev only. Remove me prior to shipping
+		//FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_BADSPAWN_CAPS",	open popup_badspawn,					1,																													; )
+		//..............................................
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_END_GAME_CAPS",	open popup_endgame,						( RANKEDGAME == 0 && ISHOST && CAN_LEAVE_GAME ),																						; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegameandparty,			( RANKEDGAME == 0 && (ISHOST == 0) && (InPrivateParty() && !PrivatePartyHost() && PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),		; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegame,					( RANKEDGAME == 0 && (ISHOST == 0) && (!InPrivateParty() || PrivatePartyHost() || !PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),	; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_LEAVE_GAME_CAPS",	open popup_endgame_ranked,				( RANKEDGAME && ISHOST && CAN_LEAVE_GAME && ( !HostMigrationWaitingForPlayers() ) ),																							; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegameandparty_ranked,	( RANKEDGAME && ISHOST == 0 && (InPrivateParty() && !PrivatePartyHost() && PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),			; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_LEAVE_GAME_CAPS",	open popup_leavegame_ranked,			( RANKEDGAME && ISHOST == 0 && (!InPrivateParty() || PrivatePartyHost() || !PrivatePartyHostInLobby()) && CAN_LEAVE_GAME ),			; )
+#endif // #else #ifdef PUBLIC_BETA		
+		
+#endif // #ifdef CONSOLE
+#ifdef PC
+		#define SQUAD_CAP 12
+		#define INVITE_MEMBER 1
+		#define KICK_MEMBER 2
+		#define SQUAD_BUTTON_START_X -439
+		#define SQUAD_BUTTON_START_Y -65
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MPUI_CHANGE_TEAM_CAPS",		scriptMenuResponse "changeteam",	(dvarBool( ui_allow_teamchange )),							; )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 2, "@MPUI_CHANGE_TEAM_BUTTON_CAPS",	;, ;, ( !dvarBool( ui_allow_teamchange ) ),				; )
+		
+ 		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MPUI_CALL_VOTE_CAPS",			open callvote; close self;,			( ALLOW_VOTE ),	; )
+ 		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 3, "@MPUI_CALL_VOTE_CAPS", ;, ;, ( !ALLOW_VOTE ), ; )
+ 		
+ 	//	FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MPUI_MUTE_PLAYERS_CAPS",		open muteplayer_menu; close self;,	1,							; )
+ 		FRAME_CHOICE_BUTTON_VIS_EX( 4, "@MENU_PLAYERS_CAPS",			close self; open players;,			1,							; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 5, "@MENU_FRIENDS_CAPS",			SETUP_ACTION_INVITE,				1,							; )
+		CHOICE_NEWICON_VIS( 5, "menu_mp_lobby_new", when( hasinvites() || haspendingfriends() ); )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 6, "@MENU_SETTINGS_CAPS",			close self; open options_new_pc; execnow "set ui_allow_graphic_change 0";,	1,					; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 7, "@MENU_ADD_TO_FAVORITES_CAPS",	uiscript createFavoriteIngame; open fav_message_popmenu;,					( ISHOST == 0 ),	; )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX( 7, "@MENU_ADD_TO_FAVORITES_CAPS",	;, ;, ( ISHOST ),	; )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 8, "@MENU_LEAVE_GAME_CAPS",			open popup_endgame,					( ( !RANKEDGAME || IN_PREGAME ) && ISHOST && CAN_LEAVE_GAME ),	; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 8, "@MENU_LEAVE_GAME_CAPS",			open popup_leavegame,				( ( !RANKEDGAME || IN_PREGAME ) && !ISHOST ),	; )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 8, "@MENU_LEAVE_GAME_CAPS",			open popup_endgame_ranked,			( RANKEDGAME && !IN_PREGAME && ISHOST && CAN_LEAVE_GAME ), ; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 8, "@MENU_LEAVE_GAME_CAPS",			open popup_leavegame_ranked,		( RANKEDGAME && !IN_PREGAME && !ISHOST && CAN_LEAVE_GAME ), ; )
+		
+#endif	// #ifdef PC
+
+//Showing the ingame Xp bar.
+#include "ui_mp/popup_player_info.inc"
+
+#define SHOW_XP_BAR					( RANKEDGAME || dvarInt( xblive_basictraining ) )
+#define XP_BAR_WIDTH				( Select( dvarInt( widescreen ), 592, 407 ) )
+#define XP_TEXT_WIDTH				65
+#define X_START						(-XP_BAR_WIDTH - XP_TEXT_WIDTH - 100)
+#define XP_BAR_Y_START				115
+
+#define REQUIRED_XP					int(getDStat( "PlayerStatsList", "RANKXP" )-int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 2)))
+#define REQUIRED_XP_STRING			(int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 3 ))-REQUIRED_XP)
+#define NEXT_LEVEL					( tablelookup( "mp/ranktable.csv", 0, getDStat( "PlayerStatsList", "RANK" ) + 1, 14 ) )
+#define BAR_FILLED					XP_BAR_WIDTH*((getDStat( "PlayerStatsList", "RANKXP" )-int(tablelookup( "mp/ranktable.csv", 0, string(getDStat( "PlayerStatsList", "RANK" )), 2)))/int(tablelookup("mp/ranktable.csv",0,getDStat( "PlayerStatsList", "RANK" ),3)))
+
+		/* BACKGROUND FOR XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(X_START+XP_TEXT_WIDTH),
+										XP_BAR_Y_START,
+										XP_BAR_WIDTH,
+										20,
+										HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,
+										"white", BG_BACKCOLOR, 
+										when( CAN_RANK_UP && SHOW_XP_BAR ), ; ) 
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(X_START+XP_TEXT_WIDTH),
+										XP_BAR_Y_START,
+										XP_BAR_WIDTH,
+										20,
+										HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,
+										"menu_mp_bar_shadow", 1 1 1 0.2, 
+										when( CAN_RANK_UP && SHOW_XP_BAR ), ; ) 
+		/* XP BAR */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	(X_START+XP_TEXT_WIDTH),
+										XP_BAR_Y_START,
+										(BAR_FILLED),
+										20,
+										HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,
+										"menu_mp_combatrecord_bar", BAR_COLOR, 
+										when( CAN_RANK_UP && SHOW_XP_BAR ),
+										; ) 
+		/* Tiny arrow at xp bar end */
+		PREPROC_SHADER_DRAW_ADV_VIS_EX(	( -5 + (X_START+XP_TEXT_WIDTH) + BAR_FILLED),
+										(XP_BAR_Y_START+18),
+										10,
+										10,
+										HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 
+										"ui_arrow_right", BAR_COLOR, 
+										when( CAN_RANK_UP && SHOW_XP_BAR );,
+										rotation -90; )
+		/* Label for "NEXT LEVEL" */
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	X_START,
+										XP_BAR_Y_START,
+										XP_BAR_WIDTH,
+										20,
+										HORIZONTAL_ALIGN_RIGHT, CHOICE_VERTICAL_ALIGN,
+										"@MPUI_NEXT_LEVEL_CAPS", 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+										when( SHOW_XP_BAR ), ; )
+		/* value for XP NEEDED to next level */
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	(X_START+XP_TEXT_WIDTH),
+										XP_BAR_Y_START,
+										XP_BAR_WIDTH,
+										20,
+										HORIZONTAL_ALIGN_RIGHT, CHOICE_VERTICAL_ALIGN,
+										locString( "MPUI_AAR_XP_NEEDED_CAPS", REQUIRED_XP_STRING ), 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+										when( CAN_RANK_UP && SHOW_XP_BAR ), ; )
+		/* next level */
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	(X_START+XP_BAR_WIDTH+XP_TEXT_WIDTH+3),
+										(XP_BAR_Y_START+2),
+										15,
+										15,
+										HORIZONTAL_ALIGN_RIGHT, CHOICE_VERTICAL_ALIGN,
+										int( NEXT_LEVEL ), 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+										when( CAN_RANK_UP && PRESTIGE_NEXT==0 && SHOW_XP_BAR ), ; )
+		PREPROC_TEXT_DRAW_ADV_VIS_EX(	(X_START+XP_BAR_WIDTH+XP_TEXT_WIDTH+3),
+										(XP_BAR_Y_START+2),
+										15,
+										15,
+										HORIZONTAL_ALIGN_RIGHT, CHOICE_VERTICAL_ALIGN,
+										"1", 
+										TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_LEFT, CHOICE_TEXTCOLOR, 
+										when( CAN_RANK_UP && PRESTIGE_NEXT && SHOW_XP_BAR ), ; )
+		/* next level rank icon */
+		RANK_ICON_ADV(	( X_START+XP_BAR_WIDTH+XP_TEXT_WIDTH+6+getTextWidth( NEXT_LEVEL, CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) ), (XP_BAR_Y_START+2), HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_CENTER,
+						tablelookup( "mp/rankIconTable.csv", 0, getDStat( "PlayerStatsList", "RANK" )+1, getDStat( "PlayerStatsList", "PLEVEL" )+1 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT==0 && SHOW_XP_BAR ) ) 
+		RANK_ICON_ADV(	( X_START+XP_BAR_WIDTH+XP_TEXT_WIDTH+6+getTextWidth( "1", CHOICE_TEXTFONT, TEXTSIZE_DEFAULT ) ), (XP_BAR_Y_START+2), HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_CENTER,
+						tablelookup( "mp/rankIconTable.csv", 0, 0, getDStat( "PlayerStatsList", "PLEVEL" )+2 ), 
+						when( CAN_RANK_UP && PRESTIGE_NEXT && SHOW_XP_BAR) ) 
+
+//************************************Contracts********************************
+//*****************************************************************************
+//Green background
+#define BACKGROUND_COLOR_COMPLETED_RGB		.34 .9 .34
+//Gray background
+#define BACKGROUND_COLOR_PROGRESS_RGB		BACKGROUND_COLOR_GRAY_RGB
+//Red background
+#define BACKGROUND_COLOR_EXPIRED_RGB		.9 .16 .24
+// Yellow Background
+#define BACKGROUND_COLOR_PROGRESS_STATUS	0.97 0.85 0.03
+
+#define CONTRACTS_Y_START					( MAP_BG_Y_START + 5 )		
+#define CONTRACTS_X_START					( MAP_BG_X_START + TAB_BG_PAD )
+#define CONTRACTS_WIDTH						( MAP_BACKGROUND_WIDTH - (TAB_BG_PAD*2) )
+#define CONTRACTS_HEIGHT					( MAP_BACKGROUND_HEIGHT - TAB_BG_PAD )
+
+#define CONTRACT_INFO( index, visArg )																																							\
+		/* BACKGROUND FOR CONTRACT INFO if completed*/																																			\
+		PREPROC_SHADER_DRAW_VIS_EX(	CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index ) CONTRACTS_WIDTH (CONTRACTS_HEIGHT/3 - 5 ) HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,	\
+									"white", BACKGROUND_COLOR_COMPLETED_RGB .1,																													\
+									when( visArg && dvarInt(showMap) == 0 && IsContractComplete( GetIndexForActiveContract( index ) ) ),														\
+									; )																																							\
+		/* BACKGROUND FOR CONTRACT INFO if in progress*/																																		\
+		PREPROC_SHADER_DRAW_VIS_EX(	CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index ) CONTRACTS_WIDTH (CONTRACTS_HEIGHT/3 - 5 ) HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,	\
+									"white", BACKGROUND_COLOR_PROGRESS_RGB .1,																													\
+									when( visArg && dvarInt(showMap) == 0 && IsContractInProgress( GetIndexForActiveContract( index ) ) ),														\
+									; )																																							\
+		/* BACKGROUND FOR CONTRACT INFO if expired*/																																			\
+		PREPROC_SHADER_DRAW_VIS_EX(	CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index ) CONTRACTS_WIDTH (CONTRACTS_HEIGHT/3 - 5 ) HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN,	\
+									"white", BACKGROUND_COLOR_EXPIRED_RGB .1,																													\
+									when( visArg && dvarInt(showMap) == 0 && IsContractExpired( GetIndexForActiveContract( index ) ) ),															\
+									; )																																							\
+		/* CONTRACT NAME */																																										\
+		PREPROC_TEXT_DRAW_VIS( CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index ) CONTRACTS_WIDTH 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, GetContractName( GetIndexForActiveContract( index ) ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR, when( visArg ); autowrapped ) \
+		/* CONTRACT DESC */ \
+		PREPROC_TEXT_DRAW_VIS( ( CONTRACTS_X_START+2 ) ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index + 12 ) ( CONTRACTS_WIDTH-2 ) 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, GetContractDesc( GetIndexForActiveContract( index ) ),0.24, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, BACKGROUND_COLOR_PROGRESS_RGB .25, when( visArg ); autowrapped ) \
+		/* CONTRACT STATUS WHEN COMPLETED */ \
+		PREPROC_TEXT_DRAW_VIS( CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index + 65 ) CONTRACTS_WIDTH 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_COMPLETE_CAPS", TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_CENTER, NEW_FRAME_GREEN_RGB 1, when( IsContractComplete( GetIndexForActiveContract( index ) ) > 0 && visArg ) ) \
+		/* CONTRACT PROGRESS TEXT ( YELLOW WHEN CONTRACT IS IN PROGRESS ) */ \
+		PREPROC_TEXT_DRAW_VIS( CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index + 65 ) CONTRACTS_WIDTH 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, locString("MPUI_CONTRACT_PROGRESS_WITHBRACES", GetContractProgress( GetIndexForActiveContract( index ) ), GetContractRequiredCount( GetIndexForActiveContract( index ) ) ), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_CENTER, NEW_FRAME_ORANGE_RGB 1, when( IsContractInProgress( GetIndexForActiveContract( index ) ) > 0 && GetContractRequiredCount( GetIndexForActiveContract( index ) ) > 1 && visArg ) ) \
+		PREPROC_TEXT_DRAW_VIS( CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index + 65 ) CONTRACTS_WIDTH 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, locString("MPUI_CONTRACT_NOT_COMPLETE"), TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_CENTER, NEW_FRAME_ORANGE_RGB 1, when( IsContractInProgress( GetIndexForActiveContract( index ) ) > 0 && GetContractRequiredCount( GetIndexForActiveContract( index ) ) == 1 && visArg ) ) \
+		/* CONTRACT STATUS WHEN EXPIRED */ \
+		PREPROC_TEXT_DRAW_VIS( CONTRACTS_X_START ( CONTRACTS_Y_START+(CONTRACTS_HEIGHT/3)*index + 65 ) CONTRACTS_WIDTH 20 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0, "@MPUI_CONTRACT_EXPIRED_CAPS", TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_CENTER, NEW_FRAME_RED_RGB 1, when( IsContractExpired( GetIndexForActiveContract( index ) ) > 0 && visArg ) ) \
+		
+		CONTRACT_INFO( 0, ( GetIndexForActiveContract(0) != -1 && RANKEDGAME && dvarInt(showMap) == 0 ) )
+		CONTRACT_INFO( 1, ( GetIndexForActiveContract(1) != -1 && RANKEDGAME && dvarInt(showMap) == 0 ) )
+		CONTRACT_INFO( 2, ( GetIndexForActiveContract(2) != -1 && RANKEDGAME && dvarInt(showMap) == 0 ) )
+
+#define NO_ACTIVE_CONTRACTS \
+		(GetIndexForActiveContract(0) == -1 && GetIndexForActiveContract(1) == -1 && GetIndexForActiveContract(2) == -1)
+
+		PREPROC_TEXT_DRAW_VIS_EX(	( CONTRACTS_X_START+20 ) CONTRACTS_Y_START ( CONTRACTS_WIDTH - 40 ) 40 HORIZONTAL_ALIGN_RIGHT CHOICE_VERTICAL_ALIGN, 0 0,  
+									"@MPUI_AAR_NO_NEW_CONTRACTS",
+									TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_MIDDLE_CENTER, CHOICE_TEXTCOLOR,
+									when( NO_ACTIVE_CONTRACTS && RANKEDGAME && dvarInt(showMap) == 0 );,
+									autowrapped ) 
+
+		// Tactical Map
+		#define SHOULD_SHOW_MAP		dvarInt(showMap)
+		#undef	RIGHTITEM_ALIGN
+		#define RIGHTITEM_ALIGN		HORIZONTAL_ALIGN_RIGHT	
+		#define MAP_X				( MAP_BG_X_START + 5 )
+		#define MAP_Y				( 101 )
+		#include "ui_mp/tactical_map.inc"
+		
+	
+	// ----------------- BEGIN Scroller --------------------------		
+	#include "ui/scroller.inc"
+	// ----------------- END Scroller --------------------------	
+
+	#define SETUP_ACTION_OPENFRIENDLIST \
+			open menu_friends;
+	// ------------------ buttons ---------------------
+	
+#ifdef PC
+	NEW_FRAME_BACK_BUTTON_ACTION_PC_VIS( ON_ESC , when( !dvarInt( ui_show_friends_list_bg ) ) )
+#else
+	// Back button
+	PREPROC_TEXT_DRAW_VIS(	CHOICE_X_START -17 50 17 CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_BOTTOM,		0 0,	"@PLATFORM_BACK",			TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( !dvarInt( ui_show_friends_list_bg ) ) )
+#endif // PC
+
+	// Contracts / Map button
+#ifndef PC	
+	PREPROC_TEXT_DRAW_VIS(	(MAP_BG_X_START-1) -17 50 17 HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM,	0 0,	"@PLATFORM_SHOW_CONTRACTS",	TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( dvarInt( showMap ) == 1 && RANKEDGAME && !dvarInt( ui_show_friends_list_bg ) ) )
+	PREPROC_TEXT_DRAW_VIS(	(MAP_BG_X_START-1) -17 50 17 HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM,	0 0,	"@PLATFORM_SHOW_MAP",		TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1, when( dvarInt( showMap ) == 0 && RANKEDGAME && !dvarInt( ui_show_friends_list_bg ) ) )
+	// Friends list button
+#ifdef PS3
+	GAMEPAD_BUTTON( -55 -17 70 17 HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM, "@PLATFORM_FRIENDLIST", BUTTON_Y { SETUP_ACTION_OPENFRIENDLIST; }, when( !dvarInt( ui_show_friends_list_bg ) && !IS_WAGER_MODE && anySignedInToLiveAndStatsFetched() && canShowContentFromUser( 0 ) ) )
+#else // #ifdef PS3
+	GAMEPAD_BUTTON( -55 -17 70 17 HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_BOTTOM, "@PLATFORM_FRIENDLIST", BUTTON_Y { SETUP_ACTION_OPENFRIENDLIST; }, when( !dvarInt( ui_show_friends_list_bg ) && !IS_WAGER_MODE && anySignedInToLiveAndStatsFetched() ) )
+#endif // #ifdef PS3
+#endif
+		
+	MAP_HEADERSTEXT
+	MAP_HEADERSBUTTONS
+
+	
+	itemDef																											
+	{							
+		name			friends_list_bg
+		style			WINDOW_STYLE_FILLED																			
+		rect			-400 -200 10000 10000
+		backcolor		0 0 0 0																		
+		visible			when( IsInGame() );	
+		decoration			
+
+		state
+		{
+			name		on
+			backcolor	0 0 0 0.7
+		}
+	}
+
+	#include "ui/safearea.menu"
+}
+
+#undef CHOICE_GROUP
+#define CHOICE_GROUP			"popmenu"
+
+#include "ui_mp/popupstyle.inc"
+#include "ui/choices_setup_popmenu.menu"
+				
+
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( popup_badspawn, setfocus popup_badspawn_2, ;, 1 )
+
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_REPORT_BADSPAWN", 1 )
+		
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_YES",	scriptMenuResponse "badspawn"; close self,	1, ;						)
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_NO",	close self,									1, name popup_badspawn_2	)
+	}

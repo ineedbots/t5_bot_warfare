@@ -1,0 +1,447 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#define		OPTIONS_STYLE			1
+#define 	CHOICE_SEP_1			27
+#define 	CHOICE_SEP_2			30
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui/framestyle.inc"
+#include "ui/frame.inc"
+
+#undef CHOICE_ACTION_SOUND
+#define CHOICE_ACTION_SOUND "uin_mouse_click_t"
+
+#undef CHOICE_BUTTON_NAME
+#define CHOICE_BUTTON_NAME		"options_graphics_"
+#undef MENUDEF_NAME
+#define MENUDEF_NAME			options_graphics
+
+#undef	OPTIONS_GRAPHICS_HEIGHT
+#undef	OPTIONS_GRAPHICS_WIDTH
+#define OPTIONS_GRAPHICS_HEIGHT		332
+#define OPTIONS_GRAPHICS_WIDTH		OPTIONS_GRAPHICS_HEIGHT * FRAME_ASPECT_RATIO
+
+{
+	menuDef
+	{
+		name			options_graphics
+		fullScreen		0
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop		""
+
+		onOpen
+		{
+			LOCAL_CLOSE_ALL_BUT( options_graphics )
+			
+			setLocalVarBool ui_showApply 0;
+			setLocalVarBool ui_hideBack 1;
+
+			// setfromdvar dst src
+			exec "exec ui/options_graphics.cfg";
+
+			if ( dvarInt( r_picmip_manual ) == 0 )
+			{
+				exec "set ui_r_picmip -1";
+				exec "set ui_r_picmip_bump -1";
+				exec "set ui_r_picmip_spec -1";
+				exec "set ui_r_picmip_manual 0";
+			}
+			
+			setdvar g_reloading "0";
+
+			// round ai_corpsecount down to valid values.
+			if ( dvarInt( ai_corpsecount ) >= 32 )
+			{
+// KTouevsky: Bump this number when the RAGDOLL_MAX_SIMULATING in ragdoll.h is bumped to 32 too
+//				setDvar ai_corpseCount 32;
+				setDvar ai_corpseCount 16;
+			}
+			elseif ( dvarInt( ai_corpsecount ) >= 16 )
+			{
+				setDvar ai_corpseCount 16;
+			}
+			elseif ( dvarInt( ai_corpsecount ) >= 10 )
+			{
+				setDvar ai_corpseCount 10;
+			}
+			elseif ( dvarInt( ai_corpsecount ) >= 5 )
+			{
+				setDvar ai_corpseCount 5;
+			}
+			elseif ( dvarInt( ai_corpsecount ) >= 3 )
+			{
+				setDvar ai_corpseCount 3;
+			}
+
+// 2008-Aug-1 KTouevsky: loosk like COD4 have "Soften Smoke Edges" to be "Yes/No" only and linked to r_zfeather directly
+			//execOnDvarFloatValue r_zfeather 0 "set ui_zfeather 0";	// off
+			//execOnDvarFloatValue r_zfeather 1 "set ui_zfeather 1";	// world
+			//execOnDvarFloatValue r_depthPrepassModels 1 "set ui_zfeather 2";	// everything
+
+			if (IsInGame())
+			{
+				showMenu "pausedbkgnd";
+			}			
+			else
+			{
+				activateBlur;
+			}
+		}
+		onClose
+		{
+			setLocalVarBool ui_hideBack 0;
+			//execOnDvarIntValue ui_zfeather 0 "set r_zfeather 0;set r_depthPrepassModels 0";	// off
+			//execOnDvarIntValue ui_zfeather 1 "set r_zfeather 1;set r_depthPrepassModels 0";	// world
+			//execOnDvarIntValue ui_zfeather 2 "set r_zfeather 1;set r_depthPrepassModels 1";	// everything
+
+			if (IsInGame())
+			{
+				hideMenu "pausedbkgnd";
+			}
+			else
+			{
+				deactivateBlur;
+			}
+
+			// be sure brightness (r_gamma) is stored in the profile
+			exec updategamerprofile;
+		}
+		onESC
+		{
+			close self;
+			open options_new_pc;
+		}
+		PC_TAB_SWITCH_ACTIONS( options_new_pc, options_controls_new_pc, options_controls_new_pc )
+
+		#include "ui_mp/leftside_options.inc"
+		
+#undef	CHOICE_X_START
+#undef	CHOICE_Y_START
+#undef	CHOICE_HORIZONTAL_ALIGN
+#undef	CHOICE_VERTICAL_ALIGN
+#undef	CHOICE_DVAR_EXTRA_WIDTH
+#undef	CHOICE_TEXT_OFFSET_X
+
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+#define CHOICE_X_START				((-OPTIONS_GRAPHICS_WIDTH/2) - 75)
+#define CHOICE_Y_START				((-OPTIONS_GRAPHICS_HEIGHT/2) + 32)
+#define CHOICE_DVAR_EXTRA_WIDTH		120
+#define CHOICE_TEXT_OFFSET_X		-10
+
+#undef CHOICE_TEXTSTYLE
+#undef CHOICE_TEXTSIZE
+#define CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+
+#undef	CHOICE_TEXT_COLOR_NO_HL
+#undef	CHOICE_TEXT_COLOR_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_NO_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_HL
+
+#define	CHOICE_TEXT_COLOR_NO_HL			CHOICE_TEXTCOLOR
+#define	CHOICE_TEXT_COLOR_HL			1 1 1 1
+#define	CHOICE_CAPTION_TEXT_COLOR_NO_HL	CHOICE_TEXTCOLOR
+#define	CHOICE_CAPTION_TEXT_COLOR_HL	0 0 0 1
+
+#define TEXTURE_QUALITY_ACTION			\
+	setLocalVarBool ui_showApply 1;		\
+	setDvar ui_r_picmip_bump dvarInt( ui_r_picmip ); \
+	setDvar ui_r_picmip_spec dvarInt( ui_r_picmip ); \
+	if ( dvarInt( ui_r_picmip ) == -1 ) \
+	{									\
+		setDvar ui_r_picmip_manual 0;	\
+	}									\
+	else								\
+	{									\
+		setDVar ui_r_picmip_manual 1;	\
+	}
+
+#define MP_ZOMBIE_INGAME ( IsInGame() && ( dvarBool( ui_multiplayer ) || dvarBool( zombiemode ) ) )
+
+		FRAME_CHOICE_SECTION_TITLE( 21, "@MENU_GRAPHICS_CAPS" )
+
+		FRAME_CHOICE_DVARENUMLIST_VIS(		22, "@MENU_VIDEO_MODE_CAPS",			ui_r_mode, r_mode, setLocalVarBool ui_showApply 1, !MP_ZOMBIE_INGAME )
+		FRAME_CHOICE_DVARYESNO_VIS(			23, "@MENU_FULLSCREEN_CAPS",			ui_r_fullscreen, setLocalVarBool ui_showApply 1, !MP_ZOMBIE_INGAME )
+		FRAME_CHOICE_DVARFLOATLIST_VIS(		24, "@MENU_ANTIALIASING_CAPS",			ui_r_aasamples, { "@MENU_OFF_CAPS" 1 "@MENU_2X_CAPS" 2 "@MENU_4X_CAPS" 4 "@MENU_8X_CAPS" 8 }, setLocalVarBool ui_showApply 1;, !MP_ZOMBIE_INGAME && !dvarbool(r_supports16xAA) )
+		FRAME_CHOICE_DVARFLOATLIST_VIS(		24, "@MENU_ANTIALIASING_CAPS",			ui_r_aasamples, { "@MENU_OFF_CAPS" 1 "@MENU_2X_CAPS" 2 "@MENU_4X_CAPS" 4 "@MENU_8X_CAPS" 8 "@MENU_16X_CAPS" 16 }, setLocalVarBool ui_showApply 1;, !MP_ZOMBIE_INGAME && dvarbool(r_supports16xAA) )
+		FRAME_CHOICE_DVARSTRINGLIST_VIS(	25, "@MENU_ASPECT_RATIO_CAPS",			ui_r_aspectratio, { "@MENU_AUTO_CAPS"; "auto"; "@MENU_STANDARD_4_3_CAPS"; "standard"; "@MENU_WIDE_16_10_CAPS"; "wide 16:10"; "@MENU_WIDE_16_9_CAPS"; "wide 16:9" }, setLocalVarBool ui_showApply 1, !MP_ZOMBIE_INGAME )
+		FRAME_CHOICE_DVARENUMLIST_VIS(		26, "@MENU_SCREEN_REFRESH_RATE_CAPS",	ui_r_displayRefresh, r_displayRefresh, setLocalVarBool ui_showApply 1;, !MP_ZOMBIE_INGAME )
+		FRAME_CHOICE_DVARYESNO_VIS(			27, "@MENU_SYNC_EVERY_FRAME_CAPS",		ui_r_vsync, setLocalVarBool ui_showApply 1, !MP_ZOMBIE_INGAME )
+
+		FRAME_CHOICE_DVARSTRINGLIST(		28, "@MENU_TEXTURE_MIPMAPS_CAPS",		r_texFilterMipMode, { "@MENU_AUTOMATIC_CAPS"; "Unchanged"; "@MENU_BILINEAR_CAPS"; "Force Bilinear"; "@MENU_TRILINEAR_CAPS"; "Force Trilinear" }, ; )
+		FRAME_DVARSLIDER(					29, "@MENU_TEXTURE_ANISOTROPY_CAPS",	r_texFilterAnisoMin, 1, 1, 16, ; )
+		FRAME_CHOICE_DVARFLOATLIST_VIS(		30, "@MENU_TEXTURE_QUALITY_CAPS",		ui_r_picmip, { "@MENU_AUTOMATIC_CAPS" -1 "@PLATFORM_LOW_CAPS" 3 "@MENU_NORMAL_CAPS" 2 "@PLATFORM_HIGH_CAPS" 1 "@MENU_EXTRA_CAPS" 0 }, TEXTURE_QUALITY_ACTION, !MP_ZOMBIE_INGAME )
+
+		
+		FRAME_CHOICE_DVARYESNO_VIS(			31, "@PATCH_MENU_OPTION_SHADERWARMING_CAPS", r_shaderWarming, ;, 1 )
+		FRAME_CHOICE_DVARYESNO_VIS(			32, "@MENU_SHADOWS_CAPS",				sm_enable, ;, dvarbool( ui_showShadowOptions ) )
+		FRAME_CHOICE_DVARYESNO_VIS(			33, "@MENU_OPTION_BULLET_IMPACTS_CAPS", fx_marks, ;, 1 )
+// KTouevsky: Add back insane when the RAGDOLL_MAX_SIMULATING in ragdoll.h is bumped to 32 too
+//		FRAME_CHOICE_DVARFLOATLIST_VIS(		34, "@MENU_NUMBER_OF_CORPSES_CAPS",		ai_corpsecount, { "@MENU_TINY_CAPS" 3 "@MENU_SMALL_CAPS" 5 "@MENU_MEDIUM_CAPS" 10 "@MENU_LARGE_CAPS" 16 "@MENU_INSANE_CAPS" 32 }, ;, !dvarBool( ui_multiplayer ) )
+		FRAME_CHOICE_DVARFLOATLIST_VIS(		34, "@MENU_NUMBER_OF_CORPSES_CAPS",		ai_corpsecount, { "@MENU_TINY_CAPS" 3 "@MENU_SMALL_CAPS" 5 "@MENU_MEDIUM_CAPS" 10 "@MENU_LARGE_CAPS" 16 }, ;, !dvarBool( ui_multiplayer ) )
+		FRAME_DVARSLIDER(					35, "@MENU_BRIGHTNESS_CAPS",			r_gamma, 1, 0.5, 3, ; )
+		FRAME_DVARSLIDER_VIS(				36, "@PLATFORM_FOV_CAPS",				cg_fov_default, 1, 65, 80, ;, ( dvarint( ui_multiplayer ) ) )
+
+#undef CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR 0.2 0.2 0.2 1
+		// darker disabled color in-game
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	22, "@MENU_VIDEO_MODE_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	23, "@MENU_FULLSCREEN_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	24, "@MENU_ANTIALIASING_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	25, "@MENU_ASPECT_RATIO_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	26, "@MENU_SCREEN_REFRESH_RATE_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	27, "@MENU_SYNC_EVERY_FRAME_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	30, "@MENU_TEXTURE_QUALITY_CAPS", ;, ;, MP_ZOMBIE_INGAME, ; )
+
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	32, "@MENU_SHADOWS_CAPS", ;, ;, !dvarbool( ui_showShadowOptions ) && MP_ZOMBIE_INGAME, ; )
+
+#undef CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR 0.4 0.4 0.4 1
+		// lighter disabled color in the shell
+		FRAME_CHOICE_DBUTTON_DARK_FOCUS_VIS_EX(	32, "@MENU_SHADOWS_CAPS", ;, ;, !dvarbool( ui_showShadowOptions ), ; )
+
+#undef	CHOICE_TEXT_COLOR_NO_HL
+#undef	CHOICE_TEXT_COLOR_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_NO_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_HL
+
+#define CHOICE_TEXT_COLOR_NO_HL 1 1 1 1
+#define CHOICE_TEXT_COLOR_HL 0 0 0 1
+#define CHOICE_CAPTION_TEXT_COLOR_NO_HL 1 1 1 1
+#define CHOICE_CAPTION_TEXT_COLOR_HL 0 0 0 1
+
+		FRAME_BUTTON_PC_RIGHT_OFFSET( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, 0, 
+			"@MENU_APPLY", 
+			open vid_restart_popmenu;, 
+			when( ( localVarBool( ui_showApply ) && !dvarint( sv_running ) ) || dvarInt(ui_allow_graphic_change) ); )
+
+		FRAME_BUTTON_PC_RIGHT_OFFSET( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, 0, 
+			"@MENU_APPLY", 
+			uiScript openMenuOnDvar g_reloading 0 vid_restart_popmenu_listen; 
+			uiScript openMenuOnDvarNot g_reloading 0 vid_restart_popmenu_dead;, 
+			when( localVarBool( ui_showApply ) && dvarint( sv_running ) && dvarInt( ui_allow_graphic_change ) == 0 ); )
+	
+		//CHOICE_APPLY_VIS( "@MENU_APPLY", open vid_restart_popmenu, when( ( localVarBool( ui_showApply ) && !dvarint( sv_running ) ) || dvarInt(ui_allow_graphic_change) ); )
+		//CHOICE_APPLY_VIS( "@MENU_APPLY", uiScript openMenuOnDvar g_reloading 0 vid_restart_popmenu_listen; uiScript openMenuOnDvarNot g_reloading 0 vid_restart_popmenu_dead;, when( localVarBool( ui_showApply ) && dvarint( sv_running ) && dvarInt( ui_allow_graphic_change ) == 0 ); )
+		//CHOICE_BACK( "@MENU_BACK", close self )
+
+
+// These are last so I don't have to redefine everything.
+#undef CHOICE_TEXTALIGN
+#define CHOICE_TEXTALIGN ITEM_ALIGN_MIDDLE_LEFT
+#undef CHOICE_TEXT_OFFSET_X
+#define CHOICE_TEXT_OFFSET_X		-5010
+#undef CHOICE_X_START
+#define CHOICE_X_START	((-OPTIONS_GRAPHICS_WIDTH/2) - 125 + 5000)
+
+#undef CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR 0.2 0.2 0.2 1
+		// darker disabled color in-game
+		FRAME_CHOICE_DBUTTON_DARK_VIS_EX(		41, dvarString( ui_r_mode ), ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	42, ui_r_fullscreen, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_NO_CAPS" 0 "@MENU_YES_CAPS" 1 }, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	43, ui_r_aasamples, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_OFF_CAPS" 1 "@MENU_2X_CAPS" 2 "@MENU_4X_CAPS" 4 "@MENU_8X_CAPS" 8 "@MENU_16X_CAPS" 16 }, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	44, ui_r_aspectratio, ITEM_TYPE_MULTI, dvarStrList { "@MENU_AUTO_CAPS"; "auto"; "@MENU_STANDARD_4_3_CAPS"; "standard"; "@MENU_WIDE_16_10_CAPS"; "wide 16:10"; "@MENU_WIDE_16_9_CAPS"; "wide 16:9" }, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_VIS_EX(		45, dvarString( ui_r_displayRefresh ), ;, ;, MP_ZOMBIE_INGAME, ; )
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	46, ui_r_vsync, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_NO_CAPS" 0 "@MENU_YES_CAPS" 1 }, ;, MP_ZOMBIE_INGAME, ; )
+
+#undef CHOICE_Y_OFFSET
+#define CHOICE_Y_OFFSET	(CHOICE_SIZE_Y / 2)
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	49, ui_r_picmip, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_AUTOMATIC_CAPS" -1 "@PLATFORM_LOW_CAPS" 3 "@MENU_NORMAL_CAPS" 2 "@PLATFORM_HIGH_CAPS" 1 "@MENU_EXTRA_CAPS" 0 }, ;, MP_ZOMBIE_INGAME, ; )
+#undef CHOICE_Y_OFFSET
+#define CHOICE_Y_OFFSET	0
+
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	52, sm_enable, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_NO_CAPS" 0 "@MENU_YES_CAPS" 1 }, ;, !dvarbool( ui_showShadowOptions ) && MP_ZOMBIE_INGAME, ; )
+		
+#undef CHOICE_TEXTCOLOR
+#define CHOICE_TEXTCOLOR 0.4 0.4 0.4 1
+		// lighter disabled color in the shell
+		FRAME_CHOICE_DBUTTON_DARK_LIST_VIS_EX(	52, sm_enable, ITEM_TYPE_MULTI, dvarFloatList { "@MENU_NO_CAPS" 0 "@MENU_YES_CAPS" 1 }, ;, !dvarbool( ui_showShadowOptions ), ; )
+		
+		/*
+		itemDef 
+		{
+			name			graphic_warning
+			type			ITEM_TYPE_BUTTON
+			text			"@MENU_GRAPHICS_WARNING"
+			style			WINDOW_STYLE_FILLED
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			rect			20 -116 240 240 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_BOTTOM
+			textfont		UI_FONT_NORMAL
+			textalign		ITEM_ALIGN_LEFT
+			textscale		TEXTSIZE_SMALL
+			visible			1
+			mouseEnter		{ play CHOICE_FOCUS_SOUND; }
+			decoration
+			autowrapped
+		}
+		*/
+		//CHOICE_FOOTNOTE( "@MENU_GRAPHICS_WARNING", 340, 340 )
+	}
+	
+	// restoring button properties
+	
+	// ---
+	#undef TEXTSIZE_BUTTON_PC
+	#define TEXTSIZE_BUTTON_PC	0.4
+	
+	#undef CHOICE_SIZE_X
+	#define CHOICE_SIZE_X 		224
+		
+	#undef  SECTION_X_OFFSET
+	#define SECTION_X_OFFSET 	0
+	// ---
+	
+	#undef CHOICE_BUTTON_NAME
+	#define CHOICE_BUTTON_NAME		"options_graphics_texture_"
+	#undef MENUDEF_NAME
+	#define MENUDEF_NAME			options_graphics_texture
+		
+	menuDef
+	{
+		name			options_graphics_texture
+		fullScreen		0
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop		""
+
+		onOpen
+		{
+			LOCAL_CLOSE_ALL_BUT( options_graphics_texture )
+			
+			setLocalVarBool ui_hideBack 1;
+			setLocalVarBool ui_showApply 0;
+
+			exec "setfromdvar ui_r_picmip			r_picmip";
+			exec "setfromdvar ui_r_picmip_bump		r_picmip_bump";
+			exec "setfromdvar ui_r_picmip_spec		r_picmip_spec";
+			exec "setfromdvar ui_r_picmip_manual	r_picmip_manual";
+			
+			if (IsInGame())
+			{
+				showMenu "pausedbkgnd";
+			}			
+			else
+			{
+				activateBlur;
+			}
+		}
+		onClose
+		{
+			setLocalVarBool ui_hideBack 0;
+			
+			if (IsInGame())
+			{
+				hideMenu "pausedbkgnd";
+			}			
+			else
+			{
+				deactivateBlur;
+			}
+		}
+
+		onESC
+		{
+			close self;
+			open options_new_pc;
+		}
+		PC_TAB_SWITCH_ACTIONS( options_new_pc, options_controls_new_pc, options_controls_new_pc )
+		
+		#include "ui_mp/leftside_options.inc"
+		
+#undef	CHOICE_X_START
+#undef	CHOICE_Y_START
+#undef	CHOICE_HORIZONTAL_ALIGN
+#undef	CHOICE_VERTICAL_ALIGN
+#undef	CHOICE_DVAR_EXTRA_WIDTH
+#undef	CHOICE_TEXT_OFFSET_X
+
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+#define CHOICE_X_START				((-OPTIONS_GRAPHICS_WIDTH/2) - 75)
+#define CHOICE_Y_START				((-OPTIONS_GRAPHICS_HEIGHT/2) + 32)
+#define CHOICE_DVAR_EXTRA_WIDTH		120
+#define CHOICE_TEXT_OFFSET_X		-10
+
+#undef CHOICE_TEXTSTYLE
+#undef CHOICE_TEXTSIZE
+#define CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+
+#undef	CHOICE_TEXT_COLOR_NO_HL
+#undef	CHOICE_TEXT_COLOR_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_NO_HL
+#undef	CHOICE_CAPTION_TEXT_COLOR_HL
+
+#define	CHOICE_TEXT_COLOR_NO_HL			CHOICE_TEXTCOLOR
+#define	CHOICE_TEXT_COLOR_HL			1 1 1 1
+#define	CHOICE_CAPTION_TEXT_COLOR_NO_HL	CHOICE_TEXTCOLOR
+#define	CHOICE_CAPTION_TEXT_COLOR_HL	0 0 0 1
+
+		FRAME_CHOICE_SECTION_TITLE( 21, "@MENU_TEXTURE_SETTINGS_CAPS" )
+
+		FRAME_CHOICE_DVARSTRINGLIST( 22, "@MENU_TEXTURE_MIPMAPS_CAPS", r_texFilterMipMode, { "@MENU_AUTOMATIC_CAPS"; "Unchanged"; "@MENU_BILINEAR_CAPS"; "Force Bilinear"; "@MENU_TRILINEAR_CAPS"; "Force Trilinear" }, setLocalVarBool ui_showApply 1 )
+		FRAME_DVARSLIDER( 23, "@MENU_TEXTURE_ANISOTROPY_CAPS", r_texFilterAnisoMin, 1, 1, 16, setLocalVarBool ui_showApply 1 )
+		FRAME_CHOICE_DVARFLOATLIST_VIS( 24, "@MENU_TEXTURE_QUALITY_CAPS", ui_r_picmip_manual, { "@MENU_AUTOMATIC_CAPS" 0 "@MENU_MANUAL_CAPS" 1 }, setLocalVarBool ui_showApply 1, 1 )
+		FRAME_CHOICE_DVARFLOATLIST_VIS( 25, "@MENU_TEXTURE_RESOLUTION_CAPS", ui_r_picmip, { "@PLATFORM_LOW_CAPS" 3 "@MENU_NORMAL_CAPS" 2 "@PLATFORM_HIGH_CAPS" 1 "@MENU_EXTRA_CAPS" 0 }, setLocalVarBool ui_showApply 1, ( dvarint( ui_r_picmip_manual ) ) )
+		FRAME_CHOICE_DVARFLOATLIST_VIS( 26, "@MENU_NORMAL_MAP_RESOLUTION_CAPS", ui_r_picmip_bump, { "@PLATFORM_LOW_CAPS" 3 "@MENU_NORMAL_CAPS" 2 "@PLATFORM_HIGH_CAPS" 1 "@MENU_EXTRA_CAPS" 0 }, setLocalVarBool ui_showApply 1, ( dvarint( ui_r_picmip_manual ) ) )
+		FRAME_CHOICE_DVARFLOATLIST_VIS( 27, "@MENU_SPECULAR_MAP_RESOLUTION_CAPS", ui_r_picmip_spec, { "@PLATFORM_LOW_CAPS" 3 "@MENU_NORMAL_CAPS" 2 "@PLATFORM_HIGH_CAPS" 1 "@MENU_EXTRA_CAPS" 0 }, setLocalVarBool ui_showApply 1, ( dvarint( ui_r_picmip_manual ) ) )
+
+		FRAME_BUTTON_PC_RIGHT_OFFSET( NEW_FRAME_DEFAULT_WIDTH, NEW_FRAME_DEFAULT_HEIGHT, 0, 
+			"@MENU_APPLY", 
+			close self; 
+			open apply_picmip_popmenu;, 
+			when( localVarBool( ui_showApply ) ); )
+
+		//CHOICE_APPLY_VIS( "@MENU_APPLY", close self; open apply_picmip_popmenu, when( localVarBool( ui_showApply ) ) )
+		
+		//CHOICE_BACK( "@MENU_BACK", close self; open options_graphics )
+
+		/*
+		itemDef 
+		{
+			name			graphic_warning
+			type			ITEM_TYPE_BUTTON
+			text			"@MENU_GRAPHICS_WARNING"
+			style			WINDOW_STYLE_FILLED
+			textstyle		ITEM_TEXTSTYLE_SHADOWED
+			rect			20 -116 240 240 HORIZONTAL_ALIGN_LEFT VERTICAL_ALIGN_BOTTOM
+			textfont		UI_FONT_NORMAL
+			textalign		ITEM_ALIGN_LEFT
+			textscale		TEXTSIZE_SMALL
+			visible			1
+			mouseEnter		{ play CHOICE_FOCUS_SOUND; }
+			decoration
+			autowrapped
+		}
+		*/
+		//CHOICE_FOOTNOTE( "@MENU_GRAPHICS_WARNING", 340, 340 )
+	}
+
+	menuDef
+	{
+		name			apply_picmip_popmenu
+		fullScreen		0
+		rect			0 0 640 480
+		focusColor		COLOR_FOCUSED
+		soundloop		""
+		onOpen
+		{
+			setLocalVarBool ui_showApply 0;
+
+			execnow "setfromdvar r_picmip ui_r_picmip";
+			execnow "setfromdvar r_picmip_bump ui_r_picmip_bump";
+			execnow "setfromdvar r_picmip_spec ui_r_picmip_spec";
+			execnow "setfromdvar r_picmip_manual ui_r_picmip_manual";
+			exec "wait; wait; r_applyPicmip";
+			close apply_picmip_popmenu;
+			open options_graphics_texture;
+		}
+		
+		// background black frame
+		PREPROC_SHADER_DRAW( 320 0 600 480, "white", 0.1 0.1 0.12 1 )
+		
+		CHOICE_SECTION_TITLE( 1, "@MENU_APPLYING_CHANGES" )
+	}
+}

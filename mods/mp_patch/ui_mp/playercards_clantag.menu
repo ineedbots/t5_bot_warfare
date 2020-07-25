@@ -1,0 +1,355 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui/frame.inc"
+#include "ui_mp/menustyle.inc"
+#include "ui_mp/overlaybg.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/popup_player_info.inc"
+#include "ui_mp/stats_info.inc"
+
+#ifdef PC
+	#include "ui_mp/popupstyle.inc"
+	#include "ui/choices_setup_popmenu.menu"
+
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		3
+	
+	menuDef
+	{
+		SYSTEM_POPUP_SETUP_VIS( "pc_editclantag", setdvar ui_clantag_new dvarString( clanName ); setFocus nameEntry;, ;, 1 )
+		SYSTEM_POPUP_TITLE_VIS( "@MPUI_EDIT_CLAN_TAG_CAPS", 1 )
+
+		itemDef 
+		{
+			name			nameEntry
+			TYPE			ITEM_TYPE_ALPHANUMERICFIELD
+			text			"@MENU_NAME1"
+			dvar			"ui_clantag_new"
+			rect			CHOICE_RECT( 1 )
+			textaligny		2
+			maxchars		4
+			maxpaintchars	4
+			textalign		ITEM_ALIGN_MIDDLE_LEFT
+			textfont		UI_FONT_NORMAL
+			textscale		TEXTSIZE_DEFAULT
+			forecolor		.9 .9 .9 1
+			style			WINDOW_STYLE_FILLED
+			backcolor		0 0 0 .3
+			visible			1
+			mouseenter		{ show keyBindStatus; play CHOICE_FOCUS_SOUND; }
+			mouseexit		{ hide keyBindStatus; setfocus ok_button; }
+			accept			{  }
+		}
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 2, "@MENU_OK", execnow setclanname; close self;, 1, ; )
+		FRAME_CHOICE_BUTTON_VIS_EX( 3, "@MENU_CANCEL", close self;, 1, ; )
+	}
+#endif
+
+#define PLAYER_CARD_CLAN_TAG_MENU_HEIGHT	NEW_FRAME_DEFAULT_HEIGHT
+#define PLAYER_CARD_CLAN_TAG_MENU_WIDTH		( PLAYER_CARD_CLAN_TAG_MENU_HEIGHT * FRAME_ASPECT_RATIO )
+#undef	CHOICE_X_START
+#define CHOICE_X_START	 			( -PLAYER_CARD_CLAN_TAG_MENU_WIDTH / 2 + 15 )
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START	 			( -PLAYER_CARD_CLAN_TAG_MENU_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( PLAYER_CARD_CLAN_TAG_MENU_HEIGHT ) )
+
+#undef CHOICE_GROUP
+#define CHOICE_GROUP				"playercard"
+
+#undef  CHOICE_SIZE_X
+#define CHOICE_SIZE_X			NEW_FRAME_BUTTON_WIDTH
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE		ITEM_TEXTSTYLE_NORMAL
+#undef	CHOICE_TEXTCOLOR 
+#define CHOICE_TEXTCOLOR		NEW_FRAME_COMMON_TEXT_COLOR
+
+#undef	CHOICE_HORIZONTAL_ALIGN 
+#define CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER 
+
+#undef  CHOICE_VERTICAL_ALIGN
+#define CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+
+#ifdef XENON
+	#define SELECT_ICON	"ui_button_xenon_3d_a_32x32"
+#endif
+#ifdef PS3
+	#define SELECT_ICON	"ui_button_ps3_x_32x32"
+#endif
+
+#define SET_CLANTAG_HINT																									\
+		if ( isclantagfeaturelocked( GetCurrentClanTagFeature() ) ) 														\
+		{																													\
+			SET_HINT_TEXT( (locString( CLASS_PRESTIGE_UNLOCK_DESC, GetClanTagFeaturePlevel( GetCurrentClanTagFeature() ) )) )	\
+		}																													\
+		else																												\
+		{																													\
+			CLEARUIHINT																										\
+		}
+#ifdef PC
+	#define PLAYER_CARD_LISTBOX_RECT_EDIT (CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT+2) (CHOICE_SIZE_X+3) 20 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+	#define PLAYER_CARD_LISTBOX_RECT (CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT*4+2) (CHOICE_SIZE_X+3) 150 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#else //#ifdef PC
+	#define PLAYER_CARD_LISTBOX_RECT_EDIT (CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT+2) (CHOICE_SIZE_X+3) 250 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+	#define PLAYER_CARD_LISTBOX_RECT (CHOICE_X_START-3) (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT*4+2) (CHOICE_SIZE_X+3) 250 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+#endif //#ifdef PC
+
+#undef	LIST_X_START				
+#define LIST_X_START				( -PLAYER_CARD_CLAN_TAG_MENU_WIDTH / 2 + 15 )
+#undef	LIST_Y_START				
+#define LIST_Y_START				( -PLAYER_CARD_CLAN_TAG_MENU_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( PLAYER_CARD_CLAN_TAG_MENU_HEIGHT ) )
+#undef	LIST_HEIGHT					
+#define LIST_HEIGHT					(PLAYER_CARD_CLAN_TAG_MENU_HEIGHT-120)
+#undef	LIST_WIDTH					
+#define LIST_WIDTH					(PLAYER_CARD_CLAN_TAG_MENU_WIDTH/2-40)
+
+#define PLAYER_EMBLEM_BG_SIZE		(190)
+#define PLAYER_EMBLEM_SIZE			(PLAYER_EMBLEM_BG_SIZE - 20)
+#define PLAYER_EMBLEM_X_START		70
+#define PLAYER_EMBLEM_Y_START		(CHOICE_Y_START+20)
+
+#define PLAYER_CARD_COMMON_ITEMS \																																			\
+		/* PLAYER NAME */																																					\
+		PLAYER_CLAN_TAG_AND_NAME( PLAYER_EMBLEM_X_START, (PLAYER_EMBLEM_Y_START-18), 1 )																					\
+		/* BACKGROUND FOR EMBLEM */																																			\
+		itemDef																																								\
+		{																																									\
+			rect            PLAYER_EMBLEM_X_START PLAYER_EMBLEM_Y_START PLAYER_EMBLEM_BG_SIZE PLAYER_EMBLEM_BG_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN			\
+			style           WINDOW_STYLE_SHADER_FRAMED																														\
+			frame           16 0.5 FRAME_SIDE_ALL																															\
+			background      "menu_mp_lobby_frame_circle"																													\
+			forecolor       0 0 0 0.4																																		\
+			visible         1																																				\
+			decoration																																						\
+		}																																									\
+		/* PLAYER EMBLEM */																																					\
+		PLAYER_EMBLEM_ALL( (PLAYER_EMBLEM_X_START+10), (PLAYER_EMBLEM_Y_START+10), PLAYER_EMBLEM_SIZE, PLAYER_EMBLEM_SIZE, 1 )
+
+#ifdef CONSOLE		
+#define CLAN_TAG_SPECIAL_ESC( actionArg ) \
+	execKeyInt KEY_ESCAPE \
+	{ \
+		play CHOICE_FOCUS_SOUND; \
+		actionArg; \
+	}
+#else // #ifdef CONSOLE
+#define CLAN_TAG_SPECIAL_ESC( actionArg )
+#endif //#ifdef CONSOLE
+
+#ifdef PC
+	#define CLAN_TAG_LIST_PC_ACTIONS \
+		mouseenter								\
+		{										\
+			setfocus "clan_tag_list"			\
+		}
+#else //#ifdef PC
+	#define CLAN_TAG_LIST_PC_ACTIONS
+#endif //#ifdef PC
+
+#define CLAN_TAG_LIST( feederType, rectArg, execCommand, onActionArg, selectionChangeArgs, visArg, extraArgs ) \
+		itemDef\
+		{ \
+			name						"clan_tag_list" \
+			type						ITEM_TYPE_LISTBOX \
+			feeder						feederType \
+			rect						rectArg \
+			origin						0 0 \
+			elementwidth				30 \
+			elementheight				19 \
+			elementtype					LISTBOX_TEXT \
+			textstyle					ITEM_TEXTSTYLE_NORMAL \
+			textfont					UI_FONT_NORMAL \
+			textscale					TEXTSIZE_DEFAULT \
+			textalignx					12 \																												\
+			textaligny					0 \
+			forecolor					CHOICE_TEXTCOLOR \
+			focusColor					CHOICE_TEXTCOLOR \
+			disableColor				CHOICE_TEXTCOLOR \
+			noscrollbars \
+			selectIcon					SELECT_ICON \
+			outlineColor				1 1 1 1 \
+			elementHighlightColor		0 0 0 1 \
+			elementBackgroundColor		NEW_FRAME_TRANSPARENCY \
+			modal \
+			noBlinkingHighlight \
+			visible			visArg \
+			userarea	4	0						0					CHOICE_SIZE_X	17			32	ITEM_ALIGN_LEFT	ITEM_ALIGN_MIDDLE /* Name */	\				
+							20						1					15				15			16	ITEM_ALIGN_LEFT	ITEM_ALIGN_MIDDLE /* Image */	\				 
+							(CHOICE_SIZE_X-60)		0					50				17			24	ITEM_ALIGN_LEFT	ITEM_ALIGN_MIDDLE /* Cost */	\				
+							(CHOICE_SIZE_X+2)		(17/2-LOCK_SIZE/2)	LOCK_SIZE		LOCK_SIZE	24	ITEM_ALIGN_LEFT	ITEM_ALIGN_MIDDLE /* Lock */	\				
+			onfocus  \
+			{ \
+				play CHOICE_FOCUS_SOUND; \
+				SET_CLANTAG_HINT \
+			}	\
+			onListboxSelectionChange \
+			{ \
+				play CHOICE_FOCUS_SOUND; \
+				selectionChangeArgs \
+				SET_CLANTAG_HINT \				
+			} \
+			doubleclick \
+			{ \
+				if( IsClanTagFeaturePurchased( GetCurrentClanTagFeature() ) ) \
+				{ \
+					execNow setClanTag ( GetCurrentClanTagFeature() ); \
+				} \
+				elseif( !IsClanTagFeatureLocked( GetCurrentClanTagFeature() ) && ( GetClanTagFeatureCost( GetCurrentClanTagFeature() ) <= GetStatByName( "CODPOINTS" ) ) ) \
+				{ \
+					open PurchaseClanTagFeatureConfirmation; \
+				} \
+			} \
+			execKeyInt BUTTON_X \
+			{ \
+			} \
+			CLAN_TAG_SPECIAL_ESC( onActionArg ) \
+			CLAN_TAG_LIST_PC_ACTIONS \
+			extraArgs \
+		}
+		
+#ifdef PC
+	#define EDIT_CLAN_TAG_ACTION	\
+		doubleclick \
+		{ \
+			open pc_editclantag; \
+		}
+#else //#ifdef PC
+	#define EDIT_CLAN_TAG_ACTION	\
+		doubleclick \
+		{ \
+			execNow editclanname; \
+		}
+#endif //#ifdef PC
+
+#ifdef PC
+	#define CLAN_TAG_LIST_EDIT_PC_ACTIONS \
+		mouseenter								\
+		{										\
+			setfocus "clan_tag_list_edit"			\
+		}
+#else //#ifdef PC
+	#define CLAN_TAG_LIST_EDIT_PC_ACTIONS
+#endif //#ifdef PC
+		
+#define CLAN_TAG_LIST_EDIT( feederType, rectArg, execCommand, onActionArg, selectionChangeArgs, visArg, extraArgs ) \
+		itemDef\
+		{ \
+			name						"clan_tag_list_edit" \
+			type						ITEM_TYPE_LISTBOX \
+			feeder						feederType \
+			rect						rectArg \
+			origin						0 0 \
+			elementwidth				30 \
+			elementheight				19 \
+			elementtype					LISTBOX_TEXT \
+			textstyle					ITEM_TEXTSTYLE_NORMAL \
+			textfont					UI_FONT_NORMAL \
+			textscale					TEXTSIZE_DEFAULT \
+			textalignx					22 \
+			textaligny					0 \
+			forecolor					CHOICE_TEXTCOLOR \
+			focusColor					CHOICE_TEXTCOLOR \
+			disableColor				CHOICE_TEXTCOLOR \
+			noscrollbars \
+			selectIcon					SELECT_ICON \
+			outlineColor				1 1 1 1 \
+			elementHighlightColor		0 0 0 1 \
+			elementBackgroundColor		NEW_FRAME_TRANSPARENCY \
+			modal \
+			noBlinkingHighlight \
+			visible			visArg \
+			onfocus  \
+			{ \
+				play CHOICE_FOCUS_SOUND; \
+				setdvar ui_show_arrow "0"; \
+			}	\
+			onListboxSelectionChange \
+			{ \
+				play CHOICE_FOCUS_SOUND; \
+				selectionChangeArgs \			
+				setdvar ui_show_arrow "0"; \
+			} \
+			EDIT_CLAN_TAG_ACTION \	
+			execKeyInt BUTTON_X \
+			{ \
+			} \
+			CLAN_TAG_SPECIAL_ESC( onActionArg ) \
+			CLAN_TAG_LIST_EDIT_PC_ACTIONS \
+			extraArgs \
+		}
+		
+#undef ON_ESC
+#define ON_ESC																							\
+	execnow "uploadstats";	\
+	execnow changemenucloseslidedirection menu_playercards_clantag MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT;	\
+	close self;																							\
+	open menu_playercard_self; 
+		
+	menuDef	
+	{
+		name					menu_playercards_clantag
+		rect					0 0 640 480 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED 
+		control					MENU_CONTROL_OPENER			
+		priority				MENU_PRI_ONTOP 
+		soundloop 				MENU_MUSIC 
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT
+		closeSlideDirection		MENU_SLIDE_DIRECTION_LEFT_TO_RIGHT
+		popup
+		onOpen
+		{		
+			setLocalVarString ui_choicegroup CHOICE_GROUP;
+			focusFirst;
+		}
+		onEsc
+		{
+			ON_ESC
+		}
+		onFocus 
+		{
+			setLocalVarString ui_choicegroup CHOICE_GROUP;  
+			activateBlur;
+		}
+		onClose
+		{
+			deactivateBlur;
+		}
+
+		NEW_FRAME( PLAYER_CARD_CLAN_TAG_MENU_WIDTH, PLAYER_CARD_CLAN_TAG_MENU_HEIGHT )
+
+		// Title
+		NEW_FRAME_TITLE( PLAYER_CARD_CLAN_TAG_MENU_WIDTH, PLAYER_CARD_CLAN_TAG_MENU_HEIGHT, "@MPUI_CLAN_TAG_CAPS", 1 )
+		PLAYER_INFO_VIS( PLAYER_CARD_CLAN_TAG_MENU_WIDTH, PLAYER_CARD_CLAN_TAG_MENU_HEIGHT, 1 )
+
+		/* Label for "Edit clan tag" */
+		PREPROC_TEXT_DRAW(	CHOICE_X_START (CHOICE_Y_START+2) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_EDIT_CLAN_TAG_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_LT_GREY_RGB 1 ) 
+
+		// CLAN TAG BUTTON 
+		CLAN_TAG_LIST_EDIT( FEEDER_CLANTAG_FEATURES_EDIT, PLAYER_CARD_LISTBOX_RECT_EDIT, ( dvarString( ui_execString ) );, ;, ;, 1, ; ) 
+
+		/* Label for "Clan Tag color" */
+		PREPROC_TEXT_DRAW(	CHOICE_X_START (CHOICE_Y_START+NEW_FRAME_BUTTON_HEIGHT*3+2) 100 10 CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0, 
+								"@MPUI_CLAN_TAG_COLOR_CAPS", 
+								TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_LEFT, NEW_FRAME_LT_GREY_RGB 1 ) 
+
+		// CLAN TAG LIST 
+		CLAN_TAG_LIST( FEEDER_CLANTAG_FEATURES, PLAYER_CARD_LISTBOX_RECT, ( dvarString( ui_execString ) );, ;, ;, 1, ; ) 
+
+		PLAYER_CARD_COMMON_ITEMS
+
+		HINT_TEXT( 13, CHOICE_X_START, dvarString( ui_hint_text ), dvarBool( ui_show_arrow ) )
+
+#ifdef PC
+		NEW_FRAME_BACK_BUTTON_ACTION( FRAME_DEFAULT_WIDTH, FRAME_DEFAULT_HEIGHT, ON_ESC; )
+#else //#ifdef PC
+		NEW_FRAME_BACK_BUTTON( PLAYER_CARD_CLAN_TAG_MENU_WIDTH, PLAYER_CARD_CLAN_TAG_MENU_HEIGHT )
+#endif //#ifdef PC
+
+		#include "ui/safearea.menu"
+}

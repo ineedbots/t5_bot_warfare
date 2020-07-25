@@ -1,0 +1,208 @@
+// CONSOLE HUD - MP
+
+#include "ui/menudef.h"
+#include "ui_mp/hud_gametypes.inc"
+#include "ui_mp/choices_setup_teams.menu"
+
+#define BAR_START_X			42
+#define BAR_START_Y			-42
+#define	BAR_HEIGHT			39
+#define BAR_WIDTH			143
+#define BAR_HEIGHT_TOP		20
+#define BAR_HEIGHT_BOTTOM	16
+
+#define BAR_PERCENT_PLAYER				( max( player( score ), 0 ) / dvarInt( "ui_scorelimit" ) )
+#define BAR_PRECENT_BEST_OTHER_PLAYER	( Select( player( score ) == scoreatrank( 1 ), (max( scoreatrank( 2 ), 0 ) / dvarInt( "ui_scorelimit" )), (max( scoreatrank( 1 ), 0 ) / dvarInt( "ui_scorelimit" )) ) )
+
+#define BEST_OTHER_PLAYER_SCORE	( Select( player( score ) == scoreatrank( 1 ), scoreatrank( 2 ), scoreatrank( 1 ) ) )
+
+#define FSM_VISIBILITY ( isVisibilityBitSet( BIT_SELECTING_LOCATION ) && !isVisibilityBitSet( BIT_SPECTATING_CLIENT ) && !isVisibilityBitSet( BIT_SCOREBOARD_OPEN ) )
+
+{
+	menuDef
+	{
+		name			"scorebars_ffa_background"
+		rect			BOTTOM_RECT_X BOTTOM_RECT_Y 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		exp				rect Y( BOTTOM_RECT_Y - (ONLINEGAME * ONLINEGAME_OFFSET) );
+		fullScreen		0
+		visible 		when( !FSM_VISIBILITY )
+		visibilityBits	bits( BIT_HUD_VISIBLE HUD_VISIBILITY !BIT_IN_KILLCAM SHOULD_DISPLAY_SCOREBAR !BIT_UI_ACTIVE !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC )
+
+
+		#define BG_OFFSET_X		(-15)
+		#define BG_OFFSET_Y		(-5)
+		#define BG_START_X		(BAR_START_X+BG_OFFSET_X)
+		#define BG_START_Y		(BAR_START_Y+BG_OFFSET_Y)
+	
+		// score background
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			BG_START_X BG_START_Y 187 46 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				material( "hud_frame_faction_fade" );
+			forecolor		1 1 1 0.5
+			visible 		1
+			decoration
+		}
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			(BAR_START_X-69) (BG_START_Y-14) 240 59 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				material( "hud_frame_faction_lines" );
+			forecolor		1 1 1 0.4
+			visible 		1
+			decoration
+		}
+
+		#define PROGRESS_OFFSET_X	47
+
+		// Player progress bar
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			BAR_START_X -42 70 BAR_HEIGHT_TOP HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect W( PROGRESS_OFFSET_X + (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PERCENT_PLAYER );
+			exp				material( "hud_score_progress" );
+			forecolor		0.42 0.68 0.46 0.8
+			visible 		when( dvarInt( "ui_scorelimit" ) != 0 && player( score ) > 0 )
+			decoration
+		}
+
+		// Other player progress bar
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			BAR_START_X -20 70 BAR_HEIGHT_BOTTOM HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect W( PROGRESS_OFFSET_X + (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PRECENT_BEST_OTHER_PLAYER );
+			exp				material( "hud_score_progress" );
+			forecolor		0.73 0.29 0.19 0.8
+			visible 		when( dvarInt( "ui_scorelimit" ) != 0 && BEST_OTHER_PLAYER_SCORE > 0 )
+			decoration
+		}
+		
+		// FACTION ICONS
+		#define FACTION_ICON_WIDTH		64
+		#define FACTION_ICON_HEIGHT		FACTION_ICON_WIDTH
+		#define FACTION_BG_WIDTH		92
+		#define FACTION_BG_HEIGHT		FACTION_BG_WIDTH
+		#define	FACTION_BG_X_START		(BAR_START_X-(FACTION_BG_WIDTH/2))
+		#define	FACTION_BG_Y_START		(BAR_START_Y-(FACTION_BG_HEIGHT/2))
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			FACTION_BG_X_START FACTION_BG_Y_START FACTION_BG_WIDTH FACTION_BG_HEIGHT HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				material( "hud_faction_back_light" );
+			forecolor		1 1 1 0.25
+			visible 		1
+			decoration
+		}
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			FACTION_BG_X_START FACTION_BG_Y_START FACTION_BG_WIDTH FACTION_BG_HEIGHT HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				material( "hud_faction_backing" );
+			forecolor		1 1 1 0.2
+			visible 		1
+			decoration
+		}
+
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			(FACTION_BG_X_START+9) (FACTION_BG_Y_START+20) FACTION_ICON_WIDTH FACTION_ICON_HEIGHT HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			origin			5 -5
+			exp				material( dvarString( "g_TeamIcon_Allies" ) );
+			visible			when( TEAM_IS_MARINES ); 
+			forecolor		1 1 1 1
+			decoration
+		}
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			(FACTION_BG_X_START+9) (FACTION_BG_Y_START+20) FACTION_ICON_WIDTH FACTION_ICON_HEIGHT HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			origin			5 -5
+			exp				material( dvarString( "g_TeamIcon_Axis" ) );
+			visible			when( TEAM_IS_OPFOR );
+			forecolor		1 1 1 1
+			decoration
+		}
+
+	}
+	
+	#define SCORE_OFFSET_X	(PROGRESS_OFFSET_X-12)
+	#define SCORE_START_X	(BAR_START_X+SCORE_OFFSET_X)
+	#define SCORE_COLOR		1 1 1
+	menuDef
+	{
+		name			"scorebars_ffa_scores"
+		rect			BOTTOM_RECT_X BOTTOM_RECT_Y 640 480 HORIZONTAL_ALIGN_FULLSCREEN VERTICAL_ALIGN_FULLSCREEN
+		exp				rect Y( BOTTOM_RECT_Y - (ONLINEGAME * ONLINEGAME_OFFSET) );
+		fullScreen		0
+		visible 		when( !FSM_VISIBILITY )
+		visibilityBits	bits( BIT_HUD_VISIBLE SHOULD_DISPLAY_SCOREBAR !BIT_IN_KILLCAM !BIT_UI_ACTIVE !BIT_IN_GUIDED_MISSILE !BIT_IN_GUIDED_MISSILE_STATIC BIT_TEAM_FREE !BIT_IN_VEHICLE )
+
+		// draws Player score
+		itemDef 
+		{
+			type			ITEM_TYPE_TEXT
+			rect			SCORE_START_X -23 24 24 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect X( SCORE_START_X + ( (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PERCENT_PLAYER ) );
+			exp				text( player( score ) );
+			textfont		UI_FONT_EXTRABIG
+			textscale		TEXTSIZE_LARGE
+			textalign		ITEM_ALIGN_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWEDMORE
+			forecolor		SCORE_COLOR 1
+			visible 		1
+			decoration 
+		}
+		// Top Arrow
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			SCORE_START_X -53 24 24 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect X( SCORE_START_X + ( (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PERCENT_PLAYER ) );
+			exp				material( "hud_frame_arrow" );
+			forecolor		1 1 1 0.8
+			visible 		1
+			decoration
+		}
+		#define OT_SCORE_START_X	(SCORE_START_X+2)
+		// OTHER Player score
+		itemDef 
+		{
+			type			ITEM_TYPE_TEXT
+			rect			(OT_SCORE_START_X-1) -7 20 20 HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect X( OT_SCORE_START_X + ( (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PRECENT_BEST_OTHER_PLAYER ) );
+			exp				text( BEST_OTHER_PLAYER_SCORE );
+			textfont		UI_FONT_EXTRABIG
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_CENTER
+			textstyle		ITEM_TEXTSTYLE_SHADOWEDMORE
+			forecolor		SCORE_COLOR 1
+			visible 		1
+			decoration 
+		}
+		// Bottom Arrow
+		itemDef
+		{
+			style			WINDOW_STYLE_SHADER
+			type			ITEM_TYPE_IMAGE
+			rect			OT_SCORE_START_X -16 20 (-20) HORIZONTAL_ALIGN_USER_LEFT VERTICAL_ALIGN_USER_BOTTOM
+			exp				rect X( OT_SCORE_START_X + ( (BAR_WIDTH-PROGRESS_OFFSET_X) * BAR_PRECENT_BEST_OTHER_PLAYER ) );
+			exp				material( "hud_frame_arrow" );
+			forecolor		1 1 1 0.8
+			visible 		1
+			decoration
+		}
+	}
+}
