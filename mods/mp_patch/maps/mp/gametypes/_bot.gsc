@@ -606,10 +606,9 @@ bot_spawner_Once()
 	
 	bot_set_difficulty( GetDvar( #"scr_bot_difficulty" ) );
 	
-	wait( 0.5 );	
 	for( ;; )
 	{		
-		wait 10.0;
+		wait 1.5;
 		
 		if ( game["state"] == "postgame" )
 			return;
@@ -617,7 +616,7 @@ bot_spawner_Once()
 		if( !GetDvarInt( #"scr_bots_managed_spawn" ) )
 			continue;
 			
-		humans = 0;
+		/*humans = 0;
 		players = level.players;			
 		for ( i = 0; i < players.size; i++ )
 		{
@@ -628,7 +627,7 @@ bot_spawner_Once()
 			
 			humans++;
 			break;
-		}
+		}*/
 		
 		countAllies = 0;
 		countAxis = 0;
@@ -652,7 +651,7 @@ bot_spawner_Once()
 			allies_num = GetDvarInt( #"scr_bots_managed_allies" );
 		}
 		
-		if( !humans )
+		/*if( !humans )
 		{
 			
 			players = level.players;
@@ -669,7 +668,7 @@ bot_spawner_Once()
 			
 			
 			continue;
-		}
+		}*/
 		
 		
 		
@@ -713,7 +712,7 @@ bot_spawner_Once()
 			for( ; differenceAxis > 0; differenceAxis = differenceAxis - 1 )
 			{
 				wait( 0.25 );
-				bot_add( "axis" );
+				add_bot( "axis" );
 			} 
 		} 
 		
@@ -748,7 +747,7 @@ bot_spawner_Once()
 			for( ; differenceAllies > 0; differenceAllies = differenceAllies - 1 )
 			{
 				wait( 0.25 );
-				bot_add( "allies" );
+				add_bot( "allies" );
 			}	
 		} 
 	}
@@ -1058,7 +1057,12 @@ bot_get_cod_points()
 	}
 	
 	if( !total_points.size )
-		total_points[ total_points.size ] = 10000;
+	{
+		if (getDvar("bot_default_cod_points") == "")
+			setDvar("bot_default_cod_points", 50000);
+	
+		total_points[ total_points.size ] = getDvarInt("bot_default_cod_points");
+	}
 
 	point_average = array_average( total_points );
 	self.pers["bot"][ "cod_points" ] = Int( point_average * RandomFloatRange( 0.6, 0.8 ) );
@@ -1091,7 +1095,12 @@ bot_get_rank()
 	}
 
 	if( !human_ranks.size )
-		human_ranks[ human_ranks.size ] = 10;
+	{
+		if (getDvar("bot_default_rank") == "")
+			setDvar("bot_default_rank", 55);
+	
+		human_ranks[ human_ranks.size ] = getDvarInt("bot_default_rank");
+	}
 
 	human_avg = array_average( human_ranks );
 
@@ -2056,7 +2065,8 @@ bot_give_loadout()
 	
 	self SetPlayerRenderOptions( int( self.pers["bot"]["class_render_opts"] ) );
 	
-	self.bot = [];
+	if (!isDefined(self.bot))
+		self.bot = [];
 	
 	self.bot[ "specialty1" ] = "specialty_null";
 	self.bot[ "specialty2" ] = "specialty_null";
@@ -2130,35 +2140,24 @@ bot_give_loadout()
 			self setPerk(tokens[i]);
 	}
 	
-	if(self.pers["bot"]["class_primary"] != "")
-	{
-		primaryTokens = strtok( self.pers["bot"]["class_primary"], "_" );
-		self.pers["primaryWeapon"] = primaryTokens[0];
-		
-		weap = self.pers["bot"]["class_primary"];
-		if(GetDvarInt( #"scr_disable_attachments" ))
-			weap = self.pers["primaryWeapon"] + "_mp";
-		
-		self GiveWeapon( weap, 0, int( self.pers["bot"]["class_primary_opts"] ) );
-		
-		if ( self hasPerk( "specialty_extraammo" ) )
-			self giveMaxAmmo( weap );
-		
-		self setSpawnWeapon( weap );
-	}
-	else
-	{
+	
+	self takeAllWeapons();
+	weap = self.pers["bot"]["class_primary"];
+	if(weap == "")
 		weap = "ak47_mp";
-		primaryTokens = strtok( weap, "_" );
-		self.pers["primaryWeapon"] = primaryTokens[0];
-		
-		self GiveWeapon( weap, 0, 0 );
-		
-		if ( self hasPerk( "specialty_extraammo" ) )
-			self giveMaxAmmo( weap );
-		
-		self setSpawnWeapon( weap );
-	}
+	
+	primaryTokens = strtok( self.pers["bot"]["class_primary"], "_" );
+	self.pers["primaryWeapon"] = primaryTokens[0];
+	
+	weap = self.pers["bot"]["class_primary"];
+	if(GetDvarInt( #"scr_disable_attachments" ))
+		weap = self.pers["primaryWeapon"] + "_mp";
+	
+	self GiveWeapon( weap, 0, int( self.pers["bot"]["class_primary_opts"] ) );
+	
+	if ( self hasPerk( "specialty_extraammo" ) )
+		self giveMaxAmmo( weap );
+
 	
 	if(self.pers["bot"]["class_secondary"] != "")
 	{
@@ -2179,8 +2178,6 @@ bot_give_loadout()
 		self SetActionSlot( 1, "weapon", self.pers["bot"]["class_equipment"] );
 	}
 	
-	self GiveWeapon( level.weapons["frag"] );
-	self SetWeaponAmmoClip( level.weapons["frag"], 0 );
 	if(self.pers["bot"]["class_lethal"] != "")
 	{
 		self GiveWeapon( self.pers["bot"]["class_lethal"] );
@@ -2195,7 +2192,6 @@ bot_give_loadout()
 	
 	if(self.pers["bot"]["class_tacticle"] != "")
 	{
-		self setOffhandSecondaryClass( self.pers["bot"]["class_tacticle"] );
 		self giveWeapon( self.pers["bot"]["class_tacticle"] );
 		
 		if(self.pers["bot"]["class_tacticle"] == "willy_pete_mp")
@@ -2204,7 +2200,22 @@ bot_give_loadout()
 			self SetWeaponAmmoClip( self.pers["bot"]["class_tacticle"], 3 );
 		else
 			self SetWeaponAmmoClip( self.pers["bot"]["class_tacticle"], 2 );
+		
+		self setOffhandSecondaryClass( self.pers["bot"]["class_tacticle"] );
 	}
+	
+	self setSpawnWeapon( weap );
+	
+	self thread fixSecondarySwitch(weap);
+}
+
+fixSecondarySwitch(weap)
+{
+	self endon("death");
+	self endon("disconnect");
+	wait 0.05;
+	self switchToWeapon(weap);
+	self setSpawnWeapon(weap);
 }
 
 bot_on_death()
@@ -2289,6 +2300,9 @@ bot_spawn()
 	//stockpile.gsc
 	//hotel.gsc
 	//kowloon.gsc
+	
+	//near players TODO
+	//follow players
 	
 	self thread bot_dom_def_think();
 	self thread bot_dom_spawn_kill_think();
@@ -4517,19 +4531,14 @@ bot_equipment_think()
 
 	for ( ;; )
 	{
-		wait( RandomIntRange( 2, 15 ) );
+		wait( RandomIntRange( 1, 3 ) );
 
 		if ( !self HasWeapon( weapon ) )
 		{
 			return;
 		}
 
-		if ( !self bot_is_idle() )
-		{
-			continue;
-		}
-
-		if ( self._is_sprinting )
+		if ( self IsRemoteControlling() || self.bot_lock_goal || isDefined(self getThreat()) || self._is_sprinting )
 		{
 			continue;
 		}
@@ -4569,6 +4578,15 @@ bot_equipment_think()
 		{
 			continue;
 		}
+		
+		if (randomInt(100) < 50)
+			continue;
+		
+		self.bot_lock_goal = true;
+		self notify("bot_check_unreachable");
+		self notify("bad_path");
+		
+		wait 0.05;
 
 		dir = VectorNormalize( AnglesToForward( self.angles ) );
 		dir = vector_scale( dir, 32 );
@@ -4592,17 +4610,16 @@ bot_equipment_think()
 		
 		if (path == "bad_path" || equipment_nearby( self.origin ))
 		{
+			self.bot_lock_goal = false;
 			continue;
 		}
-		
-		self.bot_lock_goal = true;
 		
 		self.did = "bot_equipment_think(2)";
 		self SetScriptGoal( self.origin, 128 );
 		
 		lastWeap = self getCurrentWeapon();
 		
-		if(self getCurrentWeapon() != weapon)
+		if(lastWeap != weapon)
 		{
 			self SwitchToWeapon( weapon );
 			self wait_endon( 10, "weapon_change_complete" );
@@ -4881,27 +4898,23 @@ bot_revenge_think()
 		return;
 	}
 	
-	went = isDefined(self.lastDeathPos);
+	if (!isDefined(self.lastDeathPos))
+		return;
 	
 	for(;;)
 	{
-		if(!went)
-			return;
-		
-		wait( RandomIntRange( 1, 7 ) );
+		wait( RandomIntRange( 1, 5 ) );
 		
 		if(self HasScriptGoal())
-			continue;
+			return;
 		
 		if ( self IsRemoteControlling() || self.bot_lock_goal )
 		{
-			continue;
+			return;
 		}
 		
-		if ( randomint( 100 ) < 75 )
-			continue;
-		
-		went = false;
+		if ( randomint( 100 ) < 65 )
+			return;
 		
 		self.did = "bot_revenge_think";
 		self SetScriptGoal( self.lastDeathPos, 64 );
@@ -4913,7 +4926,7 @@ bot_revenge_think()
 	}
 }
 
-bot_weapon_think()//alt weapon mode impossible?
+bot_weapon_think()
 {
 	self endon( "death" );
 	self endon( "disconnect" );
@@ -4921,29 +4934,64 @@ bot_weapon_think()//alt weapon mode impossible?
 	
 	for(;;)
 	{
-		wait( RandomIntRange( 5, 15 ) );
-		
+		wait( RandomIntRange( 2, 4 ) );
+
+		if ( IsDefined( self.laststand ) && self.laststand == true )
+		{
+			continue;
+		}
+	
+		if ( self IsRemoteControlling() )
+		{
+			continue;
+		}
+	
 		if(self UseButtonPressed())
 			continue;
 		
-		weapon = self getCurrentWeapon();
-		if(!isDefined(weapon) || weapon == "none")
-		{
-			weaps = self GetWeaponsList();
-			for(i = 0; i < weaps.size; i++)
-			{
-				if(isSubStr(weaps[i], self.pers["primaryWeapon"]))
-				{
-					self switchToWeapon(weaps[i]);
-					break;
-				}
-			}
-			
+		if(isDefined(self.isDefusing) && self.isDefusing)
 			continue;
+				
+		if(isDefined(self.isPlanting) && self.isPlanting)
+			continue;
+		
+		curWeap = self getCurrentWeapon();
+		
+		if(curWeap != "none" && self getAmmoCount(curWeap))
+		{
+			if(randomInt(100) > 2)
+				continue;
+				
+			if ( IsDefined( self GetThreat() ) )
+			{
+				continue;
+			}
 		}
 		
-		//self setSpawnWeapon(WeaponAltWeaponName(self getCurrentWeapon()));
-		//swtich to a random weapon?
+		weaponslist = self getweaponslist();
+		weap = "";
+		while(weaponslist.size)
+		{
+			weapon = weaponslist[randomInt(weaponslist.size)];
+			weaponslist = array_remove(weaponslist, weapon);
+			
+			if(!self getAmmoCount(weapon))
+				continue;
+					
+			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ))
+				continue;
+				
+			if(curWeap == weapon || weapon == "strela_mp" || weapon == "none" || weapon == "")
+				continue;
+				
+			weap = weapon;
+			break;
+		}
+		
+		if(weap == "")
+			continue;
+		
+		self switchToWeapon(weap);
 	}
 }
 
@@ -5709,7 +5757,7 @@ bot_sab()
 				}
 			}
 			
-			if(level.bombPlanted || !self isTouching(site.trigger) || (isDefined(self.laststand) && self.laststand))
+			if(level.bombPlanted || !self isTouching(site.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 			{
 				self.bot_lock_goal = false;
 				continue;
@@ -5869,7 +5917,7 @@ bot_sab()
 				}
 			}
 			
-			if(!level.bombPlanted || (isDefined(site.inUse) && site.inUse) || !self isTouching(site.trigger) || (isDefined(self.laststand) && self.laststand))
+			if(!level.bombPlanted || (isDefined(site.inUse) && site.inUse) || !self isTouching(site.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 			{
 				self.bot_lock_goal = false;
 				self notify("bot_inc_bots");
@@ -6101,7 +6149,7 @@ bot_sd_defenders()
 			}
 		}
 		
-		if(!level.bombPlanted || (isDefined(defuse.inUse) && defuse.inUse) || !self isTouching(defuse.trigger) || (isDefined(self.laststand) && self.laststand))
+		if(!level.bombPlanted || (isDefined(defuse.inUse) && defuse.inUse) || !self isTouching(defuse.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 		{
 			self.bot_lock_goal = false;
 			self notify("bot_inc_bots");
@@ -6347,7 +6395,7 @@ bot_sd_attackers()
 			}
 		}
 		
-		if(level.bombPlanted || plant.visibleTeam == "none" || !self isTouching(plant.trigger) || (isDefined(self.laststand) && self.laststand))
+		if(level.bombPlanted || plant.visibleTeam == "none" || !self isTouching(plant.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 		{
 			self.bot_lock_goal = false;
 			continue;
@@ -6616,7 +6664,7 @@ bot_dem_attackers()
 			}
 		}
 		
-		if((plant.label == "_b" && level.bombBPlanted) || (plant.label == "_a" && level.bombAPlanted) || (isDefined(plant.inUse) && plant.inUse) || !self isTouching(plant.trigger) || (isDefined(self.laststand) && self.laststand))
+		if((plant.label == "_b" && level.bombBPlanted) || (plant.label == "_a" && level.bombAPlanted) || (isDefined(plant.inUse) && plant.inUse) || !self isTouching(plant.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 		{
 			self.bot_lock_goal = false;
 			self notify("bot_inc_bots");
@@ -6923,7 +6971,7 @@ bot_dem_defenders()
 			}
 		}
 		
-		if((defuse.label == "_b" && !level.bombBPlanted) || (defuse.label == "_a" && !level.bombAPlanted) || (isDefined(defuse.inUse) && defuse.inUse) || !self isTouching(defuse.trigger) || (isDefined(self.laststand) && self.laststand))
+		if((defuse.label == "_b" && !level.bombBPlanted) || (defuse.label == "_a" && !level.bombAPlanted) || (isDefined(defuse.inUse) && defuse.inUse) || !self isTouching(defuse.trigger) || (isDefined(self.laststand) && self.laststand) || isDefined(self getThreat()))
 		{
 			self.bot_lock_goal = false;
 			self notify("bot_inc_bots");
@@ -7221,7 +7269,13 @@ bot_dom_cap_think()
 		self SetScriptGoal( self.origin, 64 );
 
 		while ( flag maps\mp\gametypes\dom::getFlagTeam() != myTeam && self isTouching(flag) )
+		{
+			cur = flag.useObj.curProgress;
 			wait 0.5;
+			
+			if(cur == flag.useObj.curProgress)
+				break;//no prog made, enemy must be capping
+		}
 
 		self ClearScriptGoal();
 		
