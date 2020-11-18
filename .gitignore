@@ -13,6 +13,7 @@
 !/main/
 /main/*
 !/main/server.cfg
+!/main_shared/
 
 # Folder to not ignore
 !/mods/
