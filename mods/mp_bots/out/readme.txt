@@ -1,7 +1,7 @@
 |\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
 ///////////////Bot Warfare////////////////
 Feel free to use code, however give credit where credit is due!
-	-INeedGames/INeedBot(s) @ ineedbots@pbot.org
+	-INeedGames/INeedBot(s) @ ineedbots@outlook.org
 |________________________________________|
 
 Contents:
@@ -74,6 +74,11 @@ Make bots use alt weapon types (tube, master key, flamethrower) possible?
 
 |\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
 ///////////////4: Changelog///////////////
+v1.03(01/05/2020):
+	Fixed bots switching to secondaries all the time.
+	Bots can freely switch to their secondaries.
+	Fixed HCTDM scorelimit menu option.
+
 v1.02(05/06/2018):
 	Fixed a few small bugs. A possible infinite loop when bots are too poor for a grenade and reasonable setups are on, and bots never spawning after death with forcerespawn off.
 	Added an option to allow for UNLIMITED score.
@@ -94,4 +99,4 @@ apdonato - ideas and/of implementation of code from their 'BO patch': http://rse
 
 
 Feel free to use code, host on other sites, host on servers, mod it and merge mods with it, just give credit where credit is due!
-	-INeedGames/INeedBot(s) @ ineedbots@pbot.org
+	-INeedGames/INeedBot(s) @ ineedbots@outlook.org
