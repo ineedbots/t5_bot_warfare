@@ -42,6 +42,24 @@ getGoodMapAmount()
 }
 
 /*
+	Rounds to the nearest whole number.
+*/
+Round(x)
+{
+	y = int(x);
+	
+	if(abs(x) - abs(y) > 0.5)
+	{
+		if(x < 0)
+			return y - 1;
+		else
+			return y + 1;
+	}
+	else
+		return y;
+}
+
+/*
 	Picks a random thing
 */
 PickRandom(arr)
