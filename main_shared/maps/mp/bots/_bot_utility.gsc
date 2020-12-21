@@ -76,6 +76,9 @@ PickRandom(arr)
 bot_wait_for_host()
 {
 	host = undefined;
+
+	while (!isDefined(level) || !isDefined(level.players))
+		wait 0.05;
 	
 	for(i = 0; i < 100; i++)
 	{
