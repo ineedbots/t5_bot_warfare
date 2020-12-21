@@ -47,6 +47,10 @@ init()
 		setDvar("bots_loadout_reasonable", false);
 	if(getDvar("bots_loadout_allow_op") == "")//allows jug, marty and laststand
 		setDvar("bots_loadout_allow_op", true);
+	if(getDvar("bots_loadout_rank") == "")// what rank the bots should be around, -1 is around the players, 0 is all random
+		setDvar("bots_loadout_rank", -1);
+	if(getDvar("bots_loadout_codpoints") == "")// how much cod points a bot should have, -1 is around the players, 0 is all random
+		setDvar("bots_loadout_codpoints", -1);
 
   level.bots = [];
   level.bot_decoys = [];
