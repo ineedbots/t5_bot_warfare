@@ -51,6 +51,8 @@ init()
 		setDvar("bots_loadout_rank", -1);
 	if(getDvar("bots_loadout_codpoints") == "")// how much cod points a bot should have, -1 is around the players, 0 is all random
 		setDvar("bots_loadout_codpoints", -1);
+	if(getDvar("bots_loadout_prestige") == "")// what pretige the bots will be, -1 is the players, -2 is random
+		setDvar("bots_loadout_prestige", -1);
 
   level.bots = [];
   level.bot_decoys = [];

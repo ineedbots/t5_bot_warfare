@@ -17,6 +17,7 @@ added()
 {
   self maps\mp\bots\_bot_loadout::bot_get_cod_points();
 	self maps\mp\bots\_bot_loadout::bot_get_rank();
+	self maps\mp\bots\_bot_loadout::bot_get_prestige();
 	
 	self maps\mp\bots\_bot_loadout::bot_setKillstreaks();
 	

@@ -178,6 +178,42 @@ fixSecondarySwitch(weap)
 }
 
 /*
+	Gets the prestige
+*/
+bot_get_prestige()
+{
+	p_dvar = getDvarInt("bots_loadout_prestige");
+	p = 0;
+
+	if (p_dvar == -1)
+	{
+		for (i = 0; i < level.players.size; i++)
+		{
+			player = level.players[i];
+
+			if (!isDefined(player.team))
+				continue;
+
+			if (player is_bot())
+				continue;
+
+			p = player maps\mp\gametypes\_persistence::statGet( "plevel" );
+			break;
+		}
+	}
+	else if (p_dvar == -2)
+	{
+		p = randomInt(17);
+	}
+	else
+	{
+		p = p_dvar;
+	}
+
+	self.pers["bot"]["prestige"] = p;
+}
+
+/*
   Gives the rank to the bot
 */
 bot_rank()
@@ -188,8 +224,12 @@ bot_rank()
 	
 	self.pers["rankxp"] = self.pers["bot"]["rankxp"];
 	rankId = self maps\mp\gametypes\_rank::getRankForXp( self.pers["bot"]["rankxp"] );
+	prestige = self.pers["bot"]["prestige"];
+
 	self.pers["rank"] = rankId;
-	self setRank( rankId );
+	self.pers["prestige"] = prestige;
+	self.pers["plevel"] = prestige;
+	self setRank( rankId, prestige );
 	
 	if(!level.gameEnded)
 		level waittill("game_ended");
