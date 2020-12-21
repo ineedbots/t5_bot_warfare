@@ -15,7 +15,7 @@
 */
 added()
 {
-  self maps\mp\bots\_bot_loadout::bot_get_cod_points();
+	self maps\mp\bots\_bot_loadout::bot_get_cod_points();
 	self maps\mp\bots\_bot_loadout::bot_get_rank();
 	self maps\mp\bots\_bot_loadout::bot_get_prestige();
 	
@@ -23,7 +23,7 @@ added()
 	
 	self.pers["bot"][ "cod_points_org" ] = self.pers["bot"][ "cod_points" ];//killstreaks cannot be set again
 
-  self maps\mp\bots\_bot_loadout::bot_set_class();
+	self maps\mp\bots\_bot_loadout::bot_set_class();
 }
 
 /*
