@@ -114,6 +114,16 @@ bot_wait_for_host()
 }
 
 /*
+	Wrapper for setgoal
+*/
+SetBotGoal(where, dist)
+{
+	self SetScriptGoal(where, dist);
+	waittillframeend;
+	self notify("new_goal");
+}
+
+/*
   Fixes sd bomb planting
 */
 bot_onUsePlantObjectFix( player )
