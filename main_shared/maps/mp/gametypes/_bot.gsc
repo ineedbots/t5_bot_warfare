@@ -452,6 +452,26 @@ teamBots()
 
 /*
 	A server thread for monitoring all bot's in game. Will add and kick bots according to server settings.
+
+	Dedis only spawn bots when developer is not 0
+	This makes the dedi unstable and can crash
+
+	Patch the executable to skip the pregame and make it so bots can spawn
+
+	pregame:
+		in the ShouldDoPregame sub:
+					 B8 01 00 00 00: mov eax, 1
+change to: B8 00 00 00 00: mov eax, 0
+			0x4F6C77 in rektmp
+			0x4598A7 in bg
+
+
+	spawnbots:
+		in the SV_AddTestClient sub:
+			     0F 85 A4 00 00 00: jnz
+change to: 0F 84 A4 00 00 00: jz
+			0x6B6180 in rektmp
+			0x4682F0 in bg
 */
 addBots()
 {
