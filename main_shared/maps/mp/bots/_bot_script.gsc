@@ -257,7 +257,7 @@ bot_spawn()
 	level endon("game_ended");
 
 	if(randomInt(100) < 1)
-		self bot_set_class();
+		self maps\mp\bots\_bot_loadout::bot_set_class();
 
 	if (getDvarInt("bots_play_obj"))
 		self thread bot_dom_cap_think();
@@ -347,6 +347,35 @@ bot_spawn()
 
 		self thread bot_dem_attackers();
 		self thread bot_dem_defenders();*/
+	}
+}
+
+/*
+	Watches when the bot is touching the obj and calls 'goal'
+*/
+bots_watch_touch_obj(obj)
+{
+	self endon ("death");
+	self endon ("disconnect");
+	self endon ("bad_path");
+	self endon ("goal");
+	self endon ("new_goal");
+
+	for (;;)
+	{
+		wait 0.5;
+
+		if (!isDefined(obj))
+		{
+			self notify("bad_path");
+			return;
+		}
+
+		if (self IsTouching(obj))
+		{
+			self notify("goal");
+			return;
+		}
 	}
 }
 
