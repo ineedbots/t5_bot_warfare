@@ -472,6 +472,13 @@ change to: B8 00 00 00 00: mov eax, 0
 change to: 0F 84 A4 00 00 00: jz
 			0x6B6180 in rektmp
 			0x4682F0 in bg
+
+
+	allow changing g_antilag dvar:
+		set the byte from 0x40 to 0x00
+		
+		0x53B1B2 in rekt
+		0x59B6F2 in bg
 */
 addBots()
 {
