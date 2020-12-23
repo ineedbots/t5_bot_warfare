@@ -71,7 +71,7 @@ PickRandom(arr)
 }
 
 /*
-  Waits for a host player
+	Waits for a host player
 */
 bot_wait_for_host()
 {
@@ -124,7 +124,7 @@ SetBotGoal(where, dist)
 }
 
 /*
-  Fixes sd bomb planting
+	Fixes sd bomb planting
 */
 bot_onUsePlantObjectFix( player )
 {
@@ -166,7 +166,7 @@ bot_onUsePlantObjectFix( player )
 }
 
 /*
-  Fixes sd bomb planting
+	Fixes sd bomb planting
 */
 bot_bombPlanted( destroyedObj, player )
 {

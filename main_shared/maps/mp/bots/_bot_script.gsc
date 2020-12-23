@@ -11,7 +11,7 @@
 #include maps\mp\bots\_bot_utility;
 
 /*
-  When the bot is added to the game
+	When the bot is added to the game
 */
 added()
 {
@@ -29,24 +29,24 @@ added()
 }
 
 /*
-  When the bot connects
+	When the bot connects
 */
 connected()
 {
 	self endon("disconnect");
 
-  self thread classWatch();
-  self thread teamWatch();
+	self thread classWatch();
+	self thread teamWatch();
 
-  self thread maps\mp\bots\_bot_loadout::bot_rank();
+	self thread maps\mp\bots\_bot_loadout::bot_rank();
 	self thread bot_skip_killcam();
 
-  self thread bot_on_spawn();
+	self thread bot_on_spawn();
 	self thread bot_on_death();
 }
 
 /*
-  When the bot dies
+	When the bot dies
 */
 bot_on_death()
 {
@@ -62,7 +62,7 @@ bot_on_death()
 }
 
 /*
-  Bots skip killcams
+	Bots skip killcams
 */
 bot_skip_killcam()
 {
@@ -123,7 +123,7 @@ teamWatch()
 }
 
 /*
-  When bot spawns
+	When bot spawns
 */
 bot_on_spawn()
 {
@@ -143,7 +143,7 @@ bot_on_spawn()
 }
 
 /*
-  Fired when the bot is damaged
+	Fired when the bot is damaged
 */
 bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHitLoc )
 {
@@ -255,7 +255,7 @@ bot_spawn()
 	self endon("death");
 	self endon("disconnect");
 	level endon("game_ended");
-
+		
 	if(randomInt(100) < 1)
 		self maps\mp\bots\_bot_loadout::bot_set_class();
 

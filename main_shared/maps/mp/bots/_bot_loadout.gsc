@@ -2,7 +2,7 @@
 	_bot_loadout
 	Author: INeedGames
 	Date: 12/20/2020
-  Loadout stuff
+	Loadout stuff
 */
 
 #include common_scripts\utility;
@@ -11,11 +11,11 @@
 #include maps\mp\bots\_bot_utility;
 
 /*
-  Gives the bot loadout
+	Gives the bot loadout
 */
 bot_give_loadout()
 {
-  self bot_giveKillstreaks();
+	self bot_giveKillstreaks();
 	
 	self clearPerks();
 	
@@ -164,16 +164,16 @@ bot_give_loadout()
 }
 
 /*
-  Fixes the weapon on spawn for the bot
+	Fixes the weapon on spawn for the bot
 */
 fixSecondarySwitch(weap)
 {
 	self endon("death");
 	self endon("disconnect");
-  self switchToWeapon(weap);
-  self setSpawnWeapon(weap);
+	self switchToWeapon(weap);
+	self setSpawnWeapon(weap);
 	wait 0.05;
-  self switchToWeapon(weap);
+	self switchToWeapon(weap);
 	self setSpawnWeapon(weap);
 }
 
@@ -214,7 +214,7 @@ bot_get_prestige()
 }
 
 /*
-  Gives the rank to the bot
+	Gives the rank to the bot
 */
 bot_rank()
 {
@@ -238,7 +238,7 @@ bot_rank()
 }
 
 /*
-  Set the bot's class
+	Set the bot's class
 */
 bot_set_class()
 {
@@ -362,7 +362,7 @@ bot_set_class()
 }
 
 /*
-  Set the bot's a random weapon for the slot
+	Set the bot's a random weapon for the slot
 */
 bot_get_random_weapon(slot, rank)
 {
@@ -513,7 +513,7 @@ bot_get_random_weapon(slot, rank)
 }
 
 /*
-  Set the bot's perk for a slot
+	Set the bot's perk for a slot
 */
 bot_get_random_perk(slot, rank)
 {
@@ -560,7 +560,7 @@ bot_get_random_perk(slot, rank)
 }
 
 /*
-  Set the bots a random face paint
+	Set the bots a random face paint
 */
 bot_random_face()
 {
@@ -631,7 +631,7 @@ bot_random_face()
 }
 
 /*
-  Gets a random lens
+	Gets a random lens
 */
 bot_random_lens()
 {
@@ -652,7 +652,7 @@ bot_random_lens()
 }
 
 /*
-  Gets a random reticle
+	Gets a random reticle
 */
 bot_random_reticle()
 {
@@ -673,7 +673,7 @@ bot_random_reticle()
 }
 
 /*
-  Gets a random tag
+	Gets a random tag
 */
 bot_random_tag()
 {
@@ -694,7 +694,7 @@ bot_random_tag()
 }
 
 /*
-  Gets a random emblem
+	Gets a random emblem
 */
 bot_random_emblem()
 {
@@ -715,7 +715,7 @@ bot_random_emblem()
 }
 
 /*
-  Gets a random camo
+	Gets a random camo
 */
 bot_random_camo()
 {
@@ -746,7 +746,7 @@ bot_random_camo()
 }
 
 /*
-  Gets the cost of a weapon
+	Gets the cost of a weapon
 */
 bot_weapon_cost(id)
 {
@@ -775,7 +775,7 @@ bot_weapon_cost(id)
 }
 
 /*
-  Checks to see iif the weapon is unlocked
+	Checks to see iif the weapon is unlocked
 */
 bot_weapon_unlocked(id, rank)
 {
@@ -805,7 +805,7 @@ bot_weapon_unlocked(id, rank)
 }
 
 /*
-  Gets the cost of an attachment
+	Gets the cost of an attachment
 */
 bot_attachment_cost(att)
 {
@@ -841,7 +841,7 @@ bot_attachment_cost(att)
 }
 
 /*
-  Builds the weapon string
+	Builds the weapon string
 */
 bot_validate_weapon(weap)
 {
@@ -873,7 +873,7 @@ bot_validate_weapon(weap)
 }
 
 /*
-  Gets random attachements
+	Gets random attachements
 */
 bot_random_attachments(weap, atts, num)
 {
@@ -994,7 +994,7 @@ bot_random_attachments(weap, atts, num)
 }
 
 /*
-  Gets the perk ref
+	Gets the perk ref
 */
 bot_perk_from_reference_full( reference_full )
 {
@@ -1015,7 +1015,7 @@ bot_perk_from_reference_full( reference_full )
 }
 
 /*
-  Get the bot's cod points
+	Get the bot's cod points
 */
 bot_get_cod_points()
 {
@@ -1063,7 +1063,7 @@ bot_get_cod_points()
 }
 
 /*
-  Get the bots rank
+	Get the bots rank
 */
 bot_get_rank()
 {
@@ -1130,7 +1130,7 @@ bot_get_rank()
 }
 
 /*
-  Set the bots killstreaks
+	Set the bots killstreaks
 */
 bot_setKillstreaks()
 {
@@ -1204,7 +1204,7 @@ bot_setKillstreaks()
 }
 
 /*
-  Get cost for ks
+	Get cost for ks
 */
 bot_get_killstreak_cost(ks)
 {
@@ -1241,7 +1241,7 @@ bot_get_killstreak_cost(ks)
 }
 
 /*
-  Gives the kss
+	Gives the kss
 */
 bot_giveKillstreaks()
 {
@@ -1251,7 +1251,7 @@ bot_giveKillstreaks()
 }
 
 /*
-  Checks if the ks is used
+	Checks if the ks is used
 */
 bot_killstreak_level_is_used( ks_level, used_levels )
 {

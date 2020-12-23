@@ -11,11 +11,11 @@
 #include maps\mp\bots\_bot_utility;
 
 /*
-  Entry point to the bots
+	Entry point to the bots
 */
 init()
 {
-  level.bw_VERSION = "1.1.0";
+	level.bw_VERSION = "1.1.0";
 
 	if(getDvar("bots_main") == "")
 		setDvar("bots_main", true);
@@ -23,7 +23,7 @@ init()
 	if (!getDvarInt("bots_main"))
 		return;
 
-  if(getDvar("bots_manage_add") == "")
+	if(getDvar("bots_manage_add") == "")
 		setDvar("bots_manage_add", 0);//amount of bots to add to the game
 	if(getDvar("bots_manage_fill") == "")
 		setDvar("bots_manage_fill", 0);//amount of bots to maintain
@@ -43,7 +43,7 @@ init()
 	if(getDvar("bots_team_mode") == "")
 		setDvar("bots_team_mode", 0);//counts just bots when 1
 
-  if(getDvar("bots_loadout_reasonable") == "")//filter out the bad 'guns' and perks
+	if(getDvar("bots_loadout_reasonable") == "")//filter out the bad 'guns' and perks
 		setDvar("bots_loadout_reasonable", false);
 	if(getDvar("bots_loadout_allow_op") == "")//allows jug, marty and laststand
 		setDvar("bots_loadout_allow_op", true);
@@ -67,21 +67,21 @@ init()
 	if(getDvar("bots_play_camp") == "")//bots camp and follow
 		setDvar("bots_play_camp", true);
 
-  level.bots = [];
-  level.bot_decoys = [];
+	level.bots = [];
+	level.bot_decoys = [];
 	level.bot_planes = [];
 
-  if(!isDefined(game["botWarfare"]))
+	if(!isDefined(game["botWarfare"]))
 		game["botWarfare"] = true;
 
-  thread fixGamemodes();
-  thread onPlayerConnect();
+	thread fixGamemodes();
+	thread onPlayerConnect();
 
-  thread diffBots();
-  thread teamBots();
-  thread addBots();
+	thread diffBots();
+	thread teamBots();
+	thread addBots();
 
-  thread doNonDediBots();
+	thread doNonDediBots();
 }
 
 /*
@@ -93,9 +93,9 @@ onPlayerConnect()
 	{
 		level waittill("connected", player);
 
-    player thread watch_shoot();
+		player thread watch_shoot();
 		player thread watch_grenade();
-    player thread connected();
+		player thread connected();
 	}
 }
 
@@ -110,16 +110,16 @@ onDisconnect()
 }
 
 /*
-  Whena  player connects
+	Whena	player connects
 */
 connected()
 {
 	self endon("disconnect");
 
-  if (!self is_bot())
-    return;
+	if (!self is_bot())
+		return;
 
-  self thread maps\mp\bots\_bot_script::connected();
+	self thread maps\mp\bots\_bot_script::connected();
 
 	level.bots[level.bots.size] = self;
 	self thread onDisconnect();
@@ -128,68 +128,68 @@ connected()
 }
 
 /*
-  Handles the diff of the bots
+	Handles the diff of the bots
 */
 diffBots()
 {
-  for (;;)
-  {
-    wait 1.5;
+	for (;;)
+	{
+		wait 1.5;
 
-    bot_set_difficulty(GetDvar( #"bot_difficulty" ));
-  }
+		bot_set_difficulty(GetDvar( #"bot_difficulty" ));
+	}
 }
 
 /*
-  Setup bot dvars for non dedicated clients
+	Setup bot dvars for non dedicated clients
 */
 doNonDediBots()
 {
-  if (!GetDvarInt( #"xblive_basictraining" ))
-    return;
+	if (!GetDvarInt( #"xblive_basictraining" ))
+		return;
 
-  if (isDefined(game[ "bots_spawned" ]))
-    return;
+	if (isDefined(game[ "bots_spawned" ]))
+		return;
 
-  game[ "bots_spawned" ] = true;
+	game[ "bots_spawned" ] = true;
 
-  if(getDvar("bot_enemies_extra") == "")
+	if(getDvar("bot_enemies_extra") == "")
 		setDvar("bot_enemies_extra", 0);
 	if(getDvar("bot_friends_extra") == "")
 		setDvar("bot_friends_extra", 0);
 
-  bot_friends = GetDvarInt( #"bot_friends" );
+	bot_friends = GetDvarInt( #"bot_friends" );
 	bot_enemies = GetDvarInt( #"bot_enemies" );
 
-  bot_enemies += GetDvarInt("bot_enemies_extra");
+	bot_enemies += GetDvarInt("bot_enemies_extra");
 	bot_friends += GetDvarInt("bot_friends_extra");
 
-  bot_wait_for_host();
+	bot_wait_for_host();
 	host = GetHostPlayer();
 
-  team = "allies";
+	team = "allies";
 	if(isDefined(host) && isDefined(host.pers[ "team" ]) && (host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis"))
 		team = host.pers[ "team" ];
 
-  setDvar("bots_manage_add", bot_enemies + bot_friends - 1);
-  setDvar("bots_manage_fill", bot_enemies + bot_friends);
-  setDvar("bots_manage_fill_mode", 0);
-  setDvar("bots_manage_fill_kick", true);
-  setDvar("bots_manage_fill_spec", false);
+	setDvar("bots_manage_add", bot_enemies + bot_friends - 1);
+	setDvar("bots_manage_fill", bot_enemies + bot_friends);
+	setDvar("bots_manage_fill_mode", 0);
+	setDvar("bots_manage_fill_kick", true);
+	setDvar("bots_manage_fill_spec", false);
 
-  setDvar("bots_team", "custom");
+	setDvar("bots_team", "custom");
 
-  if (team == "axis")
-	  setDvar("bots_team_amount", bot_friends);
-  else
-    setDvar("bots_team_amount", bot_enemies);
+	if (team == "axis")
+		setDvar("bots_team_amount", bot_friends);
+	else
+		setDvar("bots_team_amount", bot_enemies);
 
 	setDvar("bots_team_force", true);
 	setDvar("bots_team_mode", 0);
 }
 
 /*
-  Sets the difficulty of the bots
+	Sets the difficulty of the bots
 */
 bot_set_difficulty( difficulty )
 {
@@ -302,7 +302,7 @@ bot_set_difficulty( difficulty )
 		SetDvar( "sv_botMaxGrenadeTime",	"4000" );
 		SetDvar( "sv_botSprintDistance",	"512"	);
 		SetDvar( "sv_botMeleeDist",			"80" );
-    difficulty = "normal";
+		difficulty = "normal";
 	}
 
 	if ( level.gameType == "oic" && difficulty == "fu" )
@@ -468,7 +468,7 @@ change to: B8 00 00 00 00: mov eax, 0
 
 	spawnbots:
 		in the SV_AddTestClient sub:
-			     0F 85 A4 00 00 00: jnz
+					 0F 85 A4 00 00 00: jnz
 change to: 0F 84 A4 00 00 00: jz
 			0x6B6180 in rektmp
 			0x4682F0 in bg
@@ -482,13 +482,13 @@ change to: 0F 84 A4 00 00 00: jz
 */
 addBots()
 {
-  level endon ( "game_ended" );
+	level endon ( "game_ended" );
 
 	bot_wait_for_host();
 
-  for (;;)
-  {
-    wait 1.5;
+	for (;;)
+	{
+		wait 1.5;
 		
 		botsToAdd = GetDvarInt("bots_manage_add");
 		
@@ -581,7 +581,7 @@ addBots()
 			if (isDefined(tempBot))
 				kick( tempBot getEntityNumber(), "EXE_PLAYERKICKED" );
 		}
-  }
+	}
 }
 
 /*
@@ -600,23 +600,23 @@ add_bot()
 }
 
 /*
-  Gives the bot loadout
+	Gives the bot loadout
 */
 bot_give_loadout()
 {
-  self maps\mp\bots\_bot_loadout::bot_give_loadout();
+	self maps\mp\bots\_bot_loadout::bot_give_loadout();
 }
 
 /*
-  Fired when the bot is damaged
+	Fired when the bot is damaged
 */
 bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHitLoc )
 {
-  self maps\mp\bots\_bot_script::bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHitLoc );
+	self maps\mp\bots\_bot_script::bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHitLoc );
 }
 
 /*
-  Watch all players grenades
+	Watch all players grenades
 */
 watch_grenade()
 {
@@ -638,7 +638,7 @@ watch_grenade()
 }
 
 /*
-  Watch the decoy grenade
+	Watch the decoy grenade
 */
 watch_decoy(g)
 {
@@ -664,7 +664,7 @@ watch_decoy(g)
 }
 
 /*
-  Attach a trigger to the scrambler
+	Attach a trigger to the scrambler
 */
 watch_scrambler()
 {
@@ -676,7 +676,7 @@ watch_scrambler()
 }
 
 /*
-  Watch when players enter the scrambler trigger
+	Watch when players enter the scrambler trigger
 */
 scramble_nearby(trig)
 {
@@ -705,7 +705,7 @@ scramble_nearby(trig)
 }
 
 /*
-  Scramble this player
+	Scramble this player
 */
 scramble_player()
 {
@@ -720,7 +720,7 @@ scramble_player()
 }
 
 /*
-  Watch when a player shoots
+	Watch when a player shoots
 */
 watch_shoot()
 {
@@ -735,7 +735,7 @@ watch_shoot()
 }
 
 /*
-  When a player fires
+	When a player fires
 */
 doFiringThread()
 {
@@ -748,7 +748,7 @@ doFiringThread()
 }
 
 /*
-  Watches the planes
+	Watches the planes
 */
 bot_watch_planes()
 {
@@ -773,7 +773,7 @@ bot_watch_planes()
 }
 
 /*
-  Watches the plane
+	Watches the plane
 */
 watch_plane(ent)
 {
@@ -799,7 +799,7 @@ watch_plane(ent)
 }
 
 /*
-  Fix xp in sd
+	Fix xp in sd
 */
 bot_killBoost()
 {
@@ -807,7 +807,7 @@ bot_killBoost()
 }
 
 /*
-  Fixes sd
+	Fixes sd
 */
 fixGamemodes()
 {
