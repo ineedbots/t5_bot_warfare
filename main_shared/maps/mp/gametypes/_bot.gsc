@@ -521,6 +521,9 @@ addBots()
 		for(i = 0; i < playercount; i++)
 		{
 			player = level.players[i];
+
+			if (player isdemoclient())
+				continue;
 			
 			if(player is_bot())
 				bots++;
