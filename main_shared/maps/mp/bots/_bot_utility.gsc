@@ -80,7 +80,7 @@ bot_wait_for_host()
 	while (!isDefined(level) || !isDefined(level.players))
 		wait 0.05;
 		
-	for(i = 0; i < 100; i++)
+	for(i = getDvarFloat("bots_main_waitForHostTime"); i > 0; i -= 0.05)
 	{
 		host = GetHostPlayer();
 		
@@ -93,7 +93,7 @@ bot_wait_for_host()
 	if(!isDefined(host))
 		return;
 		
-	for(i = 0; i < 100; i++)
+	for(i = getDvarFloat("bots_main_waitForHostTime"); i > 0; i -= 0.05)
 	{
 		if(IsDefined( host.pers[ "team" ] ))
 			break;
@@ -104,7 +104,7 @@ bot_wait_for_host()
 	if(!IsDefined( host.pers[ "team" ] ))
 		return;
 		
-	for(i = 0; i < 100; i++)
+	for(i = getDvarFloat("bots_main_waitForHostTime"); i > 0; i -= 0.05)
 	{
 		if(host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis")
 			break;

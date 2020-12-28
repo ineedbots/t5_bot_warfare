@@ -23,6 +23,9 @@ init()
 	if (!getDvarInt("bots_main"))
 		return;
 
+	if(getDvar("bots_main_waitForHostTime") == "")
+		setDvar("bots_main_waitForHostTime", 10.0);//how long to wait to wait for the host player
+
 	if(getDvar("bots_manage_add") == "")
 		setDvar("bots_manage_add", 0);//amount of bots to add to the game
 	if(getDvar("bots_manage_fill") == "")
