@@ -463,8 +463,89 @@ getKillstreakTargetLocation()
 /*
 	Bot will think to use rcbomb
 */
-bot_rccar_think()
+bot_rccar_think(weapon)
 {
+	self endon("weapon_object_destroyed");
+	self endon("rcbomb_done");
+
+	diff = self GetBotDiffNum();
+
+	if (diff > 0)
+	{
+		if ( self GetLookaheadDist() < 128 )
+			return;
+
+		dir = self GetLookaheadDir();
+		if ( !IsDefined( dir ) )
+			return;
+
+		dir = VectorToAngles( dir );
+		if ( abs( dir[1] - self.angles[1] ) > 5 )
+			return;
+	}
+
+	if (!self ChangeToWeapon(weapon))
+		return;
+
+	wait 2;
+	stuck_time = 0;
+	last_org = self.origin;
+
+	for (;;)
+	{
+		wait 0.5;
+
+		if (!IsDefined( self.rcbomb ))
+			return;
+
+		if (DistanceSquared(self.rcbomb.origin, last_org) < 2 * 2)
+			stuck_time += 0.5;
+		else
+			stuck_time = 0;
+
+		last_org = self.rcbomb.origin;
+
+		players = get_players();
+
+		for ( i = 0; i < players.size; i++ )
+		{
+			player = players[i];
+
+			if ( player == self )
+				continue;
+			
+			if(!isDefined(player.team))
+				continue;
+
+			if ( !IsAlive( player ) )
+				continue;
+
+			if ( level.teamBased && player.team == self.team )
+				continue;
+
+			if ( diff == 0 )
+			{
+				if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 512 * 512 )
+				{
+					self PressAttackButton();
+				}
+			}
+			else if(player hasPerk("specialty_flakjacket"))
+			{
+				if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 100 * 100 )
+				{
+					self PressAttackButton();
+				}
+			}
+			else if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 200 * 200 )
+			{
+				self PressAttackButton();
+			}
+		}
+
+		if (stuck_time > 3)
+			self PressAttackButton();
+	}
 }
 
 /*
@@ -472,7 +553,7 @@ bot_rccar_think()
 */
 bot_use_supply_drop( weapon )
 {
-	if (self GetBotDiffNum())
+	if (self GetBotDiffNum() > 0)
 	{
 		if (self GetLookaheadDist() < 96)
 			return;
@@ -538,6 +619,58 @@ bot_use_supply_drop( weapon )
 */
 bot_turret_location( weapon )
 {
+	if ( self GetBotDiffNum() > 0 )
+	{
+		if ( self GetLookaheadDist() < 256 )
+			return;
+
+		dir = self GetLookaheadDir();
+
+		if ( !IsDefined( dir ) )
+			return;
+
+		dir = VectorToAngles( dir );
+
+		if ( abs( dir[1] - self.angles[1] ) > 5 )
+			return;
+
+		yaw = ( 0, self.angles[1], 0 );
+		dir = AnglesToForward( yaw );
+		dir = VectorNormalize( dir );
+
+		goal = self.origin + vector_scale( dir, 32 );
+
+		if ( weapon == "autoturret_mp" )
+		{
+			eye = self.origin + ( 0, 0, 60 );
+			goal = eye + vector_scale( dir, 1024 );
+
+			if ( !SightTracePassed( self.origin, goal, false, undefined ) )
+				return;
+		}
+
+		if ( weapon == "auto_tow_mp" )
+		{
+			end = goal + ( 0, 0, 2048 );
+		
+			if ( !SightTracePassed( goal, end, false, undefined ) )
+				return;
+		}
+	}
+
+	self thread botStopMove(true);
+
+	if (self ChangeToWeapon(weapon))
+	{
+		self thread fire_current_weapon();
+
+		wait 1.5;
+		self notify("stop_firing_weapon");
+
+		self thread changeToWeapon(self.lastNonKillstreakWeapon);
+	}
+
+	self thread botStopMove(false);
 }
 
 /*
@@ -668,7 +801,7 @@ bot_killstreak_think()
 				break;
 
 			case "killstreak_rcbomb":
-				self bot_rccar_think();
+				self bot_rccar_think(weapon);
 				wait 1;
 				break;
 
