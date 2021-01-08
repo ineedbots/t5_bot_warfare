@@ -1243,6 +1243,7 @@ bot_get_killstreak_cost(ks)
 */
 bot_giveKillstreaks()
 {
+	self.killstreak = [];
 	self.killstreak[0] = self.pers["bot"]["killstreaks"][0];
 	self.killstreak[1] = self.pers["bot"]["killstreaks"][1];
 	self.killstreak[2] = self.pers["bot"]["killstreaks"][2];

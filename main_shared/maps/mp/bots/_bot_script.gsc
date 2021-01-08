@@ -262,21 +262,21 @@ bot_spawn()
 
 	if(!level.inPrematchPeriod)
 	{
-		switch(GetDvar( #"bot_difficulty" ))
+		switch(self GetBotDiffNum())
 		{
-			case "fu":
+			case 3:
 			break;
-			case "easy":
+			case 0:
 				self freeze_player_controls(true);
 				wait 0.6;
 				self freeze_player_controls(false);
 			break;
-			case "normal":
+			case 1:
 				self freeze_player_controls(true);
 				wait 0.4;
 				self freeze_player_controls(false);
 			break;
-			case "hard":
+			case 2:
 				self freeze_player_controls(true);
 				wait 0.2;
 				self freeze_player_controls(false);
@@ -289,9 +289,10 @@ bot_spawn()
 			wait ( 0.05 );
 	}
 
-	/*if (getDvarInt("bots_play_killstreak"))
+	if (getDvarInt("bots_play_killstreak"))
 		self thread bot_killstreak_think();
 
+	/*
 	if (getDvarInt("bots_play_take_carepackages"))
 	{
 		self thread bot_watch_stuck_on_crate();
@@ -374,6 +375,431 @@ bots_watch_touch_obj(obj)
 			self notify("goal");
 			return;
 		}
+	}
+}
+
+/*
+	Changes to the weap
+*/
+changeToWeapon(weap)
+{
+	self endon("disconnect");
+	self endon("death");
+	level endon("game_ended");
+
+	if (!self HasWeapon(weap))
+		return false;
+
+	if (self GetCurrentWeapon() == weap)
+		return true;
+
+	self SwitchToWeapon(weap);
+
+	self waittill_any_timeout(5, "weapon_change");
+
+	return (self GetCurrentWeapon() == weap);
+}
+
+/*
+	Fires the bots weapon until told to stop
+*/
+fire_current_weapon()
+{
+	self endon("death");
+	self endon("disconnect");
+	self endon("weapon_change");
+	self endon("stop_firing_weapon");
+
+	wait 0.5;
+
+	for (;;)
+	{
+		self PressAttackButton();
+		wait 0.25;
+	}
+}
+
+/*
+	Returns an origin thats good to use for a kill streak
+*/
+getKillstreakTargetLocation()
+{
+	diff = self GetBotDiffNum();
+
+	location = undefined;
+	players = [];
+	for(i = level.players.size - 1; i >= 0; i--)
+	{
+		player = level.players[i];
+	
+		if(player == self)
+			continue;
+		if(!isDefined(player.team))
+			continue;
+		if(level.teamBased && self.team == player.team)
+			continue;
+		if(player.sessionstate != "playing")
+			continue;
+		if(!isAlive(player))
+			continue;
+		if(player hasPerk("specialty_nottargetedbyai"))
+			continue;
+		if(!bulletTracePassed(player.origin, player.origin+(0,0,2048), false, player) && diff > 0)
+			continue;
+			
+		players[players.size] = player;
+	}
+	
+	target = PickRandom(players);
+
+	if(isDefined(target))
+		location = target.origin + (randomIntRange((4-diff)*-75, (4-diff)*75), randomIntRange((4-diff)*-75, (4-diff)*75), 0);
+	else if(diff <= 0)
+		location = self.origin + (randomIntRange(-512, 512), randomIntRange(-512, 512), 0);
+
+	return location;
+}
+
+/*
+	Bot will think to use rcbomb
+*/
+bot_rccar_think()
+{
+}
+
+/*
+	Bot will think to use supply drop
+*/
+bot_use_supply_drop( weapon )
+{
+	if (self GetBotDiffNum())
+	{
+		if (self GetLookaheadDist() < 96)
+			return;
+
+		view_angles = self GetPlayerAngles();
+
+		if ( view_angles[0] < 7 )
+			return;
+
+		dir = self GetLookaheadDir();
+
+		if ( !IsDefined( dir ) )
+			return;
+
+		dir = VectorToAngles( dir );
+
+		if ( abs( dir[1] - self.angles[1] ) > 2 )
+			return;
+
+		yaw = ( 0, self.angles[1], 0 );
+		dir = AnglesToForward( yaw );
+
+		dir = VectorNormalize( dir );
+		drop_point = self.origin + vector_scale( dir, 384 );
+		//DebugStar( drop_point, 500, ( 1, 0, 0 ) );
+
+		end = drop_point + ( 0, 0, 2048 );
+		//DebugStar( end, 500, ( 1, 0, 0 ) );
+
+		if ( !SightTracePassed( drop_point, end, false, undefined ) )
+			return;
+
+		if ( !SightTracePassed( self.origin, end, false, undefined ) )
+			return;
+
+		// is this point in mid-air?
+		end = drop_point - ( 0, 0, 32 );
+		//DebugStar( end, 500, ( 1, 0, 0 ) );
+		if ( BulletTracePassed( drop_point, end, false, undefined ) )
+			return;
+	}
+		
+	self thread botStopMove(true);
+
+	if (self ChangeToWeapon(weapon))
+	{
+		self thread fire_current_weapon();
+
+		ret = self waittill_any_timeout( 5, "grenade_fire" );
+		self notify("stop_firing_weapon");
+
+		self thread changeToWeapon(self.lastNonKillstreakWeapon);
+
+		if (ret == "grenade_fire" && randomInt(100) < 80)
+			self waittill_any_timeout( 15, "bot_crate_landed" );
+	}
+
+	self thread botStopMove(false);
+}
+
+/*
+	Bot will think to use turret
+*/
+bot_turret_location( weapon )
+{
+}
+
+/*
+	Bot will think to heli
+*/
+bot_control_heli(weapon)
+{
+	if (!self ChangeToWeapon(weapon))
+		return;
+
+	self endon("heli_timeup");
+	
+	wait 2.5;
+	
+	if(!isDefined(self.heli))
+		return;
+	
+	self.heli endon("death");
+	self.heli endon("heli_timeup");
+	
+	while(isDefined(self.heli))
+		wait 0.25;
+}
+
+/*
+	Bots think to use killstreaks
+*/
+bot_killstreak_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	myteam = self.pers[ "team" ];
+	otherTeam = getOtherTeam( myTeam );
+
+	wait( 1 );
+
+	for (;;)
+	{
+		wait( RandomIntRange( 1, 3 ) );
+		
+		if (isDefined(self GetThreat()))
+			continue;
+		
+		if ( self IsRemoteControlling() )
+			continue;
+		
+		if(self UseButtonPressed())
+			continue;
+			
+		if(self isDefusing() || self isPlanting() || self inLastStand())
+			continue;
+
+		weapon = self maps\mp\gametypes\_hardpoints::getTopKillstreak();
+		
+		if ( !IsDefined( weapon ) || weapon == "none" )
+			continue;
+
+		killstreak = maps\mp\gametypes\_hardpoints::getKillStreakMenuName( weapon );
+
+		if ( !IsDefined( killstreak ) )
+			continue;
+
+		id = self maps\mp\gametypes\_hardpoints::getTopKillstreakUniqueId();
+
+		if ( !self maps\mp\_killstreakrules::isKillstreakAllowed( weapon, myteam ) )
+		{
+			wait( 5 );
+			continue;
+		}
+
+		diff = self GetBotDiffNum();
+		switch( killstreak )
+		{
+			case "killstreak_helicopter_comlink":
+			case "killstreak_napalm":
+			case "killstreak_airstrike":
+			case "killstreak_mortar":
+				num = 1;
+				if (killstreak == "killstreak_mortar")
+					num = 3;
+
+				if (!self ChangeToWeapon(weapon))
+					break;
+
+				self freeze_player_controls( true );
+
+				wait 1;
+
+				for (i = 0; i < num; i++)
+				{
+					origin = self getKillstreakTargetLocation();
+					if (!isDefined(origin))
+						break;
+
+					yaw = RandomIntRange( 0, 360 );
+
+					wait 0.25;
+					self notify( "confirm_location", origin, yaw );
+				}
+
+				self freeze_player_controls( false );
+
+				break;
+
+			case "killstreak_helicopter_gunner":
+			case "killstreak_helicopter_player_firstperson":
+				self bot_control_heli(weapon);
+				wait 1;
+				break;
+
+			case "killstreak_auto_turret":
+			case "killstreak_tow_turret":
+				self bot_turret_location( weapon );
+				wait 1;
+				break;
+
+			case "killstreak_auto_turret_drop":
+			case "killstreak_tow_turret_drop":
+			case "killstreak_m220_tow_drop":
+			case "killstreak_supply_drop":
+				if(killstreak == "killstreak_supply_drop")
+					weapon = "supplydrop_mp";
+				
+				self bot_use_supply_drop( weapon );
+				wait 1;
+				break;
+
+			case "killstreak_rcbomb":
+				self bot_rccar_think();
+				wait 1;
+				break;
+
+			case "killstreak_spyplane":
+				if ( diff > 0 )
+				{
+					if(level.teamBased)
+					{
+						if(level.activeCounterUAVs[otherTeam])
+							continue;
+						
+						if(level.activeSatellites[myTeam])
+							continue;
+						
+						if(level.activeUAVs[myTeam])
+							continue;
+					}
+					else
+					{
+						shouldContinue = false;
+			
+						players = get_players();
+						for (i = 0; i < players.size; i++)
+						{
+							player = players[i];
+							
+							if(player == self)
+								continue;
+								
+							if(!isDefined(player.team))
+								continue;
+							
+							if(isDefined(level.activeCounterUAVs[player.entnum]) && level.activeCounterUAVs[player.entnum])
+								continue;
+							
+							shouldContinue = true;
+							break;
+						}
+								
+						if(shouldContinue)
+							continue;
+						
+						if(level.activeSatellites[self.entnum])
+							continue;
+						
+						if(level.activeUAVs[self.entnum])
+							continue;
+					}
+				}
+
+				if (!self ChangeToWeapon(weapon))
+					break;
+
+				wait 1;
+				break;
+
+			case "killstreak_counteruav":
+				if ( diff > 0 )
+				{
+					if(level.teamBased)
+					{
+						if(level.activeCounterUAVs[myTeam])
+							continue;
+					}
+					else
+					{
+						if(level.activeCounterUAVs[self.entnum])
+							continue;
+					}
+				}
+
+				if (!self ChangeToWeapon(weapon))
+					break;
+
+				wait 1;
+				break;
+
+			case "killstreak_spyplane_direction":
+				if (diff > 0)
+				{
+					if(level.teamBased)
+					{
+						if(level.activeCounterUAVs[otherTeam])
+							continue;
+						
+						if(level.activeSatellites[myTeam])
+							continue;
+					}
+					else
+					{
+						shouldContinue = false;
+			
+						players = get_players();
+						for (i = 0; i < players.size; i++)
+						{
+							player = players[i];
+							
+							if(player == self)
+								continue;
+								
+							if(!isDefined(player.team))
+								continue;
+							
+							if(isDefined(level.activeCounterUAVs[player.entnum]) && level.activeCounterUAVs[player.entnum])
+								continue;
+							
+							shouldContinue = true;
+							break;
+						}
+								
+						if(shouldContinue)
+							continue;
+						
+						if(level.activeSatellites[self.entnum])
+							continue;
+					}
+				}
+
+			case "killstreak_dogs":
+			default:
+				if (!self ChangeToWeapon(weapon))
+					break;
+
+				wait 1;
+				break;
+		}
+
+		if (weapon == "m220_tow_mp" || weapon == "m202_flash_mp" || weapon == "minigun_mp") // don't put away ks weapons
+			continue;
+
+		self thread changeToWeapon(self.lastNonKillstreakWeapon);
 	}
 }
 
