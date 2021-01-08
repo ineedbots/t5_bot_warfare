@@ -43,6 +43,8 @@ connected()
 
 	self thread bot_on_spawn();
 	self thread bot_on_death();
+
+	self thread bot_watch_rcbomb();
 }
 
 /*
@@ -147,6 +149,9 @@ bot_on_spawn()
 */
 bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHitLoc )
 {
+	if (!self is_bot())
+		return;
+
 	self.killerLocation = undefined;
 	if(!IsDefined( self ) || !isDefined(self.team))
 		return;
@@ -465,9 +470,6 @@ getKillstreakTargetLocation()
 */
 bot_rccar_think(weapon)
 {
-	self endon("weapon_object_destroyed");
-	self endon("rcbomb_done");
-
 	diff = self GetBotDiffNum();
 
 	if (diff > 0)
@@ -488,6 +490,38 @@ bot_rccar_think(weapon)
 		return;
 
 	wait 2;
+
+	while (isDefined(self.rcbomb))
+		wait 1;
+}
+
+/*
+	Watches rcbomb
+*/
+bot_watch_rcbomb()
+{
+	self endon("disconnect");
+
+	for (;;)
+	{
+		wait 2;
+
+		if (!IsDefined( self.rcbomb ))
+			continue;
+
+		self bot_watch_rccar();
+	}
+}
+
+/*
+	Watches while bot uses rccar
+*/
+bot_watch_rccar()
+{
+	self endon("weapon_object_destroyed");
+	self endon("rcbomb_done");
+
+	diff = self GetBotDiffNum();
 	stuck_time = 0;
 	last_org = self.origin;
 
@@ -498,7 +532,7 @@ bot_rccar_think(weapon)
 		if (!IsDefined( self.rcbomb ))
 			return;
 
-		if (DistanceSquared(self.rcbomb.origin, last_org) < 2 * 2)
+		if (DistanceSquared(self.rcbomb.origin, last_org) < 4 * 4)
 			stuck_time += 0.5;
 		else
 			stuck_time = 0;
@@ -521,6 +555,9 @@ bot_rccar_think(weapon)
 				continue;
 
 			if ( level.teamBased && player.team == self.team )
+				continue;
+
+			if (!SightTracePassed( self.rcbomb.origin, player.origin, false, self.rcbomb ))
 				continue;
 
 			if ( diff == 0 )
@@ -712,6 +749,9 @@ bot_killstreak_think()
 	for (;;)
 	{
 		wait( RandomIntRange( 1, 3 ) );
+
+		if (isDefined(self.carryingTurret) && self.carryingTurret)
+			self PressAttackButton();
 		
 		if (isDefined(self GetThreat()))
 			continue;
