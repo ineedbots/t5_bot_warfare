@@ -309,12 +309,12 @@ bot_spawn()
 	//stockpile.gsc
 	//hotel.gsc
 	//kowloon.gsc
-	self thread bot_radiation_think();
+	self thread bot_radiation_think();*/
 
 	if (getDvarInt("bots_play_nade"))
 		self thread bot_use_equipment_think();
 
-	if (getDvarInt("bots_play_target_other"))
+	/*if (getDvarInt("bots_play_target_other"))
 	{
 		self thread bot_target_vehicle();
 		self thread bot_equipment_kill_think();
@@ -973,6 +973,112 @@ bot_killstreak_think()
 			continue;
 
 		self thread changeToWeapon(self.lastNonKillstreakWeapon);
+	}
+}
+
+/*
+	Bot uses their equipment
+*/
+bot_use_equipment_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	weapon = self.pers["bot"]["class_equipment"];
+	
+	if(weapon == "" || weapon == "weapon_null_mp" || weapon == "satchel_charge_mp")
+		return;
+
+	for ( ;; )
+	{
+		wait( RandomIntRange( 1, 3 ) );
+
+		if ( !self HasWeapon( weapon ) )
+			return;
+
+		if (!self GetAmmoCount(weapon))
+			continue;
+
+		if ( self IsRemoteControlling())
+			continue;
+
+		if ( isDefined(self getThreat()) )
+			continue;
+
+		if (self._is_sprinting)
+			continue;
+
+		diff = self GetBotDiffNum();
+
+		if (diff > 0)
+		{
+			if ( weapon == "camera_spike_mp" )
+			{
+				if ( self GetLookaheadDist() < 384 )
+					continue;
+
+				view_angles = self GetPlayerAngles();
+
+				if ( view_angles[0] < -5 )
+					continue;
+			}
+			else
+			{
+				if ( self GetLookaheadDist() > 64 )
+					continue;
+			}
+		}
+
+		dir = self GetLookaheadDir();
+		if ( !IsDefined( dir ) )
+			continue;
+
+		dir = VectorToAngles( dir );
+		if ( abs( dir[1] - self.angles[1] ) > 5 )
+			continue;
+
+		dir = VectorNormalize( AnglesToForward( self.angles ) );
+		dir = vector_scale( dir, 32 );
+		goal = self.origin + dir;
+		
+		if (randomInt(100) < 50)
+			continue;
+
+		grenades = GetEntArray( "grenade", "classname" );
+		anyEquNear = false;
+		for ( i = 0; i < grenades.size; i++ )
+		{
+			item = grenades[i];
+
+			if ( !IsDefined( item.name ) )
+				continue;
+
+			if ( !IsWeaponEquipment( item.name ) )
+				continue;
+
+			if ( DistanceSquared( item.origin, origin ) < 128 * 128 )
+				anyEquNear = true;
+		}
+
+		if (anyEquNear && diff > 0)
+			continue;
+
+		lastWeap = self getCurrentWeapon();
+
+		self thread botStopMove(true);
+
+		if (self ChangeToWeapon(weapon))
+		{
+			self thread fire_current_weapon();
+
+			ret = self waittill_any_timeout( 5, "grenade_fire" );
+			self notify("stop_firing_weapon");
+
+			self thread changeToWeapon(lastWeap);
+		}
+
+		self thread botStopMove(false);
 	}
 }
 
