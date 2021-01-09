@@ -1042,7 +1042,7 @@ bot_use_equipment_think()
 		dir = vector_scale( dir, 32 );
 		goal = self.origin + dir;
 		
-		if (randomInt(100) < 50)
+		if (randomInt(100) > 35)
 			continue;
 
 		grenades = GetEntArray( "grenade", "classname" );
@@ -1057,7 +1057,7 @@ bot_use_equipment_think()
 			if ( !IsWeaponEquipment( item.name ) )
 				continue;
 
-			if ( DistanceSquared( item.origin, origin ) < 128 * 128 )
+			if ( DistanceSquared( item.origin, goal ) < 128 * 128 )
 				anyEquNear = true;
 		}
 
