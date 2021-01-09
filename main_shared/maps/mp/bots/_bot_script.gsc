@@ -297,13 +297,13 @@ bot_spawn()
 	if (getDvarInt("bots_play_killstreak"))
 		self thread bot_killstreak_think();
 
-	/*
 	if (getDvarInt("bots_play_take_carepackages"))
 	{
 		self thread bot_watch_stuck_on_crate();
 		self thread bot_crate_think();
 	}
 
+	/*
 	self thread bot_revive_think();
 
 	//stockpile.gsc
@@ -974,6 +974,214 @@ bot_killstreak_think()
 
 		self thread changeToWeapon(self.lastNonKillstreakWeapon);
 	}
+}
+
+/*
+	Bots watch when they get stuck on a carepackage and cap it
+*/
+bot_watch_stuck_on_crate()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+
+	radius = GetDvarFloat( #"player_useRadius" );
+
+	for ( ;; )
+	{
+		wait( 3 );
+
+		if ( IsDefined( self GetThreat() ) )
+			continue;
+
+		if ( self UseButtonPressed() )
+			continue;
+
+		crates = GetEntArray( "care_package", "script_noteworthy" );
+
+		for ( i = 0; i < crates.size; i++ )
+		{
+			crate = crates[i];
+
+			if ( DistanceSquared( self.origin, crate.origin ) < radius * radius )
+			{
+				if ( crate.owner == self )
+				{
+					self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
+					wait level.crateOwnerUseTime / 1000 + 0.5;
+				}
+				else
+				{
+					self PressUseButton( level.crateNonOwnerUseTime / 1000 + 0.5 );
+					wait level.crateNonOwnerUseTime / 1000 + 0.5;
+				}
+			}
+		}
+	}
+}
+
+/*
+	Bots capture the cp
+*/
+bot_crate_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+	
+	myteam = self.pers[ "team" ];
+
+	self maps\mp\gametypes\_hardpoints::giveKillstreak( maps\mp\gametypes\_hardpoints::getKillstreakByMenuName( "killstreak_supply_drop" ), 1 );
+	
+	first = true;
+	
+	for ( ;; )
+	{
+		ret = "bot_crate_landed";
+		if(first)
+			first = false;
+		else
+			ret = self waittill_any_timeout( randomintrange( 3, 5 ), "bot_crate_landed" );
+		
+		if ( RandomInt( 100 ) < 20 && ret != "bot_crate_landed" )
+			continue;
+		
+		if ( self HasScriptGoal() || self.bot_lock_goal )
+			continue;
+
+		if(self isDefusing() || self isPlanting())
+			continue;
+
+		if (self inLastStand())
+			continue;
+
+		if (self IsRemoteControlling())
+			continue;
+
+		if(self UseButtonPressed())
+			continue;
+		
+		crates = GetEntArray( "care_package", "script_noteworthy" );
+		if ( crates.size == 0 )
+			continue;
+		
+		wantsClosest = randomint(2);
+
+		crate = undefined;
+		for (i = crates.size - 1; i >= 0; i--)
+		{
+			tempCrate = crates[i];
+
+			if (IsDefined( tempCrate.droppingToGround ))
+				continue;
+
+			if ( myteam == tempCrate.team )
+			{
+				if ( RandomInt( 100 ) > 30 && IsDefined( tempCrate.owner ) && tempCrate.owner != self )
+					continue;
+			}
+			else if (isDefined(tempCrate.hacker))
+				continue;
+
+			if ( !IsDefined( tempCrate.bots ) )
+				tempCrate.bots = 0;
+			
+			if ( tempCrate.bots >= 3 )
+				continue;
+
+			if (isDefined(crate))
+			{
+				if (wantsClosest)
+				{
+					if (DistanceSquared(crate.origin, self.origin) < DistanceSquared(tempCrate.origin, self.origin))
+						continue;
+				}
+				else
+				{
+					if (crate.crateType.weight < tempCrate.crateType.weight)
+						continue;
+				}
+			}
+
+			crate = tempCrate;
+		}
+
+		if (!isDefined(crate))
+			continue;
+
+		self.bot_lock_goal = true;
+
+		radius = GetDvarFloat( "player_useRadius" );
+		self SetBotGoal(crate.origin, radius);
+		//self thread bot_inc_bots(crate, true);
+		self thread bots_watch_touch_obj(crate);
+
+		path = self waittill_any_return("bad_path", "goal", "new_goal");
+
+		self.bot_lock_goal = false;
+
+		if (path != "new_goal")
+			self ClearScriptGoal();
+
+		if (path != "goal" || DistanceSquared(self.origin, crate.origin) > radius*radius)
+			continue;
+
+		if(isdefined( crate.crateType.hint_gambler ) && self hasPerk("specialty_gambler") && randomInt(3))
+			crate notify( "trigger_use_doubletap", self );
+
+		if ( crate.owner == self )
+		{
+			self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
+			wait( level.crateOwnerUseTime / 1000 + 0.5 );
+		}
+		else
+		{
+			self PressUseButton( level.crateNonOwnerUseTime / 1000 + 1 );
+			wait( level.crateNonOwnerUseTime / 1000 + 1.5 );
+		}
+	}
+}
+
+/*
+	Returns an weapon thats a rocket with ammo
+*/
+getRocketAmmo()
+{
+	answer = self getLockonAmmo();
+
+	if (isDefined(answer))
+		return answer;
+
+	weapons = [];
+	weapons[0] = "minigun_mp";
+	weapons[1] = "rpg_mp";
+
+	for (i = 0; i < weapons.size; i++)
+	{
+		if (self GetAmmoCount(weapons[i]))
+			return weapons[i];
+	}
+
+	return undefined;
+}
+
+/*
+	Returns a weapon thats lockon with ammo
+*/
+getLockonAmmo()
+{
+	weapons = [];
+	weapons[0] = "m72_law_mp";
+	weapons[1] = "strela_mp";
+	weapons[2] = "m202_flash_mp";
+
+	for (i = 0; i < weapons.size; i++)
+	{
+		if (self GetAmmoCount(weapons[i]))
+			return weapons[i];
+	}
+
+	return undefined;
 }
 
 /*
