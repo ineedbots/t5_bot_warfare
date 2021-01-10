@@ -355,6 +355,26 @@ bot_spawn()
 }
 
 /*
+	Increments the number of bots approching the obj, decrements when needed
+	Used for preventing too many bots going to one obj, or unreachable objs
+*/
+bot_inc_bots(obj, unreach)
+{
+	level endon("game_ended");
+	self endon("bot_inc_bots");
+	
+	if (!isDefined(obj.bots))
+		obj.bots = 0;
+	
+	obj.bots++;
+	
+	ret = self waittill_any_return("death", "disconnect", "bad_path", "goal", "new_goal");
+	
+	if (isDefined(obj) && (ret != "bad_path" || !isDefined(unreach)))
+		obj.bots--;
+}
+
+/*
 	Watches when the bot is touching the obj and calls 'goal'
 */
 bots_watch_touch_obj(obj)
@@ -750,7 +770,8 @@ bot_killstreak_think()
 	{
 		wait( RandomIntRange( 1, 3 ) );
 
-		if (isDefined(self.carryingTurret) && self.carryingTurret)
+		curWeap = self GetCurrentWeapon();
+		if ((isDefined(self.carryingTurret) && self.carryingTurret) || isSubStr(curWeap, "drop_"))
 			self PressAttackButton();
 		
 		if (isDefined(self GetThreat()))
@@ -1072,7 +1093,7 @@ bot_crate_think()
 		{
 			tempCrate = crates[i];
 
-			if (IsDefined( tempCrate.droppingToGround ))
+			if (!IsDefined( tempCrate.friendlyObjID ))
 				continue;
 
 			if ( myteam == tempCrate.team )
@@ -1112,8 +1133,8 @@ bot_crate_think()
 		self.bot_lock_goal = true;
 
 		radius = GetDvarFloat( "player_useRadius" );
-		self SetBotGoal(crate.origin, radius);
-		//self thread bot_inc_bots(crate, true);
+		self SetBotGoal(crate.origin + (0, 0, 12), radius);
+		self thread bot_inc_bots(crate, true);
 		self thread bots_watch_touch_obj(crate);
 
 		path = self waittill_any_return("bad_path", "goal", "new_goal");
