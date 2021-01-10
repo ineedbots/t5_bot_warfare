@@ -79,10 +79,8 @@ init()
 
 	thread fixGamemodes();
 	thread onPlayerConnect();
-
-	thread diffBots();
-	thread teamBots();
-	thread addBots();
+	
+	thread handleBots();
 
 	thread doNonDediBots();
 }
@@ -100,6 +98,21 @@ onPlayerConnect()
 		player thread watch_grenade();
 		player thread connected();
 	}
+}
+
+/*
+	Starts the threads for bots.
+*/
+handleBots()
+{
+	thread diffBots();
+	thread teamBots();
+	addBots();
+
+	while(!level.intermission)
+		wait 0.05;
+	
+	setDvar("bots_manage_add", getBotArray().size);
 }
 
 /*
