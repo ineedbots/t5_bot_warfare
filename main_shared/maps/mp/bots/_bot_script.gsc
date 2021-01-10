@@ -314,21 +314,23 @@ bot_spawn()
 	if (getDvarInt("bots_play_nade"))
 		self thread bot_use_equipment_think();
 
-	/*if (getDvarInt("bots_play_target_other"))
+	if (getDvarInt("bots_play_target_other"))
 	{
+	/*
 		self thread bot_target_vehicle();
 		self thread bot_equipment_kill_think();
-		self thread bot_turret_think();
+		self thread bot_turret_think();*/
 		self thread bot_dogs_think();
 	}
 
 	if (getDvarInt("bots_play_camp"))
 	{
+	/*
 		self thread bot_think_follow();
-		self thread bot_think_camp();
+		self thread bot_think_camp();*/
 	}
 
-	self thread bot_weapon_think();
+	/*self thread bot_weapon_think();
 
 	self thread bot_revenge_think();
 	self thread bot_uav_think();
@@ -1426,6 +1428,101 @@ bot_revive_think()
 
 		self ClearScriptGoal();
 		self.bot_lock_goal = false;
+	}
+}
+
+/*
+	Bot attacks dog
+*/
+bot_dog_attack(dog)
+{
+	dog endon("death");
+	
+	wait_time = RandomIntRange( 7, 10 );
+
+	for ( i = 0; i < wait_time; i++ )
+	{
+		wait( 1 );
+		
+		if ( !IsDefined( dog ) )
+		{
+			return;
+		}
+		
+		if ( !IsAlive( dog ) )
+		{
+			return;
+		}
+		
+		if ( !BulletTracePassed( self.origin, dog.origin, false, dog ) )
+		{
+			return;
+		}
+	}
+}
+
+/*
+	Bot thinks to attack dogs
+*/
+bot_dogs_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	myteam = self.pers[ "team" ];
+
+	if ( level.no_dogs )
+		return;
+
+	for ( ;; )
+	{
+		wait( 0.25 );
+
+		if ( !IsDefined( level.dogs ) || level.dogs.size <= 0 )
+			level waittill( "called_in_the_dogs" );
+		
+		if(isDefined(self GetThreat()))
+			continue;
+
+		for ( i = 0; i < level.dogs.size; i++ )
+		{
+			dog = level.dogs[i];
+
+			if ( !IsDefined( dog ) )
+			{
+				continue;
+			}
+
+			if ( !IsAlive( dog ) )
+			{
+				continue;
+			}
+
+			if ( level.teamBased )
+			{
+				if ( dog.aiteam == myteam )
+				{
+					continue;
+				}
+			}
+
+			if ( dog.script_owner == self )
+			{
+				continue;
+			}
+
+			if ( DistanceSquared( self.origin, dog.origin ) < 1024 * 1024 )
+			{
+				if(!BulletTracePassed( self.origin, dog.origin, false, dog ))
+					continue;
+				
+				self SetScriptEnemy( dog );
+				self bot_dog_attack(dog);
+				self ClearScriptEnemy();
+				break;
+			}
+		}
 	}
 }
 
