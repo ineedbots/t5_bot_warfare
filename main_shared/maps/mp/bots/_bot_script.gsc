@@ -303,9 +303,9 @@ bot_spawn()
 		self thread bot_crate_think();
 	}
 
-	/*
+	
 	self thread bot_revive_think();
-
+/*
 	//stockpile.gsc
 	//hotel.gsc
 	//kowloon.gsc
@@ -1051,8 +1051,6 @@ bot_crate_think()
 	level endon("game_ended");
 	
 	myteam = self.pers[ "team" ];
-
-	self maps\mp\gametypes\_hardpoints::giveKillstreak( maps\mp\gametypes\_hardpoints::getKillstreakByMenuName( "killstreak_supply_drop" ), 1 );
 	
 	first = true;
 	
@@ -1308,6 +1306,126 @@ bot_use_equipment_think()
 		}
 
 		self thread botStopMove(false);
+	}
+}
+
+/*
+	Bots go to the revive
+*/
+bot_go_revive(revive)
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+	self endon( "goal" );
+	self endon( "bad_path" );
+	self endon( "new_goal" );
+
+	for (;;)
+	{
+		wait 1;
+
+		if (!isDefined(revive))
+			break;
+
+		if (!isDefined(revive.revivetrigger))
+			break;
+
+		if (self isTouching(revive.revivetrigger))
+			break;
+	}
+
+	if(!isDefined(revive) || !isDefined(revive.revivetrigger))
+		self notify("bad_path");
+	else
+		self notify("goal");
+}
+
+/*
+	Bots go revive
+*/
+bot_revive_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+	
+	if ( !level.teamBased )
+		return;
+	
+	for ( ;; )
+	{
+		wait( randomintrange( 3, 5 ) );
+
+		if ( self HasScriptGoal() || self.bot_lock_goal )
+			continue;
+
+		if(self isDefusing() || self isPlanting())
+			continue;
+
+		if (self inLastStand())
+			continue;
+
+		if (self IsRemoteControlling())
+			continue;
+
+		if(self UseButtonPressed())
+			continue;
+
+		revivePlayer = undefined;
+		for(i = 0; i < level.players.size; i++)
+		{
+			player = level.players[i];
+
+			if(!isDefined(player.pers["team"]))
+				continue;
+			if(player == self)
+				continue;
+			if(self.pers["team"] != player.pers["team"])
+				continue;
+			if(!isDefined(player.revivetrigger))
+				continue;
+
+			if (isDefined(player.currentlyBeingRevived) && player.currentlyBeingRevived)
+				continue;
+
+			if (!isDefined(player.revivetrigger.bots))
+				player.revivetrigger.bots = 0;
+
+			if (player.revivetrigger.bots > 2)
+				continue;
+
+			revivePlayer = player;
+		}
+
+		if (!isDefined(revivePlayer))
+			continue;
+
+		self.bot_lock_goal = true;
+
+		self SetBotGoal( revivePlayer.origin, 1 );
+		self thread bot_inc_bots(revivePlayer.revivetrigger, true);
+		self thread bot_go_revive(revivePlayer);
+	
+		event = self waittill_any_return( "goal", "bad_path", "new_goal" );
+
+		if (event != "new_goal")
+			self ClearScriptGoal();
+		
+		if(event != "goal" || (isDefined(revivePlayer.currentlyBeingRevived) && revivePlayer.currentlyBeingRevived) || !self isTouching(revivePlayer.revivetrigger) || self InLastStand())
+		{
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		self SetBotGoal( self.origin, 64 );
+		
+		reviveTime = GetDvarInt( #"revive_time_taken" );
+		self PressUseButton( reviveTime + 1 );
+		wait( reviveTime + 1.5 );
+
+		self ClearScriptGoal();
+		self.bot_lock_goal = false;
 	}
 }
 
