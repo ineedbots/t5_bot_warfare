@@ -305,11 +305,11 @@ bot_spawn()
 
 	
 	self thread bot_revive_think();
-/*
+
 	//stockpile.gsc
 	//hotel.gsc
 	//kowloon.gsc
-	self thread bot_radiation_think();*/
+	self thread bot_radiation_think();
 
 	if (getDvarInt("bots_play_nade"))
 		self thread bot_use_equipment_think();
@@ -1426,6 +1426,64 @@ bot_revive_think()
 
 		self ClearScriptGoal();
 		self.bot_lock_goal = false;
+	}
+}
+
+/*
+	Presses the buttons on radiation
+*/
+bot_radiation_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	if ( level.script != "mp_radiation" )
+		return;
+
+	if ( level.wagerMatch )
+		return;
+
+	origins = [];
+	origins[0] = ( 813, 5, 267 );
+	origins[1] = ( -811, 30, 363 );
+
+	for ( ;; )
+	{
+		wait( RandomIntRange( 8, 15 ) );
+		
+		if ( self HasScriptGoal() )
+			continue;
+		
+		if ( self IsRemoteControlling() || self.bot_lock_goal )
+			continue;
+
+		if (self UseButtonPressed())
+			continue;
+
+		origin = random( origins );
+
+		if ( DistanceSquared( self.origin, origin ) < 512 * 512 )
+		{
+			self SetBotGoal( origin, 32 );
+			
+			event = self waittill_any_return( "goal", "bad_path", "new_goal" );
+
+			if (event != "new_goal")
+				self ClearScriptGoal();
+			
+			if(event == "bad_path")
+				continue;
+			
+			self SetBotGoal( self.origin, 32 );
+			
+			self PressUseButton( 3 );
+			wait( 3 );
+			
+			self ClearScriptGoal();
+		}
+
+		wait( RandomIntRange( 5, 10 ) );
 	}
 }
 
