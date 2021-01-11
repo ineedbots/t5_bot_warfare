@@ -1000,6 +1000,210 @@ bot_killstreak_think()
 }
 
 /*
+	Bot will attack the turret
+*/
+bot_turret_attack( enemy )
+{
+	enemy endon("turret_carried");
+	enemy endon("turret_deactivated");
+	enemy endon("death");
+	
+	wait_time = RandomIntRange( 7, 10 );
+
+	for ( i = 0; i < wait_time; i++ )
+	{
+		wait( 1 );
+
+		if ( !IsDefined( enemy ) )
+		{
+			return;
+		}
+		
+		if(!isAlive(enemy))
+			return;
+
+		if ( !BulletTracePassed( self getEye(), enemy.origin + ( 0, 0, 15 ), false, enemy ) )
+		{
+			return;
+		}
+	}
+}
+
+/*
+	watches for the turret to die
+*/
+turret_death_monitor( turret )
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon( "goal" );
+	self endon( "bad_path" );
+	self endon ( "new_goal" );
+	
+	turret waittill_any( "turret_carried", "turret_deactivated", "death" );
+	
+	self notify("bad_path");
+}
+
+/*
+	Bot goes hack the turret
+*/
+bot_go_hack_turret(turret)
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon("new_goal");
+	self endon( "goal" );
+	self endon( "bad_path" );
+	
+	for(;;)
+	{
+		wait 0.5;
+
+		if (!isDefined(turret))
+			break;
+
+		if (!isDefined(turret.hackerTrigger))
+			break;
+
+		if (self isTouching(turret.hackerTrigger))
+			break;
+	}
+	
+	if(!isDefined(turret) || !isDefined(turret.hackerTrigger))
+		self notify("bad_path");
+	else
+		self notify("goal");
+}
+
+/*
+	Bot thinks to target turret
+*/
+bot_turret_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	myteam = self.pers[ "team" ];
+
+	for ( ;; )
+	{
+		wait( 1 );
+
+		turrets = GetEntArray( "auto_turret", "classname" );
+
+		if ( turrets.size == 0 )
+		{
+			wait( randomintrange( 3, 5 ) );
+			continue;
+		}
+
+		if(isDefined(self GetThreat()) || self IsRemoteControlling() || self UseButtonPressed())
+			continue;
+
+		turret = undefined;
+		myEye = self GetEye();
+
+		for (i = turrets.size - 1; i >= 0; i--)
+		{
+			tempTurret = turrets[i];
+
+			if (!isDefined(tempTurret))
+				continue;
+
+			if (tempTurret.damageTaken >= tempTurret.health)
+				continue;
+
+			if (tempTurret.carried)
+				continue;
+
+			if (level.teambased && tempTurret.team == myteam)
+				continue;
+
+			if (IsDefined( tempTurret.owner ) && tempTurret.owner == self)
+				continue;
+
+			if(!bulletTracePassed(myEye, tempTurret.origin + (0, 0, 15), false, tempTurret))
+				continue;
+
+			turret = tempTurret;
+		}
+
+		if (!isDefined(turret))
+			continue;
+			
+		forward = AnglesToForward( turret.angles );
+		forward = VectorNormalize( forward );
+
+		delta = self.origin - turret.origin;
+		delta = VectorNormalize( delta );
+		
+		dot = VectorDot( forward, delta );
+
+		facing = true;
+		if ( dot < 0.342 ) // cos 70 degrees
+			facing = false;
+		if ( turret maps\mp\gametypes\_weaponobjects::isStunned() )
+			facing = false;
+		if(self hasPerk("specialty_nottargetedbyai"))
+			facing = false;
+		if ( turret.turrettype == "tow" )
+			facing = false;
+
+		if ( facing && !BulletTracePassed( myEye, turret.origin + ( 0, 0, 15 ), false, turret ) )
+			continue;
+		
+		if ( !IsDefined( turret.bots ) )
+			turret.bots = 0;
+
+		if ( turret.bots >= 2 )
+			continue;
+
+		if(!facing && !self HasScriptGoal() && !self.bot_lock_goal)
+		{
+			if ( self HasPerk( "specialty_disarmexplosive" ) )
+			{
+				self SetBotGoal(turret.origin, 32);
+				self thread bot_inc_bots(turret, true);
+				self thread turret_death_monitor( turret );
+				self thread bot_go_hack_turret( turret );
+
+				path = self waittill_any_return( "goal", "bad_path", "new_goal" );
+
+				if (path != "new_goal")
+					self ClearBotGoal();
+
+				if ( path != "goal" || !isDefined(turret) || !isDefined(turret.hackerTrigger) || !self isTouching(turret.hackerTrigger) )
+					continue;
+
+				hackTime = GetDvarFloat( #"perk_disarmExplosiveTime" );
+				self PressUseButton( hackTime + 0.5 );
+				wait( hackTime + 0.5 );
+				continue;
+			}
+			else
+			{
+				self SetBotGoal(turret.origin, 32);
+				self thread bot_inc_bots(turret, true);
+				self thread turret_death_monitor( turret );
+				self thread bots_watch_touch_obj( turret );
+				
+				if(self waittill_any_return("bad_path", "goal", "new_goal") != "new_goal")
+					self ClearBotGoal();
+			}
+		}
+
+		if(!isDefined(turret))
+			continue;
+
+		self SetScriptEnemy( turret );
+		self bot_turret_attack(turret);
+		self ClearScriptEnemy();
+	}
+}
+
+/*
 	Bots watch when they get stuck on a carepackage and cap it
 */
 bot_watch_stuck_on_crate()
@@ -1142,7 +1346,7 @@ bot_crate_think()
 		self.bot_lock_goal = false;
 
 		if (path != "new_goal")
-			self ClearScriptGoal();
+			self ClearBotGoal();
 
 		if (path != "goal" || DistanceSquared(self.origin, crate.origin) > radius*radius)
 			continue;
@@ -1412,7 +1616,7 @@ bot_revive_think()
 		event = self waittill_any_return( "goal", "bad_path", "new_goal" );
 
 		if (event != "new_goal")
-			self ClearScriptGoal();
+			self ClearBotGoal();
 		
 		if(event != "goal" || (isDefined(revivePlayer.currentlyBeingRevived) && revivePlayer.currentlyBeingRevived) || !self isTouching(revivePlayer.revivetrigger) || self InLastStand())
 		{
@@ -1426,7 +1630,7 @@ bot_revive_think()
 		self PressUseButton( reviveTime + 1 );
 		wait( reviveTime + 1.5 );
 
-		self ClearScriptGoal();
+		self ClearBotGoal();
 		self.bot_lock_goal = false;
 	}
 }
@@ -1567,9 +1771,9 @@ bot_radiation_think()
 			event = self waittill_any_return( "goal", "bad_path", "new_goal" );
 
 			if (event != "new_goal")
-				self ClearScriptGoal();
+				self ClearBotGoal();
 			
-			if(event == "bad_path")
+			if(event != "goal")
 				continue;
 			
 			self SetBotGoal( self.origin, 32 );
@@ -1577,7 +1781,7 @@ bot_radiation_think()
 			self PressUseButton( 3 );
 			wait( 3 );
 			
-			self ClearScriptGoal();
+			self ClearBotGoal();
 		}
 
 		wait( RandomIntRange( 5, 10 ) );
@@ -1636,7 +1840,7 @@ bot_dom_spawn_kill_think()
 		self thread bot_dom_watch_flags(myFlagCount, myTeam);
 
 		if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
-			self ClearScriptGoal();
+			self ClearBotGoal();
 	}
 }
 
@@ -1707,7 +1911,7 @@ bot_dom_def_think()
 		self thread bots_watch_touch_obj(flag);
 
 		if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
-			self ClearScriptGoal();
+			self ClearBotGoal();
 	}
 }
 
@@ -1819,7 +2023,7 @@ bot_dom_cap_think()
 		event = self waittill_any_return( "goal", "bad_path", "new_goal" );
 		
 		if (event != "new_goal")
-			self ClearScriptGoal();
+			self ClearBotGoal();
 
 		if (event != "goal")
 		{
@@ -1838,7 +2042,7 @@ bot_dom_cap_think()
 				break;//some enemy is near us, kill him
 		}
 
-		self ClearScriptGoal();
+		self ClearBotGoal();
 		
 		self.bot_lock_goal = false;
 	}

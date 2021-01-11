@@ -219,6 +219,16 @@ SetBotGoal(where, dist)
 }
 
 /*
+	Weapper for cleargoal
+*/
+ClearBotGoal()
+{
+	self ClearScriptGoal();
+	waittillframeend;
+	self notify("new_goal");
+}
+
+/*
 	Freezes bot in place
 */
 botStopMove(what)
