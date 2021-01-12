@@ -319,7 +319,8 @@ bot_spawn()
 	/*
 		self thread bot_target_vehicle();
 		self thread bot_equipment_kill_think();
-		self thread bot_turret_think();*/
+		*/
+		self thread bot_turret_think();
 		self thread bot_dogs_think();
 	}
 
