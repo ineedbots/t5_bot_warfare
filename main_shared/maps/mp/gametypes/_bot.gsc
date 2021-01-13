@@ -717,11 +717,14 @@ scramble_nearby(trig)
 	for(;;)
 	{
 		trig waittill("trigger", player);
+
+		if (!isDefined(player) || !isDefined(player.team))
+			continue;
 		
 		if(self maps\mp\gametypes\_weaponobjects::isStunned())
 			continue;
 		
-		if(player == self.owner)
+		if(isDefined(self.owner) && player == self.owner)
 			continue;
 		
 		if(level.teamBased && self.team == player.team)

@@ -1110,7 +1110,7 @@ bot_turret_think()
 		{
 			tempTurret = turrets[i];
 
-			if (!isDefined(tempTurret))
+			if (!isDefined(tempTurret) || !isDefined(tempTurret.damageTaken))
 				continue;
 
 			if (tempTurret.damageTaken >= tempTurret.health)
@@ -1231,9 +1231,12 @@ bot_watch_stuck_on_crate()
 		{
 			crate = crates[i];
 
+			if (!isDefined(crate) || !isDefined(crate.origin))
+				continue;
+
 			if ( DistanceSquared( self.origin, crate.origin ) < radius * radius )
 			{
-				if ( crate.owner == self )
+				if ( isDefined(crate.owner) && crate.owner == self )
 				{
 					self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
 					wait level.crateOwnerUseTime / 1000 + 0.5;
@@ -1243,6 +1246,8 @@ bot_watch_stuck_on_crate()
 					self PressUseButton( level.crateNonOwnerUseTime / 1000 + 0.5 );
 					wait level.crateNonOwnerUseTime / 1000 + 0.5;
 				}
+
+				break;
 			}
 		}
 	}
@@ -1298,7 +1303,7 @@ bot_crate_think()
 		{
 			tempCrate = crates[i];
 
-			if (!IsDefined( tempCrate.friendlyObjID ))
+			if (!isDefined(tempCrate) || !IsDefined( tempCrate.friendlyObjID ))
 				continue;
 
 			if ( myteam == tempCrate.team )
@@ -1349,13 +1354,13 @@ bot_crate_think()
 		if (path != "new_goal")
 			self ClearBotGoal();
 
-		if (path != "goal" || DistanceSquared(self.origin, crate.origin) > radius*radius)
+		if (path != "goal" || !isDefined(crate) || DistanceSquared(self.origin, crate.origin) > radius*radius)
 			continue;
 
 		if(isdefined( crate.crateType.hint_gambler ) && self hasPerk("specialty_gambler") && randomInt(3))
 			crate notify( "trigger_use_doubletap", self );
 
-		if ( crate.owner == self )
+		if ( isDefined(crate.owner) && crate.owner == self )
 		{
 			self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
 			wait( level.crateOwnerUseTime / 1000 + 0.5 );
@@ -1619,7 +1624,7 @@ bot_revive_think()
 		if (event != "new_goal")
 			self ClearBotGoal();
 		
-		if(event != "goal" || (isDefined(revivePlayer.currentlyBeingRevived) && revivePlayer.currentlyBeingRevived) || !self isTouching(revivePlayer.revivetrigger) || self InLastStand())
+		if(event != "goal" || !isDefined(revivePlayer) || (isDefined(revivePlayer.currentlyBeingRevived) && revivePlayer.currentlyBeingRevived) || !self isTouching(revivePlayer.revivetrigger) || self InLastStand())
 		{
 			self.bot_lock_goal = false;
 			continue;
