@@ -318,8 +318,8 @@ bot_spawn()
 	{
 	/*
 		self thread bot_target_vehicle();
-		self thread bot_equipment_kill_think();
 		*/
+		self thread bot_equipment_kill_think();
 		self thread bot_turret_think();
 		self thread bot_dogs_think();
 	}
@@ -1201,6 +1201,183 @@ bot_turret_think()
 		self SetScriptEnemy( turret );
 		self bot_turret_attack(turret);
 		self ClearScriptEnemy();
+	}
+}
+
+/*
+	Bot will attack the equipment
+*/
+bot_equipment_attack(equ)
+{
+	equ endon("death");
+	equ endon("hacked");
+	
+	wait_time = RandomIntRange( 7, 10 );
+
+	for ( i = 0; i < wait_time; i++ )
+	{
+		wait( 1 );
+
+		if ( !IsDefined( equ ) )
+		{
+			return;
+		}
+	}
+}
+
+/*
+	Bots target equipment
+*/
+bot_equipment_kill_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	myteam = self.pers[ "team" ];
+
+	for ( ;; )
+	{
+		hasHacker = self HasPerk( "specialty_showenemyequipment" );
+		if ( hasHacker )
+			wait( RandomIntRange( 2, 5 ) );
+		else
+			wait( RandomIntRange( 5, 7 ) );
+
+		if(isDefined(self GetThreat()) || self IsRemoteControlling() || self UseButtonPressed())
+			continue;
+
+		grenades = GetEntArray( "grenade", "classname" );
+		target = undefined;
+
+		for ( i = 0; i < grenades.size; i++ )
+		{
+			item = grenades[i];
+
+			if (!isDefined(item))
+				continue;
+
+			if ( !IsDefined( item.name ) )
+			{
+				continue;
+			}
+
+			if ( !IsDefined( item.owner ) )
+			{
+				continue;
+			}
+
+			if ( level.teamBased && item.owner.team == myteam )
+			{
+				continue;
+			}
+
+			if ( item.owner == self )
+			{
+				continue;
+			}
+
+			if ( !IsWeaponEquipment( item.name ) )
+			{
+				continue;
+			}
+			
+			if(!isDefined(item.bots))
+				item.bots = 0;
+			
+			if(item.bots >= 2)
+				continue;
+
+			dist = DistanceSquared( item.origin, self.origin );
+			if ( hasHacker && dist < 512 * 512 )
+			{
+				target = item;
+				break;
+			}
+
+			if ( dist < 256 * 256 )
+			{
+				target = item;
+				break;
+			}
+		}
+		
+		if ( !IsDefined( target ) )
+		{
+			players = get_players();
+			for ( i = 0; i < players.size; i++ )
+			{
+				player = players[i];
+				if ( player == self )
+				{
+					continue;
+				}
+				
+				if(!isDefined(player.team))
+					continue;
+				
+				if ( level.teamBased && player.team == myteam )
+				{
+					continue;
+				}
+				
+				if(!isDefined(player.tacticalInsertion))
+					continue;
+				
+				if(!isDefined(player.tacticalInsertion.bots))
+					player.tacticalInsertion.bots = 0;
+				
+				if(player.tacticalInsertion.bots >= 2)
+					continue;
+				
+				dist = DistanceSquared( player.tacticalInsertion.origin, self.origin );
+				if ( hasHacker && dist < 512 * 512 )
+				{
+					target = player.tacticalInsertion;
+					break;
+				}
+
+				if ( dist < 256 * 256 )
+				{
+					target = player.tacticalInsertion;
+					break;
+				}
+			}
+		}
+
+		if ( IsDefined( target ) )
+		{
+			facing = false;
+			if(isDefined(target.name) && target.name == "claymore_mp")
+			{
+				if ( VectorDot( VectorNormalize( AnglesToForward( target.angles ) ), VectorNormalize( self.origin - target.origin ) ) >= 0.342 && !target maps\mp\gametypes\_weaponobjects::isStunned() ) // cos 70 degrees
+					facing = true;
+			}
+			
+			if ( (( self HasPerk( "specialty_disarmexplosive" ) && !facing ) || isDefined(target.enemyTrigger)) && !self HasScriptGoal() && !self.bot_lock_goal )
+			{
+				self SetBotGoal(target.origin, 32);
+				self thread bot_inc_bots(target, true);
+				self thread bots_watch_touch_obj( target );
+				
+				path = self waittill_any_return("bad_path", "goal", "new_goal");
+
+				if (path != "new_goal")
+					self ClearBotGoal();
+
+				if (path != "goal" || !isDefined(target) || (isDefined(target.hackerTrigger) && !self isTouching(target.hackerTrigger)) || (isDefined(target.enemyTrigger) && !self isTouching(target.enemyTrigger)))
+					continue;
+			
+				hackTime = GetDvarFloat( #"perk_disarmExplosiveTime" );
+				self PressUseButton( hackTime + 0.5 );
+				wait( hackTime + 0.5 );
+				continue;
+			}
+
+			self SetScriptEnemy( target );
+			self bot_equipment_attack(target);
+			self ClearScriptEnemy();
+		}
 	}
 }
 
