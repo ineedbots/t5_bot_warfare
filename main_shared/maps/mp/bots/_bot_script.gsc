@@ -1627,10 +1627,133 @@ bot_vehicle_attack( enemy )
 }
 
 /*
+	Bot will change to angles with speed
+*/
+bot_lookat(angles, speed)
+{
+	self notify("bots_aim_overlap");
+	self endon("bots_aim_overlap");
+	self endon("disconnect");
+	self endon("death");
+	level endon ( "game_ended" );
+	
+	myAngle=self getPlayerAngles();
+	
+	X=(angles[0]-myAngle[0]);
+	while(X > 170.0)
+		X=X-360.0;
+	while(X < -170.0)
+		X=X+360.0;
+	X=X/speed;
+	
+	Y=(angles[1]-myAngle[1]);
+	while(Y > 180.0)
+		Y=Y-360.0;
+	while(Y < -180.0)
+		Y=Y+360.0;
+		
+	Y=Y/speed;
+	
+	for(i=0;i<speed;i++)
+	{
+		newAngle=(myAngle[0]+X,myAngle[1]+Y,0);
+		self setPlayerAngles(newAngle);
+		myAngle=self getPlayerAngles();
+		wait 0.05;
+	}
+}
+
+/*
 	Bot attacks the plane
 */
-bot_plane_attack(enemy)
+bot_plane_attack(plane)
 {
+	plane endon("death");
+	plane endon("delete");
+	plane endon("leaving");
+
+	weap = self getLockonAmmo();
+
+	if (!isDefined(weap))
+		return;
+
+	self thread botStopMove(true);
+
+	if(weap == "strela_mp")
+	{
+		self freeze_player_controls(true);
+		
+		self SetSpawnWeapon( weap );
+		
+		if(!self GetWeaponAmmoClip(weap))
+		{
+			self SetWeaponAmmoClip(weap, 1);
+			self SetWeaponAmmoStock(weap, self GetWeaponAmmoStock(weap)-1);
+		}
+	}
+	else
+	{
+		if (!self ChangeToWeapon(weap))
+			return;
+		
+		if(!self GetWeaponAmmoClip(weap))
+		{
+			self PressAttackButton();
+			self wait_endon(10, "reload");
+		}
+		
+		self freeze_player_controls(true);
+	}
+
+	wait_time = 0;
+	lock_time = 0;
+
+	while (wait_time < 2)
+	{
+		wait 0.05;
+
+		if(!self GetWeaponAmmoClip(weap))
+			return;
+		
+		if(self getCurrentWeapon() != weap)
+			return;
+		
+		if(self InLastStand())
+			return;
+		
+		if ( !IsDefined( plane ) )
+			return;
+
+		if ( !IsAlive( plane ) )
+			return;
+
+		if ( !BulletTracePassed( self getEye(), plane.origin, false, plane ) )
+		{
+			wait_time += 0.05;
+			lock_time = 0;
+		}
+		else
+		{
+			wait_time = 0;
+			lock_time += 0.05;
+
+			self thread bot_lookat(VectorToAngles(((plane.origin-self.origin)-(anglesToForward(self getplayerangles())))), 4);
+
+			if(lock_time >= 2)
+			{
+				self SetWeaponAmmoClip(weap, self GetWeaponAmmoClip(weap)-1);
+				
+				missile = MagicBullet( weap, self getEye(), plane.origin, self );
+				missile Missile_SetTarget( plane );
+				
+				level notify ( "missile_fired", self, missile, plane, true );
+				self notify("bots_aim_overlap");
+				
+				wait 1;
+				return;
+			}
+		}
+	}
 }
 
 /*
@@ -1749,6 +1872,7 @@ bot_target_vehicle()
 		{
 			self bot_plane_attack(target);
 			self freeze_player_controls(false);
+			self thread botStopMove(false);
 		}
 		else
 		{
