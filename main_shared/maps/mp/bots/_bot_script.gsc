@@ -592,12 +592,12 @@ bot_watch_rccar()
 			}
 			else if(player hasPerk("specialty_flakjacket"))
 			{
-				if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 100 * 100 )
+				if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 64 * 64 )
 				{
 					self PressAttackButton();
 				}
 			}
-			else if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 200 * 200 )
+			else if ( DistanceSquared( self.rcbomb.origin, player.origin ) < 128 * 128 )
 			{
 				self PressAttackButton();
 			}
