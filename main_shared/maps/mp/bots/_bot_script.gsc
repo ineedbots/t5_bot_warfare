@@ -316,9 +316,7 @@ bot_spawn()
 
 	if (getDvarInt("bots_play_target_other"))
 	{
-	/*
 		self thread bot_target_vehicle();
-		*/
 		self thread bot_equipment_kill_think();
 		self thread bot_turret_think();
 		self thread bot_dogs_think();
@@ -1590,6 +1588,175 @@ getLockonAmmo()
 	}
 
 	return undefined;
+}
+
+/*
+	Bot attacks the vehicle
+*/
+bot_vehicle_attack( enemy )
+{
+	wait_time = RandomIntRange( 7, 10 );
+
+	for ( i = 0; i < wait_time; i++ )
+	{
+		wait( 1 );
+
+		if ( !IsDefined( enemy ) )
+		{
+			return;
+		}
+
+		if ( !IsAlive( enemy ) )
+		{
+			return;
+		}
+
+		if ( !IsDefined( enemy.targetname ) || enemy.targetname != "rcbomb" )
+		{
+			if ( !self getRocketAmmo() )
+			{
+				return;
+			}
+		}
+
+		if ( !BulletTracePassed( self.origin, enemy.origin, false, enemy ) )
+		{
+			return;
+		}
+	}
+}
+
+/*
+	Bot attacks the plane
+*/
+bot_plane_attack(enemy)
+{
+}
+
+/*
+	Bots think to kill vehicles
+*/
+bot_target_vehicle()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon ( "game_ended" );
+
+	myteam = self.pers[ "team" ];
+
+	for (;;)
+	{
+		wait( 1 );
+		
+		if(isDefined(self GetThreat()) || self IsRemoteControlling() || self UseButtonPressed())
+			continue;
+		
+		airborne_enemies = GetEntArray( "script_vehicle", "classname" );
+		target = undefined;
+		for ( i = 0; i < airborne_enemies.size; i++ )
+		{
+			enemy = airborne_enemies[i];
+
+			if ( !IsDefined( enemy ) )
+			{
+				continue;
+			}
+
+			if ( !IsAlive( enemy ) )
+			{
+				continue;
+			}
+
+			if ( level.teamBased )
+			{
+				if ( enemy.team == myteam )
+				{
+					continue;
+				}
+			}
+
+			if ( enemy.owner == self )
+			{
+				continue;
+			}
+
+			if ( !IsDefined( enemy.targetname ) || enemy.targetname != "rcbomb" )
+			{
+				if ( !self getRocketAmmo() )
+				{
+					continue;
+				}
+			}
+
+			if ( !BulletTracePassed( self.origin, enemy.origin, false, enemy ) )
+			{
+				continue;
+			}
+
+			target = enemy;
+			break;
+		}
+		
+		if(!isDefined(target))
+		{
+			if(isDefined(self getLockonAmmo()))
+			{
+				for(i = 0; i < level.bot_planes.size; i++)
+				{
+					enemy = level.bot_planes[i];
+					
+					if ( !IsDefined( enemy ) )
+					{
+						continue;
+					}
+
+					if ( !IsAlive( enemy ) )
+					{
+						continue;
+					}
+					
+					if ( level.teamBased )
+					{
+						if ( enemy.team == myteam )
+						{
+							continue;
+						}
+					}
+
+					if ( enemy.owner == self )
+					{
+						continue;
+					}
+					
+					if ( !BulletTracePassed( self getEye(), enemy.origin, false, enemy ) )
+					{
+						continue;
+					}
+					
+					target = enemy;
+					break;
+				}
+			}
+		}
+		
+		if(!isDefined(target))
+		{
+			wait( RandomIntRange( 3, 5 ) );
+			continue;
+		}
+		
+		if(isDefined(target.bot_plane))
+		{
+			self bot_plane_attack(target);
+			self freeze_player_controls(false);
+		}
+		else
+		{
+			self SetScriptEnemy( target );
+			self bot_vehicle_attack( target );
+			self ClearScriptEnemy();
+		}
+	}
 }
 
 /*
