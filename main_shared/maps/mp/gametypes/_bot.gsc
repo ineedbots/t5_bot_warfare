@@ -79,6 +79,7 @@ init()
 
 	thread fixGamemodes();
 	thread onPlayerConnect();
+	thread bot_watch_planes();
 	
 	thread handleBots();
 

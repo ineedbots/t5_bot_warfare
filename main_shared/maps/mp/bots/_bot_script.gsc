@@ -1613,7 +1613,7 @@ bot_vehicle_attack( enemy )
 
 		if ( !IsDefined( enemy.targetname ) || enemy.targetname != "rcbomb" )
 		{
-			if ( !self getRocketAmmo() )
+			if ( !isDefined(self getRocketAmmo()) )
 			{
 				return;
 			}
@@ -1776,6 +1776,7 @@ bot_target_vehicle()
 		
 		airborne_enemies = GetEntArray( "script_vehicle", "classname" );
 		target = undefined;
+		myEye = self getEye();
 		for ( i = 0; i < airborne_enemies.size; i++ )
 		{
 			enemy = airborne_enemies[i];
@@ -1805,13 +1806,13 @@ bot_target_vehicle()
 
 			if ( !IsDefined( enemy.targetname ) || enemy.targetname != "rcbomb" )
 			{
-				if ( !self getRocketAmmo() )
+				if ( !isDefined(self getRocketAmmo()) )
 				{
 					continue;
 				}
 			}
 
-			if ( !BulletTracePassed( self.origin, enemy.origin, false, enemy ) )
+			if ( !BulletTracePassed( myEye, enemy.origin, false, enemy ) )
 			{
 				continue;
 			}
@@ -1851,7 +1852,7 @@ bot_target_vehicle()
 						continue;
 					}
 					
-					if ( !BulletTracePassed( self getEye(), enemy.origin, false, enemy ) )
+					if ( !BulletTracePassed( myEye, enemy.origin, false, enemy ) )
 					{
 						continue;
 					}
