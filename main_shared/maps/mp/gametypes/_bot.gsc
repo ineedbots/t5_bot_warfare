@@ -812,7 +812,7 @@ watch_plane(ent)
 		
 	level.bot_planes[level.bot_planes.size] = ent;
 		
-	ent waittill_any("death", "delete");
+	ent waittill_any("death", "delete", "leaving");
 		
 	for ( entry = 0; entry < level.bot_planes.size; entry++ )
 	{
