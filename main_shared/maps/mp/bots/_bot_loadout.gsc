@@ -397,10 +397,16 @@ bot_get_random_weapon(slot, rank)
 	}
 		
 	reason = GetDvarInt("bots_loadout_reasonable");
+	diff = self GetBotDiffNum();
+
+	if(slot == "equipment" && self.pers["bot"]["cod_points"] < 2000)
+		return;
 		
 	for(;;)
 	{
-		id = random( level.bot_weapon_ids[ slot ] );
+		id = PickRandom( level.bot_weapon_ids[ slot ] );
+		if (!isDefined(id))
+			return;
 		
 		if(!bot_weapon_unlocked(id, rank))
 			continue;
@@ -451,12 +457,12 @@ bot_get_random_weapon(slot, rank)
 			continue;
 		}
 
-		if ( id[ "reference" ] == "claymore" && GetDvar( #"bot_difficulty" ) == "easy" )
+		if ( id[ "reference" ] == "claymore" && diff <= 0 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "scrambler" && GetDvar( #"bot_difficulty" ) == "easy" )
+		if ( id[ "reference" ] == "scrambler" && diff <= 0 )
 		{
 			continue;
 		}
@@ -468,13 +474,8 @@ bot_get_random_weapon(slot, rank)
 			continue;
 		
 		cost = bot_weapon_cost(id);
-		if(self.pers["bot"]["cod_points"] < cost)
-		{
-			if(slot == "equipment" && self.pers["bot"]["cod_points"] < 2000)
-				break;
-			
+		if(cost > 0 && self.pers["bot"]["cod_points"] < cost)
 			continue;
-		}
 		
 		self.pers["bot"]["cod_points"] = self.pers["bot"]["cod_points"] - cost;
 		
@@ -482,7 +483,7 @@ bot_get_random_weapon(slot, rank)
 		if(isSubStr(self.pers["bot"]["class_perk2"], "perk_professional") && slot == "primary")
 			maxAttachs = 2;
 		
-		if(RandomFloatRange( 0, 1 ) < ( rank / level.maxRank ))
+		if(RandomFloatRange( 0, 1 ) < (( rank / level.maxRank ) + 0.1))
 			weap = bot_random_attachments(id[ "reference" ], id[ "attachment" ], maxAttachs);
 		else
 			weap = id[ "reference" ];
@@ -521,7 +522,10 @@ bot_get_random_perk(slot, rank)
 		
 	for ( ;; )
 	{
-		id = random( level.allowedPerks[0] );
+		id = PickRandom( level.allowedPerks[0] );
+		if (!isDefined(id))
+			return;
+
 		id = level.tbl_PerkData[ id ];
 
 		if ( id[ "reference" ] == "specialty_null" )
@@ -535,7 +539,7 @@ bot_get_random_perk(slot, rank)
 
 		cost = Int( id[ "cost" ] );
 
-		if ( cost > self.pers["bot"][ "cod_points" ] )
+		if ( cost > 0 && cost > self.pers["bot"][ "cod_points" ] )
 			continue;
 		
 		if(reason)
@@ -552,7 +556,7 @@ bot_get_random_perk(slot, rank)
 	id = bot_perk_from_reference_full(self.pers["bot"]["class_perk" + slot]+"_pro");
 	cost = Int( id[ "cost" ] );
 		
-	if ( Int( cost ) <= self.pers["bot"][ "cod_points" ] && RandomFloatRange( 0, 1 ) < ( rank / level.maxRank ) )
+	if ( Int( cost ) <= self.pers["bot"][ "cod_points" ] && RandomFloatRange( 0, 1 ) < (( rank / level.maxRank ) + 0.1) )
 	{
 		self.pers["bot"][ "cod_points" ] = self.pers["bot"][ "cod_points" ] - cost;
 		self.pers["bot"]["class_perk" + slot] = id[ "reference_full" ];
@@ -799,6 +803,9 @@ bot_weapon_unlocked(id, rank)
 	}
 		
 	unlock = Int( id[ "unlock_level" ] );
+	if (unlock <= 3)
+		return true;
+	
 	return (rank >= unlock);
 }
 
@@ -888,7 +895,7 @@ bot_random_attachments(weap, atts, num)
 			return ( weapon );
 		}
 		
-		attachment = random( attachments );
+		attachment = PickRandom( attachments );
 		attachments = array_remove( attachments, attachment );
 		if(attachment == "")
 			return weapon;
@@ -920,7 +927,7 @@ bot_random_attachments(weap, atts, num)
 		}
 		
 		cost = bot_attachment_cost(attachment);
-		if(cost > self.pers["bot"]["cod_points"])
+		if(cost > 0 && cost > self.pers["bot"]["cod_points"])
 			continue;
 		
 		self.pers["bot"]["cod_points"] -= cost;
@@ -940,7 +947,7 @@ bot_random_attachments(weap, atts, num)
 			return ( weapon );
 		}
 		
-		_attachment = random( attachments );
+		_attachment = PickRandom( attachments );
 		attachments = array_remove( attachments, _attachment );
 		
 		if(_attachment == "")
@@ -982,7 +989,7 @@ bot_random_attachments(weap, atts, num)
 			continue;
 		
 		cost = bot_attachment_cost(_attachment);
-		if(cost > self.pers["bot"]["cod_points"])
+		if(cost > 0 && cost > self.pers["bot"]["cod_points"])
 			continue;
 		
 		self.pers["bot"]["cod_points"] -= cost;
@@ -1162,7 +1169,10 @@ bot_setKillstreaks()
 		
 	for ( i = 0; i < 3; i++ )
 	{
-		killstreak = random( allowed_killstreaks );
+		killstreak = PickRandom( allowed_killstreaks );
+		if (!isDefined(killstreak))
+			break;
+
 		allowed_killstreaks = array_remove( allowed_killstreaks, killstreak );
 
 		ks_level = maps\mp\gametypes\_hardpoints::GetKillstreakLevel( i, killstreak );
@@ -1175,7 +1185,7 @@ bot_setKillstreaks()
 		
 		cost = bot_get_killstreak_cost(killstreak);
 		
-		if(self.pers["bot"]["cod_points"] < cost)
+		if(cost > 0 && self.pers["bot"]["cod_points"] < cost)
 		{
 			i--;
 			continue;
