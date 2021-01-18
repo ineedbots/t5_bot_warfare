@@ -1558,15 +1558,11 @@ getRocketAmmo()
 	if (isDefined(answer))
 		return answer;
 
-	weapons = [];
-	weapons[0] = "minigun_mp";
-	weapons[1] = "rpg_mp";
+	if (self GetAmmoCount("minigun_mp"))
+		return "minigun_mp";
 
-	for (i = 0; i < weapons.size; i++)
-	{
-		if (self GetAmmoCount(weapons[i]))
-			return weapons[i];
-	}
+	if (self GetAmmoCount("rpg_mp"))
+		return "rpg_mp";
 
 	return undefined;
 }
@@ -1576,16 +1572,14 @@ getRocketAmmo()
 */
 getLockonAmmo()
 {
-	weapons = [];
-	weapons[0] = "m72_law_mp";
-	weapons[1] = "strela_mp";
-	weapons[2] = "m202_flash_mp";
+	if (self GetAmmoCount("m72_law_mp"))
+		return "m72_law_mp";
 
-	for (i = 0; i < weapons.size; i++)
-	{
-		if (self GetAmmoCount(weapons[i]))
-			return weapons[i];
-	}
+	if (self GetAmmoCount("strela_mp"))
+		return "strela_mp";
+
+	if (self GetAmmoCount("m202_flash_mp"))
+		return "m202_flash_mp";
 
 	return undefined;
 }
