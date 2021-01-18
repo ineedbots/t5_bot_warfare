@@ -301,6 +301,16 @@ doExtraCheck()
 }
 
 /*
+	Returns the cone dot (like fov, or distance from the center of our screen).
+*/
+getConeDot(to, from, dir)
+{
+    dirToTarget = VectorNormalize(to-from);
+    forward = AnglesToForward(dir);
+    return vectordot(dirToTarget, forward);
+}
+
+/*
 	Fixes sd bomb planting
 */
 bot_onUsePlantObjectFix( player )

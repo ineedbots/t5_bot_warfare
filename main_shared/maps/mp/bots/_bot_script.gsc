@@ -665,7 +665,7 @@ bot_use_supply_drop( weapon )
 
 		self thread changeToWeapon(self.lastNonKillstreakWeapon);
 
-		if (ret == "grenade_fire" && randomInt(100) < 80)
+		if (ret == "grenade_fire" && randomInt(100) < 80 && !self HasScriptGoal() && !self.bot_lock_goal)
 			self waittill_any_timeout( 15, "bot_crate_landed" );
 	}
 
@@ -1236,16 +1236,15 @@ bot_equipment_kill_think()
 
 	for ( ;; )
 	{
-		hasHacker = self HasPerk( "specialty_showenemyequipment" );
-		if ( hasHacker )
-			wait( RandomIntRange( 2, 5 ) );
-		else
-			wait( RandomIntRange( 5, 7 ) );
+		wait RandomIntRange( 1, 3 );
 
 		if(isDefined(self GetThreat()) || self IsRemoteControlling() || self UseButtonPressed())
 			continue;
 
 		grenades = GetEntArray( "grenade", "classname" );
+		hasHacker = self HasPerk( "specialty_showenemyequipment" );
+		myEye = self getEye();
+		myAngles = self getPlayerAngles();
 		target = undefined;
 
 		for ( i = 0; i < grenades.size; i++ )
@@ -1286,14 +1285,13 @@ bot_equipment_kill_think()
 			if(item.bots >= 2)
 				continue;
 
-			dist = DistanceSquared( item.origin, self.origin );
-			if ( hasHacker && dist < 512 * 512 )
-			{
-				target = item;
-				break;
-			}
+			if (!hasHacker && !BulletTracePassed(myEye, item.origin, false, item))
+				continue;
 
-			if ( dist < 256 * 256 )
+			if(getConeDot(item.origin, self.origin, myAngles) < 0.6)
+				continue;
+
+			if ( DistanceSquared( item.origin, self.origin ) < 512 * 512 )
 			{
 				target = item;
 				break;
@@ -1327,15 +1325,14 @@ bot_equipment_kill_think()
 				
 				if(player.tacticalInsertion.bots >= 2)
 					continue;
-				
-				dist = DistanceSquared( player.tacticalInsertion.origin, self.origin );
-				if ( hasHacker && dist < 512 * 512 )
-				{
-					target = player.tacticalInsertion;
-					break;
-				}
 
-				if ( dist < 256 * 256 )
+				if (!hasHacker && !BulletTracePassed(myEye, player.tacticalInsertion.origin, false, player.tacticalInsertion))
+					continue;
+
+				if(getConeDot(player.tacticalInsertion.origin, self.origin, myAngles) < 0.6)
+					continue;
+				
+				if ( DistanceSquared( player.tacticalInsertion.origin, self.origin ) < 512 * 512 )
 				{
 					target = player.tacticalInsertion;
 					break;
