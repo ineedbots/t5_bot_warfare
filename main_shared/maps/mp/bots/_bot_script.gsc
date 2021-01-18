@@ -1771,6 +1771,7 @@ bot_target_vehicle()
 		airborne_enemies = GetEntArray( "script_vehicle", "classname" );
 		target = undefined;
 		myEye = self getEye();
+		rocketAmmo = self getRocketAmmo();
 		for ( i = 0; i < airborne_enemies.size; i++ )
 		{
 			enemy = airborne_enemies[i];
@@ -1800,7 +1801,7 @@ bot_target_vehicle()
 
 			if ( !IsDefined( enemy.targetname ) || enemy.targetname != "rcbomb" )
 			{
-				if ( !isDefined(self getRocketAmmo()) )
+				if ( !isDefined(rocketAmmo) )
 				{
 					continue;
 				}
