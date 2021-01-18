@@ -422,6 +422,10 @@ bot_get_random_weapon(slot, rank)
 				
 				case "camera_spike":
 				case "satchel_charge":
+					if(self.pers["bot"]["cod_points"] >= 2500)
+						continue;
+					break;
+
 				case "nightingale":
 				case "tabun_gas":
 				case "rottweil72":
@@ -457,12 +461,12 @@ bot_get_random_weapon(slot, rank)
 			continue;
 		}
 
-		if ( id[ "reference" ] == "claymore" && diff <= 0 )
+		if ( id[ "reference" ] == "claymore" && diff <= 0 && RandomInt( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "scrambler" && diff <= 0 )
+		if ( id[ "reference" ] == "scrambler" && diff <= 0 && RandomInt( 100 ) > 20 )
 		{
 			continue;
 		}
