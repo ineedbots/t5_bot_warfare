@@ -334,6 +334,9 @@ bot_set_difficulty( difficulty )
 	{
 		SetDvar( "sv_botSprintDistance",	"256" );
 	}
+
+	if (!getDvarInt("bots_play_nade"))
+		SetDvar( "sv_botAllowGrenades",		"0"	);
 		
 	SetDvar( "bot_difficulty", difficulty );
 }
