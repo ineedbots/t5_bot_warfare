@@ -666,7 +666,7 @@ bot_use_supply_drop( weapon )
 		self thread changeToWeapon(self.lastNonKillstreakWeapon);
 
 		if (ret == "grenade_fire" && randomInt(100) < 80 && !self HasScriptGoal() && !self.bot_lock_goal)
-			self waittill_any_timeout( 15, "bot_crate_landed" );
+			self waittill_any_timeout( 15, "bot_crate_landed", "new_goal" );
 	}
 
 	self thread botStopMove(false);
