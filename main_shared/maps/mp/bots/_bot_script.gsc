@@ -330,8 +330,7 @@ bot_spawn()
 	}
 
 
-	/*self thread bot_uav_think();
-	*/
+	self thread bot_uav_think();
 	self thread bot_weapon_think();
 	self thread bot_listen_to_steps();
 	self thread bot_revenge_think();
@@ -364,6 +363,9 @@ bot_inc_bots(obj, unreach)
 {
 	level endon("game_ended");
 	self endon("bot_inc_bots");
+	
+	if (!isDefined(obj))
+		return;
 	
 	if (!isDefined(obj.bots))
 		obj.bots = 0;
@@ -2313,6 +2315,179 @@ bot_weapon_think()
 }
 
 /*
+	Bots pay attention to the uav
+*/
+bot_uav_think()
+{
+	/*self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+	
+	myTeam = self.pers[ "team" ];		
+	otherTeam = getOtherTeam( myTeam );
+	diff = self GetBotDiffNum();
+	
+	wasFooled = false;
+	for(;;)
+	{
+		wait 0.75;
+		
+		if ( self HasScriptGoal() )
+			continue;
+		
+		if ( self IsRemoteControlling() || self.bot_lock_goal )
+		{
+			continue;
+		}
+		
+		hasCam = isDefined(self.cameraSpike);
+		
+		if(self.bot_scrambled && !hasCam)
+			continue;
+		
+		players = get_players();
+		
+		hasUAV = false;
+		hasSR = false;
+		if(level.teamBased)
+		{
+			if(level.activeCounterUAVs[otherTeam] && !hasCam)
+				continue;
+			
+			hasSR = level.activeSatellites[myTeam];
+			hasUAV = level.activeUAVs[myTeam];
+		}
+		else
+		{
+			shouldContinue = false;
+			
+			for (i = 0; i < players.size; i++)
+			{
+				player = players[i];
+				
+				if(player == self)
+					continue;
+					
+				if(!isDefined(player.team))
+					continue;
+				
+				if(isDefined(level.activeCounterUAVs[player.entnum]) && level.activeCounterUAVs[player.entnum])
+					continue;
+				
+				shouldContinue = true;
+				break;
+			}
+					
+			if(shouldContinue && !hasCam)
+				continue;
+			
+			hasSR = level.activeSatellites[self.entnum];
+			hasUAV = level.activeUAVs[self.entnum];
+		}
+		
+		if(level.hardcoreMode && !hasUAV && !hasSR && !hasCam)
+			continue;
+		
+		dist = GetDvarInt( #"scr_help_dist" );
+		dist = dist * dist * 8;
+		
+		if(!wasFooled && level.bot_decoys.size && !hasCam)
+		{
+			shouldContinue = false;
+			
+			for(i = 0; i < level.bot_decoys.size; i++)
+			{
+				g = level.bot_decoys[i];
+				
+				if(isDefined(g.owner) && g.owner == self)
+					continue;
+				
+				if(level.teamBased && g.team == myTeam)
+					continue;
+				
+				if(DistanceSquared(self.origin, g.origin) > dist)
+					continue;
+				
+				if(lengthsquared( g getVelocity() ) > 10000)
+					continue;
+				
+				if(diff > 0)
+					wasFooled = true;
+				
+				self SetBotGoal( g.origin, 128 );
+				
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearScriptGoal();
+				
+				shouldContinue = true;
+				break;
+			}
+			
+			if(shouldContinue)
+				continue;
+		}
+		
+		if ( diff <= 0 )
+		{
+			continue;
+		}
+		
+		for (i = 0; i < players.size; i++)
+		{
+			player = players[i];
+			
+			if(player == self)
+				continue;
+			
+			if(level.teambased && player.team == myTeam)
+				continue;
+			
+			if(!isAlive(player))
+				continue;
+				
+			if(player.sessionstate != "playing")
+				continue;
+			
+			if(DistanceSquared(self.origin, player.origin) > dist)
+				continue;
+			
+			if(hasCam)
+			{
+				if(!self.cameraSpike maps\mp\gametypes\_weaponobjects::isStunned())
+				{
+					if ( VectorDot( VectorNormalize( AnglesToForward( self.cameraSpike.cameraHead.angles ) ), VectorNormalize( player.origin - self.cameraSpike.origin ) ) >= 0.342 && SightTracePassed(player.origin+(0,0,5), self.cameraSpike.origin+(0,0,5), false, self.cameraSpike) && !player hasPerk("specialty_nottargetedbyai")) // cos 70 degrees
+					{
+						self.did = "bot_uav_think(3)";
+						self SetScriptGoal( player.origin, 128 );
+
+						if(DistanceSquared(player.origin, self.origin) > 128*128)
+						{
+							self waittill_any( "goal", "bad_path" );
+						}
+						
+						self ClearScriptGoal();
+						break;
+					}
+				}
+			}
+			else if(hasSR || (!isSubStr(player getCurrentWeapon(), "_silencer_") && player.bot_firing) || (hasUAV && !player hasPerk("specialty_gpsjammer")) || (isDefined(self.acousticSensor) && !self.acousticSensor maps\mp\gametypes\_weaponobjects::isStunned() && !player hasPerk("specialty_nomotionsensor") && distance2d(self.acousticSensor.origin, player.origin) < 666))
+			{
+				self.did = "bot_uav_think(2)";
+				self SetScriptGoal( player.origin, 128 );
+
+				if(DistanceSquared(player.origin, self.origin) > 128*128)
+				{
+					self waittill_any( "goal", "bad_path" );
+				}
+				
+				self ClearScriptGoal();
+				break;
+			}
+		}
+	}*/
+}
+
+/*
 	bots will go to their target's kill location
 */
 bot_revenge_think()
@@ -2322,7 +2497,9 @@ bot_revenge_think()
 	
 	if(!isDefined(self.killerLocation))
 		return;
-	
+
+	loc = self.killerLocation;
+
 	for(;;)
 	{
 		wait( RandomIntRange( 1, 5 ) );
@@ -2333,7 +2510,7 @@ bot_revenge_think()
 		if ( randomint( 100 ) < 75 )
 			return;
 		
-		self SetBotGoal( self.killerLocation, 64 );
+		self SetBotGoal( loc, 64 );
 
 		if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
 			self ClearBotGoal();
