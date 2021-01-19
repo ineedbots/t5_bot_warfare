@@ -17,6 +17,8 @@ init()
 {
 	level.bw_VERSION = "1.1.0";
 
+	level.bot_offline = false;
+
 	if(getDvar("bots_main") == "")
 		setDvar("bots_main", true);
 
@@ -339,6 +341,8 @@ bot_set_difficulty( difficulty )
 		SetDvar( "sv_botAllowGrenades",		"0"	);
 		
 	SetDvar( "bot_difficulty", difficulty );
+	SetDvar( "scr_bot_difficulty", difficulty );
+	SetDvar( "splitscreen_botDifficulty", difficulty );
 }
 
 /*
@@ -625,6 +629,8 @@ add_bot()
 	if (isdefined(bot))
 	{
 		bot.pers["isBot"] = true;
+		bot.equipment_enabled = true;
+		bot.pers[ "bot_perk" ] = true;
 		bot.pers["isBotWarfare"] = true;
 		bot thread maps\mp\bots\_bot_script::added();
 	}

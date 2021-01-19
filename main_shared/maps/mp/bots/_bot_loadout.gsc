@@ -98,6 +98,8 @@ bot_give_loadout()
 		
 		
 	self takeAllWeapons();
+	self GiveWeapon( "knife_mp" );
+
 	weap = self.pers["bot"]["class_primary"];
 	if(weap == "")
 		weap = "ak47_mp";
