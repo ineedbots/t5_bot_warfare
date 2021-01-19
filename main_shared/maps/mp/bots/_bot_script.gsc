@@ -329,10 +329,10 @@ bot_spawn()
 		self thread bot_think_camp();*/
 	}
 
-	/*self thread bot_weapon_think();
 
-	self thread bot_uav_think();
+	/*self thread bot_uav_think();
 	*/
+	self thread bot_weapon_think();
 	self thread bot_listen_to_steps();
 	self thread bot_revenge_think();
 	self thread follow_target();
@@ -2249,6 +2249,70 @@ follow_target()
 }
 
 /*
+	Bots will think to switch weapons
+*/
+bot_weapon_think()
+{
+	self endon("death");
+	self endon("disconnect");
+	level endon("game_ended");
+	
+	for(;;)
+	{
+		self waittill_any_timeout(randomIntRange(2, 4), "bot_force_check_switch");
+			
+		if(self isDefusing() || self isPlanting())
+			continue;
+
+		if (self IsRemoteControlling())
+			continue;
+
+		if (self InLastStand())
+			continue;
+
+		curWeap = self GetCurrentWeapon();
+		threat = self getThreat();
+
+		if (isDefined(threat) && !isPlayer(threat))
+			continue;
+		
+		if(curWeap != "none" && self getAmmoCount(curWeap) && curWeap != "strela_mp")
+		{
+			if(randomInt(100) > 2)
+				continue;
+				
+			if(isDefined(threat))
+				continue;
+		}
+		
+		weaponslist = self getweaponslist();
+		weap = "";
+		while(weaponslist.size)
+		{
+			weapon = weaponslist[randomInt(weaponslist.size)];
+			weaponslist = array_remove(weaponslist, weapon);
+			
+			if(!self getAmmoCount(weapon))
+				continue;
+					
+			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ))
+				continue;
+				
+			if(curWeap == weapon || weapon == "none" || weapon == "" || weapon == "strela_mp")
+				continue;
+				
+			weap = weapon;
+			break;
+		}
+		
+		if(weap == "")
+			continue;
+		
+		self SwitchToWeapon(weap);
+	}
+}
+
+/*
 	bots will go to their target's kill location
 */
 bot_revenge_think()
@@ -2304,7 +2368,7 @@ bot_listen_to_steps()
 
 			if (!isDefined(player.team))
 				continue;
-				
+
 			if(level.teamBased && self.team == player.team)
 				continue;
 			if(player.sessionstate != "playing")
