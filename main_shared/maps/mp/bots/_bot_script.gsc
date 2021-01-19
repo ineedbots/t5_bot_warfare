@@ -331,10 +331,11 @@ bot_spawn()
 
 	/*self thread bot_weapon_think();
 
-	self thread bot_revenge_think();
 	self thread bot_uav_think();
+	*/
 	self thread bot_listen_to_steps();
-	self thread follow_target();*/
+	self thread bot_revenge_think();
+	self thread follow_target();
 
 	if (getDvarInt("bots_play_obj"))
 	{
@@ -2194,6 +2195,152 @@ bot_dogs_think()
 				break;
 			}
 		}
+	}
+}
+
+/*
+	Clears goal when events death
+*/
+stop_go_target_on_death(tar)
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon( "new_goal" );
+	self endon( "bad_path" );
+	self endon( "goal" );
+
+	tar waittill_either("death", "disconnect");
+
+	self ClearBotGoal();
+}
+
+/*
+	Goes to the target's location if it had one
+*/
+follow_target()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	
+	for(;;)
+	{
+		wait 1;
+		
+		if ( self HasScriptGoal() || self.bot_lock_goal )
+			continue;
+		
+		threat = self GetThreat();
+
+		if ( !isDefined(threat) )
+			continue;
+
+		if (!isPlayer(threat))
+			continue;
+
+		if(randomInt(100) > 50)
+			continue;
+
+		self thread stop_go_target_on_death(threat);
+
+		self SetBotGoal(threat.origin, 64);
+		if (self waittill_any_return("new_goal", "goal", "bad_path") != "new_goal")
+			self ClearBotGoal();
+	}
+}
+
+/*
+	bots will go to their target's kill location
+*/
+bot_revenge_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	
+	if(!isDefined(self.killerLocation))
+		return;
+	
+	for(;;)
+	{
+		wait( RandomIntRange( 1, 5 ) );
+		
+		if(self HasScriptGoal() || self.bot_lock_goal)
+			return;
+		
+		if ( randomint( 100 ) < 75 )
+			return;
+		
+		self SetBotGoal( self.killerLocation, 64 );
+
+		if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+			self ClearBotGoal();
+	}
+}
+
+/*
+	Bots will listen to foot steps and target nearby targets
+*/
+bot_listen_to_steps()
+{
+	self endon("disconnect");
+	self endon("death");
+	
+	for(;;)
+	{
+		wait 1;
+			
+		dist = 100;
+		if(self hasPerk("specialty_loudenemies"))
+			dist *= 1.4;
+		
+		dist *= dist;
+		
+		heard = undefined;
+		for(i = level.players.size-1 ; i >= 0; i--)
+		{
+			player = level.players[i];
+
+			if(player == self)
+				continue;
+
+			if (!isDefined(player.team))
+				continue;
+				
+			if(level.teamBased && self.team == player.team)
+				continue;
+			if(player.sessionstate != "playing")
+				continue;
+			if(!isAlive(player))
+				continue;
+
+			if( lengthsquared( player getVelocity() ) < 20000 )
+				continue;
+			
+			if( distanceSquared(player.origin, self.origin) > dist )
+				continue;
+			
+			if( player hasPerk("specialty_quieter"))
+				continue;
+				
+			heard = player;
+			break;
+		}
+		
+		if(!IsDefined(heard))
+			continue;
+		
+		if(bulletTracePassed(self getEye(), heard getTagOrigin( "j_spineupper" ), false, heard))
+		{
+			self setAttacker(heard);
+			continue;
+		}
+		
+		if (self HasScriptGoal() || self.bot_lock_goal)
+			continue;
+		
+		self SetBotGoal( heard.origin, 64 );
+
+		if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+			self ClearBotGoal();
 	}
 }
 
