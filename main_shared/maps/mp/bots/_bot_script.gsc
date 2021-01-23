@@ -139,8 +139,26 @@ bot_on_spawn()
 		self.bot_lock_goal = false;
 		self.help_time = undefined;
 		self.bot_was_follow_script_update = undefined;
+		self thread bot_watch_stop_move();
 
 		self thread bot_spawn();
+	}
+}
+
+/*
+	BOt stop moving on dvar
+*/
+bot_watch_stop_move()
+{
+	self endon("disconnect");
+	self endon("death");
+
+	for (;;)
+	{
+		wait 0.05;
+
+		if (!getDvarInt("bots_play_move"))
+			self thread botStopMove(true);
 	}
 }
 
@@ -2310,7 +2328,7 @@ bot_weapon_think()
 		if(weap == "")
 			continue;
 		
-		self SwitchToWeapon(weap);
+		self thread changeToWeapon(weap);
 	}
 }
 

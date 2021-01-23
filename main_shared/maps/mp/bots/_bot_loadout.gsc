@@ -98,7 +98,8 @@ bot_give_loadout()
 		
 		
 	self takeAllWeapons();
-	self GiveWeapon( "knife_mp" );
+	if (getDvarInt("bots_play_knife"))
+		self GiveWeapon( "knife_mp" );
 
 	weap = self.pers["bot"]["class_primary"];
 	if(weap == "")
@@ -116,12 +117,23 @@ bot_give_loadout()
 	if ( self hasPerk( "specialty_extraammo" ) )
 		self giveMaxAmmo( weap );
 
+	if (!getDVarint("bots_play_fire"))
+	{
+		self SetWeaponAmmoClip(weap, 0);
+		self SetWeaponAmmoStock(weap, 0);
+	}
 		
 	if(self.pers["bot"]["class_secondary"] != "")
 	{
 		self GiveWeapon( self.pers["bot"]["class_secondary"], 0, int( self.pers["bot"]["class_secondary_opts"] ) );
 		if ( self hasPerk( "specialty_extraammo" ) )
 			self giveMaxAmmo( self.pers["bot"]["class_secondary"] );
+
+		if (!getDVarint("bots_play_fire"))
+		{
+			self SetWeaponAmmoClip(self.pers["bot"]["class_secondary"], 0);
+			self SetWeaponAmmoStock(self.pers["bot"]["class_secondary"], 0);
+		}
 	}
 		
 	self SetActionSlot( 3, "altMode" );

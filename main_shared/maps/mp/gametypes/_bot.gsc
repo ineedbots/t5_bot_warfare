@@ -65,6 +65,12 @@ init()
 		setDvar("bots_play_killstreak", true);
 	if(getDvar("bots_play_nade") == "")//bots grenade
 		setDvar("bots_play_nade", true);
+	if(getDvar("bots_play_knife") == "")//bots knife
+		setDvar("bots_play_knife", true);
+	if(getDvar("bots_play_fire") == "")//bots fire
+		setDvar("bots_play_fire", true);
+	if(getDvar("bots_play_move") == "")//bots move
+		setDvar("bots_play_move", true);
 	if(getDvar("bots_play_take_carepackages") == "")//bots take carepackages
 		setDvar("bots_play_take_carepackages", true);
 	if(getDvar("bots_play_obj") == "")//bots play the obj
