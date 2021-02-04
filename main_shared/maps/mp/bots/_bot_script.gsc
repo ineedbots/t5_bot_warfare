@@ -17,6 +17,8 @@ added()
 {
 	self endon("disconnect");
 
+	self.pers["bot"] = [];
+
 	self maps\mp\bots\_bot_loadout::bot_get_cod_points();
 	self maps\mp\bots\_bot_loadout::bot_get_rank();
 	self maps\mp\bots\_bot_loadout::bot_get_prestige();
@@ -2337,7 +2339,7 @@ bot_weapon_think()
 */
 bot_uav_think()
 {
-	/*self endon( "death" );
+	self endon( "death" );
 	self endon( "disconnect" );
 	level endon("game_ended");
 	
@@ -2475,34 +2477,24 @@ bot_uav_think()
 				{
 					if ( VectorDot( VectorNormalize( AnglesToForward( self.cameraSpike.cameraHead.angles ) ), VectorNormalize( player.origin - self.cameraSpike.origin ) ) >= 0.342 && SightTracePassed(player.origin+(0,0,5), self.cameraSpike.origin+(0,0,5), false, self.cameraSpike) && !player hasPerk("specialty_nottargetedbyai")) // cos 70 degrees
 					{
-						self.did = "bot_uav_think(3)";
-						self SetScriptGoal( player.origin, 128 );
-
-						if(DistanceSquared(player.origin, self.origin) > 128*128)
-						{
-							self waittill_any( "goal", "bad_path" );
-						}
+						self SetBotGoal( player.origin, 128 );
 						
-						self ClearScriptGoal();
+						if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+							self ClearBotGoal();
 						break;
 					}
 				}
 			}
 			else if(hasSR || (!isSubStr(player getCurrentWeapon(), "_silencer_") && player.bot_firing) || (hasUAV && !player hasPerk("specialty_gpsjammer")) || (isDefined(self.acousticSensor) && !self.acousticSensor maps\mp\gametypes\_weaponobjects::isStunned() && !player hasPerk("specialty_nomotionsensor") && distance2d(self.acousticSensor.origin, player.origin) < 666))
 			{
-				self.did = "bot_uav_think(2)";
-				self SetScriptGoal( player.origin, 128 );
+				self SetBotGoal( player.origin, 128 );
 
-				if(DistanceSquared(player.origin, self.origin) > 128*128)
-				{
-					self waittill_any( "goal", "bad_path" );
-				}
-				
-				self ClearScriptGoal();
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearBotGoal();
 				break;
 			}
 		}
-	}*/
+	}
 }
 
 /*
