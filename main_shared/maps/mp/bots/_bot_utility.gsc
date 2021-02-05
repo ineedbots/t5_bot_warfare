@@ -105,17 +105,20 @@ GetBotDiffNum()
 	{
 		case "fu":
 			num = 3;
+			break;
 		case "hard":
 			num = 2;
+			break;
 		case "normal":
 			num = 1;
+			break;
 		case "easy":
 		default:
 			num = 0;
 			break;
 	}
 
-	return 0;
+	return num;
 }
 
 /*
