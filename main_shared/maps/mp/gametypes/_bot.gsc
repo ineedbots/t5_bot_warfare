@@ -659,6 +659,58 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 }
 
 /*
+	Bot is idle
+*/
+bot_is_idle()
+{
+	if ( !IsDefined( self ) )
+	{
+		return false;
+	}
+
+	if ( !IsAlive( self ) )
+	{
+		return false;
+	}
+
+	if ( !self is_bot() )
+	{
+		return false;
+	}
+
+	if ( self inLastStand() )
+	{
+		return false;
+	}
+
+	if ( self HasScriptGoal() )
+	{
+		return false;
+	}
+
+	if ( IsDefined( self GetThreat() ) )
+	{
+		return false;
+	}
+	
+	if ( self IsRemoteControlling() || self.bot_lock_goal )
+	{
+		return false;
+	}
+	
+	if(self UseButtonPressed())
+		return false;
+		
+	if(self isPlanting())
+		return false;
+			
+	if(self isDefusing())
+		return false;
+
+	return true;
+}
+
+/*
 	Watch all players grenades
 */
 watch_grenade()
