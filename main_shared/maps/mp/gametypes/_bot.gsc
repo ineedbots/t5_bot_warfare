@@ -763,7 +763,7 @@ watch_decoy(g)
 */
 watch_scrambler()
 {
-	trig = spawn( "trigger_radius", self.origin + (0, 0, -1000), 0, 1000, 2000 );;
+	trig = spawn( "trigger_radius", self.origin + (0, 0, -1000), 0, 1000, 2000 );
 		
 	self scramble_nearby(trig);
 		

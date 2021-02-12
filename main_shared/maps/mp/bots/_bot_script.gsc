@@ -2437,7 +2437,7 @@ bot_uav_think()
 				self SetBotGoal( g.origin, 128 );
 				
 				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
-					self ClearScriptGoal();
+					self ClearBotGoal();
 				
 				shouldContinue = true;
 				break;
