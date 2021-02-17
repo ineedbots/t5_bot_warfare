@@ -61,7 +61,7 @@ bot_on_death()
 	{
 		self waittill("death");
 		
-		self.wantSafeSpawn = false;
+		self.wantSafeSpawn = true;
 	}
 }
 
