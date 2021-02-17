@@ -95,6 +95,14 @@ inLastStand()
 }
 
 /*
+	Is they the flag carrier men?
+*/
+isFlagCarrier()
+{
+	return (isDefined(self.isFlagCarrier) && self.isFlagCarrier);
+}
+
+/*
 	Gets the bot's difficulty number
 */
 GetBotDiffNum()
