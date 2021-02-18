@@ -73,5 +73,8 @@ stringtable,mp/mapsTable.csv
 stringtable,mp/attachmentTable.csv
 
 rawfile,maps/mp/gametypes/_bot.gsc
+rawfile,maps/mp/bots/_bot_loadout.gsc
+rawfile,maps/mp/bots/_bot_script.gsc
+rawfile,maps/mp/bots/_bot_utility.gsc
 
 menufile,ui_mp/playercards.menu

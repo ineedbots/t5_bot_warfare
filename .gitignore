@@ -19,11 +19,15 @@
 !/mods/
 /mods/*
 !/mods/mp_bots/
-!/mods/mp_patch/
+!/mods/patch_mp/
+!/mods/patch_ui_mp/
 
 *.log
 missingasset.csv
 *.ff
 *.files
-/mods/mp_bots/out/*
-!/mods/mp_bots/out/readme.txt
+*.iwd
+!/out/
+!/out/**/*.ff
+!/out/**/*.iwd
+*.zip
