@@ -1847,6 +1847,20 @@ getLockonAmmo()
 }
 
 /*
+	Gets the object thats the closest in the array
+*/
+bot_array_nearest_curorigin(array)
+{
+	result = undefined;
+	
+	for(i = 0; i < array.size; i++)
+		if(!isDefined(result) || DistanceSquared(self.origin,array[i].curorigin) < DistanceSquared(self.origin,result.curorigin))
+			result = array[i];
+		
+	return result;
+}
+
+/*
 	Bot attacks the vehicle
 */
 bot_vehicle_attack( enemy )
@@ -3785,5 +3799,369 @@ bot_sab()
 			self.bot_lock_goal = false;
 			continue;
 		}
+	}
+}
+
+/*
+	Bots play sd defenders
+*/
+bot_sd_defenders()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+
+	if ( level.gametype != "sd" )
+		return;
+
+	myTeam = self.pers[ "team" ];
+	otherTeam = getOtherTeam( myTeam );
+	
+	if(myTeam == game["attackers"])
+		return;
+
+	rand = randomInt(100);
+
+	for ( ;; )
+	{
+		wait( randomintrange( 3, 5 ) );
+		
+		if ( self IsRemoteControlling() || self.bot_lock_goal )
+		{
+			continue;
+		}
+
+		if (self IsPlanting() || self isDefusing())
+			continue;
+		
+		// bomb not planted, lets protect our sites
+		if(!level.bombPlanted)
+		{
+			timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining()/1000;
+			
+			if(timeleft >= 90)
+				continue;
+			
+			// check for a bomb carrier, and camp the bomb
+			if(!level.multiBomb && isDefined(level.sdBomb))
+			{
+				bomb = level.sdBomb;
+				carrier = level.sdBomb.carrier;
+				
+				if(!isDefined(carrier))
+				{
+					origin = ( bomb.curorigin[0], bomb.curorigin[1], bomb.curorigin[2]+32 );
+					
+					//hang around the bomb
+					if(self HasScriptGoal())
+						continue;
+				
+					if(DistanceSquared(origin, self.origin) <= 1024*1024)
+						continue;
+					
+					self SetBotGoal( origin, 256 );
+
+					self thread bot_get_obj(bomb);
+					
+					if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+						self ClearBotGoal();
+					continue;
+				}
+			}
+			
+			// pick a site to protect
+			if(!isDefined(level.bombZones) || !level.bombZones.size)
+				continue;
+			
+			sites = [];
+			for(i = 0; i < level.bombZones.size; i++)
+			{
+				sites[sites.size] = level.bombZones[i];
+			}
+			
+			if(!sites.size)
+				continue;
+			
+			if (rand > 50)
+				site = self bot_array_nearest_curorigin(sites);
+			else
+				site = random(sites);
+			
+			if(!isDefined(site))
+				continue;
+			
+			origin = ( site.curorigin[0]+50, site.curorigin[1]+50, site.curorigin[2]+32 );
+			
+			if(site isInUse())//somebody is planting
+			{
+				self.bot_lock_goal = true;
+				self SetBotGoal( origin, 64 );
+
+				self thread bot_defend_site(site);
+
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearBotGoal();
+				
+				self.bot_lock_goal = false;
+				continue;
+			}
+			
+			//else hang around the site
+			if(DistanceSquared(origin, self.origin) <= 1024*1024)
+				continue;
+			
+			self.bot_lock_goal = true;
+			self SetBotGoal( origin, 256 );
+
+			if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+				self ClearBotGoal();
+			
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		// bomb is planted, we need to defuse
+		if(!isDefined(level.defuseObject))
+			continue;
+		
+		defuse = level.defuseObject;
+		
+		if(!isDefined(defuse.bots))
+			defuse.bots = 0;
+		
+		origin = ( defuse.curorigin[0], defuse.curorigin[1], defuse.curorigin[2]+32 );
+		
+		// someone is going to go defuse ,lets just hang around
+		if(defuse.bots > 1)
+		{
+			if(self HasScriptGoal())
+				continue;
+		
+			if(DistanceSquared(origin, self.origin) <= 1024*1024)
+				continue;
+			
+			self SetBotGoal( origin, 256 );
+			self thread bot_go_defuse(defuse);
+			
+			if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+				self ClearBotGoal();
+			continue;
+		}
+
+		// lets defuse
+		self.bot_lock_goal = true;
+		self SetBotGoal( origin, 1 );
+		self thread bot_inc_bots(defuse);
+		self thread bot_go_defuse(defuse);
+	
+		event = self waittill_any_return( "goal", "bad_path", "new_goal" );
+
+		if (event != "new_goal")
+			self ClearBotGoal();
+		
+		if(event != "goal" || !level.bombPlanted || defuse isInUse() || !self isTouching(defuse.trigger) || self InLastStand() || isDefined(self getThreat()))
+		{
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		self SetBotGoal( self.origin, 64 );
+		
+		self bot_use_bomb_thread(defuse);
+		wait 1;
+		self ClearBotGoal();
+		self.bot_lock_goal = false;
+	}
+}
+
+/*
+	Bots play sd attackers
+*/
+bot_sd_attackers()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	level endon("game_ended");
+
+	if ( level.gametype != "sd" )
+		return;
+
+	myTeam = self.pers[ "team" ];
+	otherTeam = getOtherTeam( myTeam );
+	
+	if(myTeam != game["attackers"])
+		return;
+
+	rand = randomInt(100);
+	
+	first = true;
+
+	for ( ;; )
+	{
+		if(first)
+			first = false;
+		else
+			wait( randomintrange( 3, 5 ) );
+		
+		if ( self IsRemoteControlling() || self.bot_lock_goal )
+		{
+			continue;
+		}
+		
+		//bomb planted
+		if(level.bombPlanted)
+		{
+			if(!isDefined(level.defuseObject))
+				continue;
+			
+			site = level.defuseObject;
+			
+			origin = ( site.curorigin[0], site.curorigin[1], site.curorigin[2]+32 );
+			
+			if(site IsInUse())//somebody is defusing
+			{
+				self.bot_lock_goal = true;
+				
+				self SetBotGoal( origin, 64 );
+				
+				self thread bot_defend_site(site);
+				
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearBotGoal();
+				
+				self.bot_lock_goal = false;
+				continue;
+			}
+			
+			//else hang around the site
+			if(DistanceSquared(origin, self.origin) <= 1024*1024)
+				continue;
+			
+			self.bot_lock_goal = true;
+			self SetBotGoal( origin, 256 );
+			
+			if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+				self ClearBotGoal();
+			
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining()/1000;
+		timepassed = maps\mp\gametypes\_globallogic_utils::getTimePassed()/1000;
+		
+		//dont have a bomb
+		if(!self IsBombCarrier() && !level.multiBomb)
+		{
+			if(!isDefined(level.sdBomb))
+				continue;
+			
+			bomb = level.sdBomb;
+			carrier = level.sdBomb.carrier;
+			
+			//bomb is picked up
+			if(isDefined(carrier))
+			{
+				//escort the bomb carrier
+				if(self HasScriptGoal())
+					continue;
+				
+				origin = carrier.origin;
+				
+				if(DistanceSquared(origin, self.origin) <= 1024*1024)
+					continue;
+				
+				self SetBotGoal( origin, 256 );
+				self thread bot_escort_obj(bomb, carrier);
+				
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearBotGoal();
+				continue;
+			}
+			
+			if(!isDefined(bomb.bots))
+				bomb.bots = 0;
+			
+			origin = ( bomb.curorigin[0], bomb.curorigin[1], bomb.curorigin[2]+32 );
+			
+			//hang around the bomb if other is going to go get it
+			if(bomb.bots > 1)
+			{
+				if(self HasScriptGoal())
+					continue;
+			
+				if(DistanceSquared(origin, self.origin) <= 1024*1024)
+					continue;
+				
+				self SetBotGoal( origin, 256 );
+				
+				self thread bot_get_obj(bomb);
+				
+				if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+					self ClearBotGoal();
+				continue;
+			}
+
+			// go get the bomb
+			self.bot_lock_goal = true;
+			self SetBotGoal( origin, 64 );
+			self thread bot_inc_bots(bomb);
+			self thread bot_get_obj(bomb);
+
+			if (self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal")
+				self ClearBotGoal();
+
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		// check if to plant
+		if(timepassed < 120 && timeleft >= 90 && randomInt(100) < 98)
+			continue;
+		
+		if(!isDefined(level.bombZones) || !level.bombZones.size)
+			continue;
+		
+		sites = [];
+		for(i = 0; i < level.bombZones.size; i++)
+		{
+			sites[sites.size] = level.bombZones[i];
+		}
+		
+		if(!sites.size)
+			continue;
+		
+		if(rand > 50)
+			plant = self bot_array_nearest_curorigin(sites);
+		else
+			plant = random(sites);
+		
+		if(!isDefined(plant))
+			continue;
+		
+		origin = ( plant.curorigin[0]+50, plant.curorigin[1]+50, plant.curorigin[2]+32 );
+		
+		self.bot_lock_goal = true;
+		self SetBotGoal( origin, 1 );
+		self thread bot_go_plant(plant);
+
+		event = self waittill_any_return( "goal", "bad_path", "new_goal" );
+
+		if (event != "new_goal")
+			self ClearBotGoal();
+		
+		if(event != "goal" || level.bombPlanted || plant.visibleTeam == "none" || !self isTouching(plant.trigger) || self InLastStand() || isDefined(self getThreat()) || plant IsInUse())
+		{
+			self.bot_lock_goal = false;
+			continue;
+		}
+		
+		self SetBotGoal( self.origin, 64 );
+		
+		self bot_use_bomb_thread(plant);
+		wait 1;
+		
+		self ClearBotGoal();
+		self.bot_lock_goal = false;
 	}
 }
