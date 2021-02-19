@@ -22,24 +22,24 @@ You can find the more information at the Git Repo: https://github.com/ineedbots/
   - Fixed infinite loops and script errors
 
 - v1.03
-	- Fixed bots switching to secondaries all the time.
-	- Bots can freely switch to their secondaries.
-	- Fixed HCTDM scorelimit menu option.
+  - Fixed bots switching to secondaries all the time.
+  - Bots can freely switch to their secondaries.
+  - Fixed HCTDM scorelimit menu option.
 
 - v1.02
-	- Fixed a few small bugs. A possible infinite loop when bots are too poor for a grenade and reasonable setups are on, and bots never spawning after death with forcerespawn off.
-	- Added an option to allow for UNLIMITED score.
+  - Fixed a few small bugs. A possible infinite loop when bots are too poor for a grenade and reasonable setups are on, and bots never spawning after death with forcerespawn off.
+  - Added an option to allow for UNLIMITED score.
 
 - v1.01
-	- Fixed bot's rank not updating after a multiround.
-	- Can now set bot numbers for friends and enemies from 0 - 30 within menu. (15v15) (1v29)
+  - Fixed bot's rank not updating after a multiround.
+  - Can now set bot numbers for friends and enemies from 0 - 30 within menu. (15v15) (1v29)
 
 - v1.0
-	- Initial release.
+  - Initial release.
 
 ## Credits
 - INeedGames(me) - http://www.moddb.com/mods/bot-warfare
 - apdonato - http://rsebots.blogspot.ca/
 
 Feel free to use code, host on other sites, host on servers, mod it and merge mods with it, just give credit where credit is due!
-	-INeedGames/INeedBot(s) @ ineedbots@outlook.com
+  -INeedGames/INeedBot(s) @ ineedbots@outlook.com

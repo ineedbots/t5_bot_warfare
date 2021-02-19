@@ -18,29 +18,29 @@ You can find the ModDB release post [here](https://www.moddb.com/mods/bot-warfar
 This mod extends the functionality and features of Combat Training in Black Ops multiplayer.
 
 - Menu changes (combat training menu):
-	- You can select any game mode.
-	- You can change prestige classes if available.
-	- You can change your clan tag, emblem and calling card.
-	- You can prestige.
-	- Increased limits of bot numbers.
-	
+  - You can select any game mode.
+  - You can change prestige classes if available.
+  - You can change your clan tag, emblem and calling card.
+  - You can prestige.
+  - Increased limits of bot numbers.
+    
 - Bot changes:
-	- Bots play all game modes (capture flags, plant and defuse, etc.).
-	- Bots take out spyplanes and counter spyplanes.
-	- Bots react to the uav, jammer, decoys, motion sensor and camera spike.
-	- Bots can destroy tactical insertions.
-	- Bots can call in chopper gunner and gun ship but do not use it.
-	- Bots can hack claymores if they are not facing it.
-	- Fixed bots never reviving a player if they move.
-	- Fixed bots trying to capture a hacked care package when they can't because its on their team.
-	- Silencers will not cause other bots to look in the firer's direction.
-	- Bots class, rank, and cod points all persist across rounds.
-	- Bots will spend cod points on everything they choose now (not just gun and perk like before).
-	- Bots can choose two attachments if they have the perk.
-	- Bots can skip killcams.
-	- Bots have a slight delay after spawning, scales inversely with difficulty.
-	- Bots can reroll carepackages.
-	- Bots can use the valkyrie rocket carepackage streak.
+  - Bots play all game modes (capture flags, plant and defuse, etc.).
+  - Bots take out spyplanes and counter spyplanes.
+  - Bots react to the uav, jammer, decoys, motion sensor and camera spike.
+  - Bots can destroy tactical insertions.
+  - Bots can call in chopper gunner and gun ship but do not use it.
+  - Bots can hack claymores if they are not facing it.
+  - Fixed bots never reviving a player if they move.
+  - Fixed bots trying to capture a hacked care package when they can't because its on their team.
+  - Silencers will not cause other bots to look in the firer's direction.
+  - Bots class, rank, and cod points all persist across rounds.
+  - Bots will spend cod points on everything they choose now (not just gun and perk like before).
+  - Bots can choose two attachments if they have the perk.
+  - Bots can skip killcams.
+  - Bots have a slight delay after spawning, scales inversely with difficulty.
+  - Bots can reroll carepackages.
+  - Bots can use the valkyrie rocket carepackage streak.
 
 ## Installation
 0. Download the [latest release](https://github.com/ineedbots/bo1_bot_warfare/releases) of Bot Warfare.
@@ -123,24 +123,24 @@ This mod extends the functionality and features of Combat Training in Black Ops 
   - Fixed infinite loops and script errors
 
 - v1.03
-	- Fixed bots switching to secondaries all the time.
-	- Bots can freely switch to their secondaries.
-	- Fixed HCTDM scorelimit menu option.
+  - Fixed bots switching to secondaries all the time.
+  - Bots can freely switch to their secondaries.
+  - Fixed HCTDM scorelimit menu option.
 
 - v1.02
-	- Fixed a few small bugs. A possible infinite loop when bots are too poor for a grenade and reasonable setups are on, and bots never spawning after death with forcerespawn off.
-	- Added an option to allow for UNLIMITED score.
+  - Fixed a few small bugs. A possible infinite loop when bots are too poor for a grenade and reasonable setups are on, and bots never spawning after death with forcerespawn off.
+  - Added an option to allow for UNLIMITED score.
 
 - v1.01
-	- Fixed bot's rank not updating after a multiround.
-	- Can now set bot numbers for friends and enemies from 0 - 30 within menu. (15v15) (1v29)
+  - Fixed bot's rank not updating after a multiround.
+  - Can now set bot numbers for friends and enemies from 0 - 30 within menu. (15v15) (1v29)
 
 - v1.0
-	- Initial release.
+  - Initial release.
 
 ## Credits
 - INeedGames(me) - http://www.moddb.com/mods/bot-warfare
 - apdonato - http://rsebots.blogspot.ca/
 
 Feel free to use code, host on other sites, host on servers, mod it and merge mods with it, just give credit where credit is due!
-	-INeedGames/INeedBot(s) @ ineedbots@outlook.com
+  -INeedGames/INeedBot(s) @ ineedbots@outlook.com
