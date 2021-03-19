@@ -173,6 +173,7 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 		return;
 
 	self.killerLocation = undefined;
+	self.lastKiller = undefined;
 	if(!IsDefined( self ) || !isDefined(self.team))
 		return;
 		
@@ -201,6 +202,7 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 		return;
 
 	self.killerLocation = eAttacker.origin;
+	self.lastKiller = eAttacker;
 		
 	if (!isSubStr(sWeapon, "_silencer_"))
 		self bot_cry_for_help( eAttacker );
@@ -2760,6 +2762,14 @@ bot_revenge_think()
 {
 	self endon( "death" );
 	self endon( "disconnect" );
+
+	if (isDefined(self.lastKiller) && isAlive(self.lastKiller))
+	{
+		if(bulletTracePassed(self getEye(), self.lastKiller getTagOrigin( "j_spineupper" ), false, self.lastKiller))
+		{
+			self setAttacker(self.lastKiller);
+		}
+	}
 	
 	if(!isDefined(self.killerLocation))
 		return;
