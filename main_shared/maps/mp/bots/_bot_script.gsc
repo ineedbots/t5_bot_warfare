@@ -2530,6 +2530,7 @@ follow_target()
 
 /*
 	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
+	t5 bots cannot switch to altmode
 	Bots will think to switch weapons
 */
 bot_weapon_think()
