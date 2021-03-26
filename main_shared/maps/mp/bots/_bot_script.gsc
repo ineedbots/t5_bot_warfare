@@ -2529,6 +2529,7 @@ follow_target()
 }
 
 /*
+	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
 	Bots will think to switch weapons
 */
 bot_weapon_think()
@@ -2536,6 +2537,8 @@ bot_weapon_think()
 	self endon("death");
 	self endon("disconnect");
 	level endon("game_ended");
+
+	first = true;
 	
 	for(;;)
 	{
@@ -2556,13 +2559,23 @@ bot_weapon_think()
 		if (isDefined(threat) && !isPlayer(threat))
 			continue;
 		
-		if(curWeap != "none" && self getAmmoCount(curWeap) && curWeap != "strela_mp")
+		if (first)
 		{
-			if(randomInt(100) > 2)
+			first = false;
+
+			if (randomInt(100) > 10)
 				continue;
+		}
+		else
+		{
+			if(curWeap != "none" && self getAmmoCount(curWeap) && curWeap != "strela_mp")
+			{
+				if(randomInt(100) > 2)
+					continue;
 				
-			if(isDefined(threat))
-				continue;
+				if(isDefined(threat))
+					continue;
+			}
 		}
 		
 		weaponslist = self getweaponslist();
