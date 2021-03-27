@@ -2591,7 +2591,7 @@ bot_weapon_think()
 			if(!self getAmmoCount(weapon))
 				continue;
 					
-			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ))
+			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ) && !isWeaponAltmode(weapon))
 				continue;
 				
 			if(curWeap == weapon || weapon == "none" || weapon == "" || weapon == "strela_mp")
