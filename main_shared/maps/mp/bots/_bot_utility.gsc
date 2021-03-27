@@ -146,6 +146,25 @@ GetBotDiffNum()
 }
 
 /*
+	is the weapon alt mode?
+*/
+isWeaponAltmode(weap)
+{
+	if (isStrStart(weap, "gl_") || isStrStart(weap, "ft_") || isStrStart(weap, "mk_"))
+		return true;
+
+	return false;
+}
+
+/*
+	If the string starts with
+*/
+isStrStart( string1, subStr )
+{
+	return ( getSubStr( string1, 0, subStr.size ) == subStr );
+}
+
+/*
 	Taken from iw4 script
 */
 waittill_any_timeout( timeOut, string1, string2, string3, string4, string5 )

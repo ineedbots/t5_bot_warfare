@@ -688,6 +688,9 @@ changeToWeapon(weap)
 
 	self SwitchToWeapon(weap);
 
+	if (isWeaponAltmode(weap))
+		self setSpawnWeapon(weap);
+
 	self waittill_any_timeout(5, "weapon_change");
 
 	return (self GetCurrentWeapon() == weap);
@@ -2530,7 +2533,6 @@ follow_target()
 
 /*
 	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
-	t5 bots cannot switch to altmode
 	Bots will think to switch weapons
 */
 bot_weapon_think()
