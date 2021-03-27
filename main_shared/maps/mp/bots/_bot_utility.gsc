@@ -157,6 +157,27 @@ isWeaponAltmode(weap)
 }
 
 /*
+	Returns a valid grenade launcher weapon
+*/
+getValidTube()
+{
+	weaps = self getweaponslist();
+
+	for (i = 0; i < weaps.size; i++)
+	{
+		weap = weaps[i];
+
+		if(!self getAmmoCount(weap))
+			continue;
+
+		if ((isSubStr(weap, "gl_") && !isSubStr(weap, "_gl_")) || weap == "china_lake_mp")
+			return weap;
+	}
+
+	return undefined;
+}
+
+/*
 	Taken from iw4 script
 */
 waittill_any_timeout( timeOut, string1, string2, string3, string4, string5 )

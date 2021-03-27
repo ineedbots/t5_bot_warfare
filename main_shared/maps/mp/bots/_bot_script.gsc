@@ -334,7 +334,10 @@ bot_spawn()
 	self thread bot_radiation_think();
 
 	if (getDvarInt("bots_play_nade"))
+	{
 		self thread bot_use_equipment_think();
+		self thread bot_watch_think_mw2();
+	}
 
 	if (getDvarInt("bots_play_target_other"))
 	{
@@ -2528,6 +2531,52 @@ follow_target()
 		self SetBotGoal(threat.origin, 64);
 		if (self waittill_any_return("new_goal", "goal", "bad_path") != "new_goal")
 			self ClearBotGoal();
+	}
+}
+
+/*
+	Bots play mw2
+*/
+bot_watch_think_mw2()
+{
+	self endon("disconnect");
+	self endon("death");
+	level endon("game_ended");
+
+	for (;;)
+	{
+		wait randomIntRange(1, 4);
+			
+		if(self isDefusing() || self isPlanting())
+			continue;
+
+		if (self IsRemoteControlling())
+			continue;
+
+		if (self InLastStand())
+			continue;
+
+		if (isDefined(self GetThreat()))
+			continue;
+
+		tube = self getValidTube();
+		if (!isDefined(tube))
+		{
+			if (self GetAmmoCount("m72_law_mp"))
+				tube = "m72_law_mp";
+			else if (self GetAmmoCount("rpg_mp"))
+				tube = "rpg_mp";
+			else
+				continue;
+		}
+
+		if (self GetCurrentWeapon() == tube)
+			continue;
+
+		if (randomInt(100) > 35)
+			continue;
+
+		self ChangeToWeapon(tube);
 	}
 }
 
