@@ -364,9 +364,9 @@ doExtraCheck()
 */
 getConeDot(to, from, dir)
 {
-    dirToTarget = VectorNormalize(to-from);
-    forward = AnglesToForward(dir);
-    return vectordot(dirToTarget, forward);
+	dirToTarget = VectorNormalize(to-from);
+	forward = AnglesToForward(dir);
+	return vectordot(dirToTarget, forward);
 }
 
 /*
