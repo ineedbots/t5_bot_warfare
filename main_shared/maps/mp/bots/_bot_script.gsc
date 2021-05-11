@@ -2465,7 +2465,7 @@ bot_dogs_think()
 				}
 			}
 
-			if ( !isDefined(dog.script_owner) || dog.script_owner == self )
+			if ( isDefined(dog.script_owner) && dog.script_owner == self )
 			{
 				continue;
 			}
