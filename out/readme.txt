@@ -13,6 +13,13 @@ You can find the more information at the Git Repo: https://github.com/ineedbots/
 4. The mod is now loaded! Go play Combat Training and enjoy the new additions.
 
 ## Changelog
+- v1.1.1
+  - Fixed some script runtime errors
+  - Improved domination
+  - Bots use altmode weapons
+  - Improved revenge
+  - Bots can swap weapons on spawn more likely
+
 - v1.1.0
   - Rewrote using CoD4x as a base
   - Fixed bots not knifing

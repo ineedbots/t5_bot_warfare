@@ -15,7 +15,7 @@
 */
 init()
 {
-	level.bw_VERSION = "1.1.0";
+	level.bw_VERSION = "1.1.1";
 
 	level.bot_offline = false;
 

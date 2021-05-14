@@ -114,6 +114,13 @@ This mod extends the functionality and features of Combat Training in Black Ops 
 - bots_main_waitForHostTime - a float value, how long in seconds to wait for the host player to connect before adding in bots
 
 ## Changelog
+- v1.1.1
+  - Fixed some script runtime errors
+  - Improved domination
+  - Bots use altmode weapons
+  - Improved revenge
+  - Bots can swap weapons on spawn more likely
+
 - v1.1.0
   - Rewrote using CoD4x as a base
   - Fixed bots not knifing

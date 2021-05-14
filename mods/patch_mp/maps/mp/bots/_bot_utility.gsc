@@ -146,6 +146,38 @@ GetBotDiffNum()
 }
 
 /*
+	is the weapon alt mode?
+*/
+isWeaponAltmode(weap)
+{
+	if (isStrStart(weap, "gl_") || isStrStart(weap, "ft_") || isStrStart(weap, "mk_"))
+		return true;
+
+	return false;
+}
+
+/*
+	Returns a valid grenade launcher weapon
+*/
+getValidTube()
+{
+	weaps = self getweaponslist();
+
+	for (i = 0; i < weaps.size; i++)
+	{
+		weap = weaps[i];
+
+		if(!self getAmmoCount(weap))
+			continue;
+
+		if ((isSubStr(weap, "gl_") && !isSubStr(weap, "_gl_")) || weap == "china_lake_mp")
+			return weap;
+	}
+
+	return undefined;
+}
+
+/*
 	Taken from iw4 script
 */
 waittill_any_timeout( timeOut, string1, string2, string3, string4, string5 )
@@ -332,9 +364,9 @@ doExtraCheck()
 */
 getConeDot(to, from, dir)
 {
-    dirToTarget = VectorNormalize(to-from);
-    forward = AnglesToForward(dir);
-    return vectordot(dirToTarget, forward);
+	dirToTarget = VectorNormalize(to-from);
+	forward = AnglesToForward(dir);
+	return vectordot(dirToTarget, forward);
 }
 
 /*

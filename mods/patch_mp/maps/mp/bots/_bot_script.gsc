@@ -173,6 +173,7 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 		return;
 
 	self.killerLocation = undefined;
+	self.lastKiller = undefined;
 	if(!IsDefined( self ) || !isDefined(self.team))
 		return;
 		
@@ -201,6 +202,7 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 		return;
 
 	self.killerLocation = eAttacker.origin;
+	self.lastKiller = eAttacker;
 		
 	if (!isSubStr(sWeapon, "_silencer_"))
 		self bot_cry_for_help( eAttacker );
@@ -332,7 +334,10 @@ bot_spawn()
 	self thread bot_radiation_think();
 
 	if (getDvarInt("bots_play_nade"))
+	{
 		self thread bot_use_equipment_think();
+		self thread bot_watch_think_mw2();
+	}
 
 	if (getDvarInt("bots_play_target_other"))
 	{
@@ -685,6 +690,9 @@ changeToWeapon(weap)
 		return true;
 
 	self SwitchToWeapon(weap);
+
+	if (isWeaponAltmode(weap))
+		self setSpawnWeapon(weap);
 
 	self waittill_any_timeout(5, "weapon_change");
 
@@ -2457,7 +2465,7 @@ bot_dogs_think()
 				}
 			}
 
-			if ( dog.script_owner == self )
+			if ( isDefined(dog.script_owner) && dog.script_owner == self )
 			{
 				continue;
 			}
@@ -2527,6 +2535,53 @@ follow_target()
 }
 
 /*
+	Bots play mw2
+*/
+bot_watch_think_mw2()
+{
+	self endon("disconnect");
+	self endon("death");
+	level endon("game_ended");
+
+	for (;;)
+	{
+		wait randomIntRange(1, 4);
+			
+		if(self isDefusing() || self isPlanting())
+			continue;
+
+		if (self IsRemoteControlling())
+			continue;
+
+		if (self InLastStand())
+			continue;
+
+		if (isDefined(self GetThreat()))
+			continue;
+
+		tube = self getValidTube();
+		if (!isDefined(tube))
+		{
+			if (self GetAmmoCount("m72_law_mp"))
+				tube = "m72_law_mp";
+			else if (self GetAmmoCount("rpg_mp"))
+				tube = "rpg_mp";
+			else
+				continue;
+		}
+
+		if (self GetCurrentWeapon() == tube)
+			continue;
+
+		if (randomInt(100) > 35)
+			continue;
+
+		self ChangeToWeapon(tube);
+	}
+}
+
+/*
+	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
 	Bots will think to switch weapons
 */
 bot_weapon_think()
@@ -2534,6 +2589,8 @@ bot_weapon_think()
 	self endon("death");
 	self endon("disconnect");
 	level endon("game_ended");
+
+	first = true;
 	
 	for(;;)
 	{
@@ -2554,13 +2611,23 @@ bot_weapon_think()
 		if (isDefined(threat) && !isPlayer(threat))
 			continue;
 		
-		if(curWeap != "none" && self getAmmoCount(curWeap) && curWeap != "strela_mp")
+		if (first)
 		{
-			if(randomInt(100) > 2)
+			first = false;
+
+			if (randomInt(100) > 10)
 				continue;
+		}
+		else
+		{
+			if(curWeap != "none" && self getAmmoCount(curWeap) && curWeap != "strela_mp")
+			{
+				if(randomInt(100) > 2)
+					continue;
 				
-			if(isDefined(threat))
-				continue;
+				if(isDefined(threat))
+					continue;
+			}
 		}
 		
 		weaponslist = self getweaponslist();
@@ -2573,7 +2640,7 @@ bot_weapon_think()
 			if(!self getAmmoCount(weapon))
 				continue;
 					
-			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ))
+			if (!maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ) && !isWeaponAltmode(weapon))
 				continue;
 				
 			if(curWeap == weapon || weapon == "none" || weapon == "" || weapon == "strela_mp")
@@ -2760,6 +2827,14 @@ bot_revenge_think()
 {
 	self endon( "death" );
 	self endon( "disconnect" );
+
+	if (isDefined(self.lastKiller) && isAlive(self.lastKiller))
+	{
+		if(bulletTracePassed(self getEye(), self.lastKiller getTagOrigin( "j_spineupper" ), false, self.lastKiller))
+		{
+			self setAttacker(self.lastKiller);
+		}
+	}
 	
 	if(!isDefined(self.killerLocation))
 		return;
@@ -3094,20 +3169,23 @@ bot_dom_cap_think()
 
 		otherFlagCount = maps\mp\gametypes\dom::getTeamFlagCount( otherTeam );
 
-		if ( myFlagCount < otherFlagCount )
+		if (game["teamScores"][myteam] >= game["teamScores"][otherTeam])
 		{
-			if ( randomint( 100 ) < 15 )
-				continue;
-		}
-		else if ( myFlagCount == otherFlagCount )
-		{
-			if ( randomint( 100 ) < 35 )
-				continue;	
-		}
-		else if ( myFlagCount > otherFlagCount )
-		{
-			if ( randomint( 100 ) < 95 )
-				continue;
+			if ( myFlagCount < otherFlagCount )
+			{
+				if ( randomint( 100 ) < 15 )
+					continue;
+			}
+			else if ( myFlagCount == otherFlagCount )
+			{
+				if ( randomint( 100 ) < 35 )
+					continue;	
+			}
+			else if ( myFlagCount > otherFlagCount )
+			{
+				if ( randomint( 100 ) < 95 )
+					continue;
+			}
 		}
 
 		flag = undefined;
