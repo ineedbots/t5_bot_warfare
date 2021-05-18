@@ -721,6 +721,10 @@ watch_grenade()
 	for(;;)
 	{
 		self waittill("grenade_fire", g, name);
+
+		if (!isDefined(g))
+			continue;
+
 		if(name == "scrambler_mp")
 		{
 			g thread watch_scrambler();
