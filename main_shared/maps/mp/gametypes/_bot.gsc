@@ -354,19 +354,92 @@ bot_set_difficulty( difficulty )
 /*
 	A server thread for monitoring all bot's teams for custom server settings.
 */
-teamBots()
+teamBots_loop()
 {
-	for(;;)
+	teamAmount = getDvarInt("bots_team_amount");
+	toTeam = getDvar("bots_team");
+	
+	alliesbots = 0;
+	alliesplayers = 0;
+	axisbots = 0;
+	axisplayers = 0;
+	
+	playercount = level.players.size;
+	for(i = 0; i < playercount; i++)
 	{
-		wait 1.5;
-		teamAmount = getDvarInt("bots_team_amount");
-		toTeam = getDvar("bots_team");
+		player = level.players[i];
 		
-		alliesbots = 0;
-		alliesplayers = 0;
-		axisbots = 0;
-		axisplayers = 0;
+		if(!isDefined(player.pers["team"]))
+			continue;
 		
+		if(player is_bot())
+		{
+			if(player.pers["team"] == "allies")
+				alliesbots++;
+			else if(player.pers["team"] == "axis")
+				axisbots++;
+		}
+		else
+		{
+			if(player.pers["team"] == "allies")
+				alliesplayers++;
+			else if(player.pers["team"] == "axis")
+				axisplayers++;
+		}
+	}
+	
+	allies = alliesbots;
+	axis = axisbots;
+	
+	if(!getDvarInt("bots_team_mode"))
+	{
+		allies += alliesplayers;
+		axis += axisplayers;
+	}
+	
+	if(toTeam != "custom")
+	{
+		if(getDvarInt("bots_team_force"))
+		{
+			if(toTeam == "autoassign")
+			{
+				if(abs(axis - allies) > 1)
+				{
+					toTeam = "axis";
+					if(axis > allies)
+						toTeam = "allies";
+				}
+			}
+			
+			if(toTeam != "autoassign")
+			{
+				playercount = level.players.size;
+				for(i = 0; i < playercount; i++)
+				{
+					player = level.players[i];
+					
+					if(!isDefined(player.pers["team"]))
+						continue;
+					
+					if(!player is_bot())
+						continue;
+						
+					if(player.pers["team"] == toTeam)
+						continue;
+						
+					if (toTeam == "allies")
+						player thread [[level.allies]]();
+					else if (toTeam == "axis")
+						player thread [[level.axis]]();
+					else
+						player thread [[level.spectator]]();
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
 		playercount = level.players.size;
 		for(i = 0; i < playercount; i++)
 		{
@@ -375,108 +448,152 @@ teamBots()
 			if(!isDefined(player.pers["team"]))
 				continue;
 			
-			if(player is_bot())
+			if(!player is_bot())
+				continue;
+				
+			if(player.pers["team"] == "axis")
 			{
-				if(player.pers["team"] == "allies")
-					alliesbots++;
-				else if(player.pers["team"] == "axis")
-					axisbots++;
+				if(axis > teamAmount)
+				{
+					player thread [[level.allies]]();
+					break;
+				}
 			}
 			else
 			{
-				if(player.pers["team"] == "allies")
-					alliesplayers++;
-				else if(player.pers["team"] == "axis")
-					axisplayers++;
-			}
-		}
-		
-		allies = alliesbots;
-		axis = axisbots;
-		
-		if(!getDvarInt("bots_team_mode"))
-		{
-			allies += alliesplayers;
-			axis += axisplayers;
-		}
-		
-		if(toTeam != "custom")
-		{
-			if(getDvarInt("bots_team_force"))
-			{
-				if(toTeam == "autoassign")
+				if(axis < teamAmount)
 				{
-					if(abs(axis - allies) > 1)
-					{
-						toTeam = "axis";
-						if(axis > allies)
-							toTeam = "allies";
-					}
+					player thread [[level.axis]]();
+					break;
 				}
-				
-				if(toTeam != "autoassign")
+				else if(player.pers["team"] != "allies")
 				{
-					playercount = level.players.size;
-					for(i = 0; i < playercount; i++)
-					{
-						player = level.players[i];
-						
-						if(!isDefined(player.pers["team"]))
-							continue;
-						
-						if(!player is_bot())
-							continue;
-							
-						if(player.pers["team"] == toTeam)
-							continue;
-							
-						if (toTeam == "allies")
-							player thread [[level.allies]]();
-						else if (toTeam == "axis")
-							player thread [[level.axis]]();
-						else
-							player thread [[level.spectator]]();
-						break;
-					}
+					player thread [[level.allies]]();
+					break;
 				}
 			}
 		}
+	}
+}
+
+/*
+	A server thread for monitoring all bot's teams for custom server settings.
+*/
+teamBots()
+{
+	for(;;)
+	{
+		wait 1.5;
+		teamBots_loop();
+	}
+}
+
+/*
+	Loop
+*/
+addBots_loop()
+{
+	botsToAdd = GetDvarInt("bots_manage_add");
+	
+	if(botsToAdd > 0)
+	{
+		SetDvar("bots_manage_add", 0);
+		
+		if(botsToAdd > 64)
+			botsToAdd = 64;
+			
+		for(; botsToAdd > 0; botsToAdd--)
+		{
+			level add_bot();
+			wait 0.25;
+		}
+	}
+	
+	fillMode = getDVarInt("bots_manage_fill_mode");
+	
+	if(fillMode == 2 || fillMode == 3)
+		setDvar("bots_manage_fill", getGoodMapAmount());
+	
+	fillAmount = getDvarInt("bots_manage_fill");
+	
+	players = 0;
+	bots = 0;
+	spec = 0;
+	
+	playercount = level.players.size;
+	for(i = 0; i < playercount; i++)
+	{
+		player = level.players[i];
+
+		if (player isdemoclient())
+			continue;
+		
+		if(player is_bot())
+			bots++;
+		else if(!isDefined(player.pers["team"]) || (player.pers["team"] != "axis" && player.pers["team"] != "allies"))
+			spec++;
 		else
+			players++;
+	}
+	
+	if(fillMode == 4)
+	{
+		axisplayers = 0;
+		alliesplayers = 0;
+		
+		playercount = level.players.size;
+		for(i = 0; i < playercount; i++)
 		{
-			playercount = level.players.size;
-			for(i = 0; i < playercount; i++)
-			{
-				player = level.players[i];
-				
-				if(!isDefined(player.pers["team"]))
-					continue;
-				
-				if(!player is_bot())
-					continue;
-					
-				if(player.pers["team"] == "axis")
-				{
-					if(axis > teamAmount)
-					{
-						player thread [[level.allies]]();
-						break;
-					}
-				}
-				else
-				{
-					if(axis < teamAmount)
-					{
-						player thread [[level.axis]]();
-						break;
-					}
-					else if(player.pers["team"] != "allies")
-					{
-						player thread [[level.allies]]();
-						break;
-					}
-				}
-			}
+			player = level.players[i];
+			
+			if(player is_bot())
+				continue;
+			
+			if(!isDefined(player.pers["team"]))
+				continue;
+			
+			if(player.pers["team"] == "axis")
+				axisplayers++;
+			else if(player.pers["team"] == "allies")
+				alliesplayers++;
 		}
+		
+		result = fillAmount - abs(axisplayers - alliesplayers) + bots;
+		
+		if (players == 0)
+		{
+			if(bots < fillAmount)
+				result = fillAmount-1;
+			else if (bots > fillAmount)
+				result = fillAmount+1;
+			else
+				result = fillAmount;
+		}
+		
+		bots = result;
+	}
+
+	if (!randomInt(999))
+	{
+		setDvar("testclients_doreload", true);
+		wait 0.1;
+		setDvar("testclients_doreload", false);
+		doExtraCheck();
+	}
+	
+	amount = bots;
+	if(fillMode == 0 || fillMode == 2)
+		amount += players;
+	if(getDVarInt("bots_manage_fill_spec"))
+		amount += spec;
+		
+	if(amount < fillAmount)
+		setDvar("bots_manage_add", 1);
+	else if(amount > fillAmount && getDvarInt("bots_manage_fill_kick"))
+	{
+		tempBot = PickRandom(getBotArray());
+		if (isDefined(tempBot))
+			kick( tempBot getEntityNumber(), "EXE_PLAYERKICKED" );
 	}
 }
 
@@ -520,108 +637,7 @@ addBots()
 	{
 		wait 1.5;
 		
-		botsToAdd = GetDvarInt("bots_manage_add");
-		
-		if(botsToAdd > 0)
-		{
-			SetDvar("bots_manage_add", 0);
-			
-			if(botsToAdd > 64)
-				botsToAdd = 64;
-				
-			for(; botsToAdd > 0; botsToAdd--)
-			{
-				level add_bot();
-				wait 0.25;
-			}
-		}
-		
-		fillMode = getDVarInt("bots_manage_fill_mode");
-		
-		if(fillMode == 2 || fillMode == 3)
-			setDvar("bots_manage_fill", getGoodMapAmount());
-		
-		fillAmount = getDvarInt("bots_manage_fill");
-		
-		players = 0;
-		bots = 0;
-		spec = 0;
-		
-		playercount = level.players.size;
-		for(i = 0; i < playercount; i++)
-		{
-			player = level.players[i];
-
-			if (player isdemoclient())
-				continue;
-			
-			if(player is_bot())
-				bots++;
-			else if(!isDefined(player.pers["team"]) || (player.pers["team"] != "axis" && player.pers["team"] != "allies"))
-				spec++;
-			else
-				players++;
-		}
-		
-		if(fillMode == 4)
-		{
-			axisplayers = 0;
-			alliesplayers = 0;
-			
-			playercount = level.players.size;
-			for(i = 0; i < playercount; i++)
-			{
-				player = level.players[i];
-				
-				if(player is_bot())
-					continue;
-				
-				if(!isDefined(player.pers["team"]))
-					continue;
-				
-				if(player.pers["team"] == "axis")
-					axisplayers++;
-				else if(player.pers["team"] == "allies")
-					alliesplayers++;
-			}
-			
-			result = fillAmount - abs(axisplayers - alliesplayers) + bots;
-			
-			if (players == 0)
-			{
-				if(bots < fillAmount)
-					result = fillAmount-1;
-				else if (bots > fillAmount)
-					result = fillAmount+1;
-				else
-					result = fillAmount;
-			}
-			
-			bots = result;
-		}
-
-		if (!randomInt(999))
-		{
-			setDvar("testclients_doreload", true);
-			wait 0.1;
-			setDvar("testclients_doreload", false);
-			doExtraCheck();
-		}
-		
-		amount = bots;
-		if(fillMode == 0 || fillMode == 2)
-			amount += players;
-		if(getDVarInt("bots_manage_fill_spec"))
-			amount += spec;
-			
-		if(amount < fillAmount)
-			setDvar("bots_manage_add", 1);
-		else if(amount > fillAmount && getDvarInt("bots_manage_fill_kick"))
-		{
-			tempBot = PickRandom(getBotArray());
-			if (isDefined(tempBot))
-				kick( tempBot getEntityNumber(), "EXE_PLAYERKICKED" );
-		}
+		addBots_loop();
 	}
 }
 
@@ -852,25 +868,33 @@ doFiringThread()
 /*
 	Watches the planes
 */
+bot_watch_planes_loop()
+{
+	ents = GetEntArray("script_model", "classname");
+	for(i = 0; i < ents.size; i++)
+	{
+		ent = ents[i];
+		
+		if(isDefined(ent.bot_plane))
+			continue;
+		
+		if(ent.model != level.spyplanemodel)
+			continue;
+		
+		thread watch_plane(ent);
+	}
+}
+
+/*
+	Watches the planes
+*/
 bot_watch_planes()
 {
 	for(;;)
 	{
 		level waittill("uav_update");
 		
-		ents = GetEntArray("script_model", "classname");
-		for(i = 0; i < ents.size; i++)
-		{
-			ent = ents[i];
-			
-			if(isDefined(ent.bot_plane))
-				continue;
-			
-			if(ent.model != level.spyplanemodel)
-				continue;
-			
-			thread watch_plane(ent);
-		}
+		bot_watch_planes_loop();
 	}
 }
 
