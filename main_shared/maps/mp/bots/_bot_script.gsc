@@ -686,13 +686,13 @@ changeToWeapon(weap)
 	if (!self HasWeapon(weap))
 		return false;
 
-	if (self GetCurrentWeapon() == weap)
-		return true;
-
 	self SwitchToWeapon(weap);
 
 	if (isWeaponAltmode(weap))
 		self setSpawnWeapon(weap);
+
+	if (self GetCurrentWeapon() == weap)
+		return true;
 
 	self waittill_any_timeout(5, "weapon_change");
 
@@ -1244,17 +1244,8 @@ bot_killstreak_think_loop()
 						return;
 				}
 			}
-
-			if (!self ChangeToWeapon(weapon))
-				break;
-
-			wait 1;
-			break;
-
+		
 		case "killstreak_dogs":
-			if (IsDefined( level.dogs ))
-				return;
-
 		default:
 			if (!self ChangeToWeapon(weapon))
 				break;
@@ -2656,7 +2647,7 @@ bot_watch_think_mw2_loop()
 	if (randomInt(100) > 35)
 		return;
 
-	self ChangeToWeapon(tube);
+	self thread ChangeToWeapon(tube);
 }
 
 /*
