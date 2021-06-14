@@ -119,6 +119,22 @@ isBombCarrier()
 }
 
 /*
+	iw5
+*/
+allowClassChoice()
+{
+	return true;
+}
+
+/*
+	iw5
+*/
+allowTeamChoice()
+{
+	return true;
+}
+
+/*
 	Gets the bot's difficulty number
 */
 GetBotDiffNum()
