@@ -19,76 +19,95 @@ init()
 
 	level.bot_offline = false;
 
-	if(getDvar("bots_main") == "")
-		setDvar("bots_main", true);
+	if ( getDvar( "bots_main" ) == "" )
+		setDvar( "bots_main", true );
 
-	if (!getDvarInt("bots_main"))
+	if ( !getDvarInt( "bots_main" ) )
 		return;
 
-	if(getDvar("bots_main_waitForHostTime") == "")
-		setDvar("bots_main_waitForHostTime", 10.0);//how long to wait to wait for the host player
+	if ( getDvar( "bots_main_waitForHostTime" ) == "" )
+		setDvar( "bots_main_waitForHostTime", 10.0 ); //how long to wait to wait for the host player
 
-	if(getDvar("bots_manage_add") == "")
-		setDvar("bots_manage_add", 0);//amount of bots to add to the game
-	if(getDvar("bots_manage_fill") == "")
-		setDvar("bots_manage_fill", 0);//amount of bots to maintain
-	if(getDvar("bots_manage_fill_spec") == "")
-		setDvar("bots_manage_fill_spec", true);//to count for fill if player is on spec team
-	if(getDvar("bots_manage_fill_mode") == "")
-		setDvar("bots_manage_fill_mode", 0);//fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
-	if(getDvar("bots_manage_fill_kick") == "")
-		setDvar("bots_manage_fill_kick", false);//kick bots if too many
-		
-	if(getDvar("bots_team") == "")
-		setDvar("bots_team", "autoassign");//which team for bots to join
-	if(getDvar("bots_team_amount") == "")
-		setDvar("bots_team_amount", 0);//amount of bots on axis team
-	if(getDvar("bots_team_force") == "")
-		setDvar("bots_team_force", false);//force bots on team
-	if(getDvar("bots_team_mode") == "")
-		setDvar("bots_team_mode", 0);//counts just bots when 1
+	if ( getDvar( "bots_manage_add" ) == "" )
+		setDvar( "bots_manage_add", 0 ); //amount of bots to add to the game
 
-	if(getDvar("bots_loadout_reasonable") == "")//filter out the bad 'guns' and perks
-		setDvar("bots_loadout_reasonable", false);
-	if(getDvar("bots_loadout_allow_op") == "")//allows jug, marty and laststand
-		setDvar("bots_loadout_allow_op", true);
-	if(getDvar("bots_loadout_rank") == "")// what rank the bots should be around, -1 is around the players, 0 is all random
-		setDvar("bots_loadout_rank", -1);
-	if(getDvar("bots_loadout_codpoints") == "")// how much cod points a bot should have, -1 is around the players, 0 is all random
-		setDvar("bots_loadout_codpoints", -1);
-	if(getDvar("bots_loadout_prestige") == "")// what pretige the bots will be, -1 is the players, -2 is random
-		setDvar("bots_loadout_prestige", -1);
+	if ( getDvar( "bots_manage_fill" ) == "" )
+		setDvar( "bots_manage_fill", 0 ); //amount of bots to maintain
 
-	if(getDvar("bots_play_target_other") == "")//bot target non play ents (vehicles)
-		setDvar("bots_play_target_other", true);
-	if(getDvar("bots_play_killstreak") == "")//bot use killstreaks
-		setDvar("bots_play_killstreak", true);
-	if(getDvar("bots_play_nade") == "")//bots grenade
-		setDvar("bots_play_nade", true);
-	if(getDvar("bots_play_knife") == "")//bots knife
-		setDvar("bots_play_knife", true);
-	if(getDvar("bots_play_fire") == "")//bots fire
-		setDvar("bots_play_fire", true);
-	if(getDvar("bots_play_move") == "")//bots move
-		setDvar("bots_play_move", true);
-	if(getDvar("bots_play_take_carepackages") == "")//bots take carepackages
-		setDvar("bots_play_take_carepackages", true);
-	if(getDvar("bots_play_obj") == "")//bots play the obj
-		setDvar("bots_play_obj", true);
-	if(getDvar("bots_play_camp") == "")//bots camp and follow
-		setDvar("bots_play_camp", true);
+	if ( getDvar( "bots_manage_fill_spec" ) == "" )
+		setDvar( "bots_manage_fill_spec", true ); //to count for fill if player is on spec team
+
+	if ( getDvar( "bots_manage_fill_mode" ) == "" )
+		setDvar( "bots_manage_fill_mode", 0 ); //fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
+
+	if ( getDvar( "bots_manage_fill_kick" ) == "" )
+		setDvar( "bots_manage_fill_kick", false ); //kick bots if too many
+
+	if ( getDvar( "bots_team" ) == "" )
+		setDvar( "bots_team", "autoassign" ); //which team for bots to join
+
+	if ( getDvar( "bots_team_amount" ) == "" )
+		setDvar( "bots_team_amount", 0 ); //amount of bots on axis team
+
+	if ( getDvar( "bots_team_force" ) == "" )
+		setDvar( "bots_team_force", false ); //force bots on team
+
+	if ( getDvar( "bots_team_mode" ) == "" )
+		setDvar( "bots_team_mode", 0 ); //counts just bots when 1
+
+	if ( getDvar( "bots_loadout_reasonable" ) == "" ) //filter out the bad 'guns' and perks
+		setDvar( "bots_loadout_reasonable", false );
+
+	if ( getDvar( "bots_loadout_allow_op" ) == "" ) //allows jug, marty and laststand
+		setDvar( "bots_loadout_allow_op", true );
+
+	if ( getDvar( "bots_loadout_rank" ) == "" ) // what rank the bots should be around, -1 is around the players, 0 is all random
+		setDvar( "bots_loadout_rank", -1 );
+
+	if ( getDvar( "bots_loadout_codpoints" ) == "" ) // how much cod points a bot should have, -1 is around the players, 0 is all random
+		setDvar( "bots_loadout_codpoints", -1 );
+
+	if ( getDvar( "bots_loadout_prestige" ) == "" ) // what pretige the bots will be, -1 is the players, -2 is random
+		setDvar( "bots_loadout_prestige", -1 );
+
+	if ( getDvar( "bots_play_target_other" ) == "" ) //bot target non play ents (vehicles)
+		setDvar( "bots_play_target_other", true );
+
+	if ( getDvar( "bots_play_killstreak" ) == "" ) //bot use killstreaks
+		setDvar( "bots_play_killstreak", true );
+
+	if ( getDvar( "bots_play_nade" ) == "" ) //bots grenade
+		setDvar( "bots_play_nade", true );
+
+	if ( getDvar( "bots_play_knife" ) == "" ) //bots knife
+		setDvar( "bots_play_knife", true );
+
+	if ( getDvar( "bots_play_fire" ) == "" ) //bots fire
+		setDvar( "bots_play_fire", true );
+
+	if ( getDvar( "bots_play_move" ) == "" ) //bots move
+		setDvar( "bots_play_move", true );
+
+	if ( getDvar( "bots_play_take_carepackages" ) == "" ) //bots take carepackages
+		setDvar( "bots_play_take_carepackages", true );
+
+	if ( getDvar( "bots_play_obj" ) == "" ) //bots play the obj
+		setDvar( "bots_play_obj", true );
+
+	if ( getDvar( "bots_play_camp" ) == "" ) //bots camp and follow
+		setDvar( "bots_play_camp", true );
 
 	level.bots = [];
 	level.bot_decoys = [];
 	level.bot_planes = [];
 
-	if(!isDefined(game["botWarfare"]))
+	if ( !isDefined( game["botWarfare"] ) )
 		game["botWarfare"] = true;
 
 	thread fixGamemodes();
 	thread onPlayerConnect();
 	thread bot_watch_planes();
-	
+
 	thread handleBots();
 
 	thread doNonDediBots();
@@ -99,9 +118,9 @@ init()
 */
 onPlayerConnect()
 {
-	for(;;)
+	for ( ;; )
 	{
-		level waittill("connected", player);
+		level waittill( "connected", player );
 
 		player thread watch_shoot();
 		player thread watch_grenade();
@@ -118,10 +137,10 @@ handleBots()
 	thread teamBots();
 	addBots();
 
-	while(!level.intermission)
+	while ( !level.intermission )
 		wait 0.05;
-	
-	setDvar("bots_manage_add", getBotArray().size);
+
+	setDvar( "bots_manage_add", getBotArray().size );
 }
 
 /*
@@ -129,9 +148,9 @@ handleBots()
 */
 onDisconnect()
 {
-	self waittill("disconnect");
-		
-	level.bots = array_remove(level.bots, self);
+	self waittill( "disconnect" );
+
+	level.bots = array_remove( level.bots, self );
 }
 
 /*
@@ -139,9 +158,9 @@ onDisconnect()
 */
 connected()
 {
-	self endon("disconnect");
+	self endon( "disconnect" );
 
-	if (!self is_bot())
+	if ( !self is_bot() )
 		return;
 
 	self thread maps\mp\bots\_bot_script::connected();
@@ -149,7 +168,7 @@ connected()
 	level.bots[level.bots.size] = self;
 	self thread onDisconnect();
 
-	level notify("bot_connected", self);
+	level notify( "bot_connected", self );
 }
 
 /*
@@ -157,11 +176,11 @@ connected()
 */
 diffBots()
 {
-	for (;;)
+	for ( ;; )
 	{
 		wait 1.5;
 
-		bot_set_difficulty(GetDvar( #"bot_difficulty" ));
+		bot_set_difficulty( GetDvar( #"bot_difficulty" ) );
 	}
 }
 
@@ -170,47 +189,49 @@ diffBots()
 */
 doNonDediBots()
 {
-	if (!GetDvarInt( #"xblive_basictraining" ))
+	if ( !GetDvarInt( #"xblive_basictraining" ) )
 		return;
 
-	if (isDefined(game[ "bots_spawned" ]))
+	if ( isDefined( game[ "bots_spawned" ] ) )
 		return;
 
 	game[ "bots_spawned" ] = true;
 
-	if(getDvar("bot_enemies_extra") == "")
-		setDvar("bot_enemies_extra", 0);
-	if(getDvar("bot_friends_extra") == "")
-		setDvar("bot_friends_extra", 0);
+	if ( getDvar( "bot_enemies_extra" ) == "" )
+		setDvar( "bot_enemies_extra", 0 );
+
+	if ( getDvar( "bot_friends_extra" ) == "" )
+		setDvar( "bot_friends_extra", 0 );
 
 	bot_friends = GetDvarInt( #"bot_friends" );
 	bot_enemies = GetDvarInt( #"bot_enemies" );
 
-	bot_enemies += GetDvarInt("bot_enemies_extra");
-	bot_friends += GetDvarInt("bot_friends_extra");
+	bot_enemies += GetDvarInt( "bot_enemies_extra" );
+	bot_friends += GetDvarInt( "bot_friends_extra" );
 
 	bot_wait_for_host();
 	host = GetHostPlayer();
 
 	team = "allies";
-	if(isDefined(host) && isDefined(host.pers[ "team" ]) && (host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis"))
+
+	if ( isDefined( host ) && isDefined( host.pers[ "team" ] ) && ( host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis" ) )
 		team = host.pers[ "team" ];
 
-	setDvar("bots_manage_add", bot_enemies + bot_friends - 1);
-	setDvar("bots_manage_fill", bot_enemies + bot_friends);
-	setDvar("bots_manage_fill_mode", 0);
-	setDvar("bots_manage_fill_kick", true);
-	setDvar("bots_manage_fill_spec", false);
+	setDvar( "bots_manage_add", bot_enemies + bot_friends - 1 );
+	setDvar( "bots_manage_fill", bot_enemies + bot_friends );
+	setDvar( "bots_manage_fill_mode", 0 );
+	setDvar( "bots_manage_fill_kick", true );
+	setDvar( "bots_manage_fill_spec", false );
 
-	setDvar("bots_team", "custom");
+	setDvar( "bots_team", "custom" );
 
-	if (team == "axis")
-		setDvar("bots_team_amount", bot_friends);
+	if ( team == "axis" )
+		setDvar( "bots_team_amount", bot_friends );
 	else
-		setDvar("bots_team_amount", bot_enemies);
+		setDvar( "bots_team_amount", bot_enemies );
 
-	setDvar("bots_team_force", true);
-	setDvar("bots_team_mode", 0);
+	setDvar( "bots_team_force", true );
+	setDvar( "bots_team_mode", 0 );
 }
 
 /*
@@ -343,9 +364,9 @@ bot_set_difficulty( difficulty )
 		SetDvar( "sv_botSprintDistance",	"256" );
 	}
 
-	if (!getDvarInt("bots_play_nade"))
+	if ( !getDvarInt( "bots_play_nade" ) )
 		SetDvar( "sv_botAllowGrenades",		"0"	);
-		
+
 	SetDvar( "bot_difficulty", difficulty );
 	SetDvar( "scr_bot_difficulty", difficulty );
 	SetDvar( "splitscreen_botDifficulty", difficulty );
@@ -356,83 +377,87 @@ bot_set_difficulty( difficulty )
 */
 teamBots_loop()
 {
-	teamAmount = getDvarInt("bots_team_amount");
-	toTeam = getDvar("bots_team");
-	
+	teamAmount = getDvarInt( "bots_team_amount" );
+	toTeam = getDvar( "bots_team" );
+
 	alliesbots = 0;
 	alliesplayers = 0;
 	axisbots = 0;
 	axisplayers = 0;
-	
+
 	playercount = level.players.size;
-	for(i = 0; i < playercount; i++)
+
+	for ( i = 0; i < playercount; i++ )
 	{
 		player = level.players[i];
-		
-		if(!isDefined(player.pers["team"]))
+
+		if ( !isDefined( player.pers["team"] ) )
 			continue;
-		
-		if(player is_bot())
+
+		if ( player is_bot() )
 		{
-			if(player.pers["team"] == "allies")
+			if ( player.pers["team"] == "allies" )
 				alliesbots++;
-			else if(player.pers["team"] == "axis")
+			else if ( player.pers["team"] == "axis" )
 				axisbots++;
 		}
 		else
 		{
-			if(player.pers["team"] == "allies")
+			if ( player.pers["team"] == "allies" )
 				alliesplayers++;
-			else if(player.pers["team"] == "axis")
+			else if ( player.pers["team"] == "axis" )
 				axisplayers++;
 		}
 	}
-	
+
 	allies = alliesbots;
 	axis = axisbots;
-	
-	if(!getDvarInt("bots_team_mode"))
+
+	if ( !getDvarInt( "bots_team_mode" ) )
 	{
 		allies += alliesplayers;
 		axis += axisplayers;
 	}
-	
-	if(toTeam != "custom")
+
+	if ( toTeam != "custom" )
 	{
-		if(getDvarInt("bots_team_force"))
+		if ( getDvarInt( "bots_team_force" ) )
 		{
-			if(toTeam == "autoassign")
+			if ( toTeam == "autoassign" )
 			{
-				if(abs(axis - allies) > 1)
+				if ( abs( axis - allies ) > 1 )
 				{
 					toTeam = "axis";
-					if(axis > allies)
+
+					if ( axis > allies )
 						toTeam = "allies";
 				}
 			}
-			
-			if(toTeam != "autoassign")
+
+			if ( toTeam != "autoassign" )
 			{
 				playercount = level.players.size;
-				for(i = 0; i < playercount; i++)
+
+				for ( i = 0; i < playercount; i++ )
 				{
 					player = level.players[i];
-					
-					if(!isDefined(player.pers["team"]))
+
+					if ( !isDefined( player.pers["team"] ) )
 						continue;
-					
-					if(!player is_bot())
+
+					if ( !player is_bot() )
 						continue;
-						
-					if(player.pers["team"] == toTeam)
+
+					if ( player.pers["team"] == toTeam )
 						continue;
-						
-					if (toTeam == "allies")
+
+					if ( toTeam == "allies" )
 						player thread [[level.allies]]();
-					else if (toTeam == "axis")
+					else if ( toTeam == "axis" )
 						player thread [[level.axis]]();
 					else
 						player thread [[level.spectator]]();
+
 					break;
 				}
 			}
@@ -441,19 +466,20 @@ teamBots_loop()
 	else
 	{
 		playercount = level.players.size;
-		for(i = 0; i < playercount; i++)
+
+		for ( i = 0; i < playercount; i++ )
 		{
 			player = level.players[i];
-			
-			if(!isDefined(player.pers["team"]))
+
+			if ( !isDefined( player.pers["team"] ) )
 				continue;
-			
-			if(!player is_bot())
+
+			if ( !player is_bot() )
 				continue;
-				
-			if(player.pers["team"] == "axis")
+
+			if ( player.pers["team"] == "axis" )
 			{
-				if(axis > teamAmount)
+				if ( axis > teamAmount )
 				{
 					player thread [[level.allies]]();
 					break;
@@ -461,12 +487,12 @@ teamBots_loop()
 			}
 			else
 			{
-				if(axis < teamAmount)
+				if ( axis < teamAmount )
 				{
 					player thread [[level.axis]]();
 					break;
 				}
-				else if(player.pers["team"] != "allies")
+				else if ( player.pers["team"] != "allies" )
 				{
 					player thread [[level.allies]]();
 					break;
@@ -481,7 +507,7 @@ teamBots_loop()
 */
 teamBots()
 {
-	for(;;)
+	for ( ;; )
 	{
 		wait 1.5;
 		teamBots_loop();
@@ -493,106 +519,111 @@ teamBots()
 */
 addBots_loop()
 {
-	botsToAdd = GetDvarInt("bots_manage_add");
-	
-	if(botsToAdd > 0)
+	botsToAdd = GetDvarInt( "bots_manage_add" );
+
+	if ( botsToAdd > 0 )
 	{
-		SetDvar("bots_manage_add", 0);
-		
-		if(botsToAdd > 64)
+		SetDvar( "bots_manage_add", 0 );
+
+		if ( botsToAdd > 64 )
 			botsToAdd = 64;
-			
-		for(; botsToAdd > 0; botsToAdd--)
+
+		for ( ; botsToAdd > 0; botsToAdd-- )
 		{
 			level add_bot();
 			wait 0.25;
 		}
 	}
-	
-	fillMode = getDVarInt("bots_manage_fill_mode");
-	
-	if(fillMode == 2 || fillMode == 3)
-		setDvar("bots_manage_fill", getGoodMapAmount());
-	
-	fillAmount = getDvarInt("bots_manage_fill");
-	
+
+	fillMode = getDVarInt( "bots_manage_fill_mode" );
+
+	if ( fillMode == 2 || fillMode == 3 )
+		setDvar( "bots_manage_fill", getGoodMapAmount() );
+
+	fillAmount = getDvarInt( "bots_manage_fill" );
+
 	players = 0;
 	bots = 0;
 	spec = 0;
-	
+
 	playercount = level.players.size;
-	for(i = 0; i < playercount; i++)
+
+	for ( i = 0; i < playercount; i++ )
 	{
 		player = level.players[i];
 
-		if (player isdemoclient())
+		if ( player isdemoclient() )
 			continue;
-		
-		if(player is_bot())
+
+		if ( player is_bot() )
 			bots++;
-		else if(!isDefined(player.pers["team"]) || (player.pers["team"] != "axis" && player.pers["team"] != "allies"))
+		else if ( !isDefined( player.pers["team"] ) || ( player.pers["team"] != "axis" && player.pers["team"] != "allies" ) )
 			spec++;
 		else
 			players++;
 	}
-	
-	if(fillMode == 4)
+
+	if ( fillMode == 4 )
 	{
 		axisplayers = 0;
 		alliesplayers = 0;
-		
+
 		playercount = level.players.size;
-		for(i = 0; i < playercount; i++)
+
+		for ( i = 0; i < playercount; i++ )
 		{
 			player = level.players[i];
-			
-			if(player is_bot())
+
+			if ( player is_bot() )
 				continue;
-			
-			if(!isDefined(player.pers["team"]))
+
+			if ( !isDefined( player.pers["team"] ) )
 				continue;
-			
-			if(player.pers["team"] == "axis")
+
+			if ( player.pers["team"] == "axis" )
 				axisplayers++;
-			else if(player.pers["team"] == "allies")
+			else if ( player.pers["team"] == "allies" )
 				alliesplayers++;
 		}
-		
-		result = fillAmount - abs(axisplayers - alliesplayers) + bots;
-		
-		if (players == 0)
+
+		result = fillAmount - abs( axisplayers - alliesplayers ) + bots;
+
+		if ( players == 0 )
 		{
-			if(bots < fillAmount)
-				result = fillAmount-1;
-			else if (bots > fillAmount)
-				result = fillAmount+1;
+			if ( bots < fillAmount )
+				result = fillAmount - 1;
+			else if ( bots > fillAmount )
+				result = fillAmount + 1;
 			else
 				result = fillAmount;
 		}
-		
+
 		bots = result;
 	}
 
-	if (!randomInt(999))
+	if ( !randomInt( 999 ) )
 	{
-		setDvar("testclients_doreload", true);
+		setDvar( "testclients_doreload", true );
 		wait 0.1;
-		setDvar("testclients_doreload", false);
+		setDvar( "testclients_doreload", false );
 		doExtraCheck();
 	}
-	
+
 	amount = bots;
-	if(fillMode == 0 || fillMode == 2)
+
+	if ( fillMode == 0 || fillMode == 2 )
 		amount += players;
-	if(getDVarInt("bots_manage_fill_spec"))
+
+	if ( getDVarInt( "bots_manage_fill_spec" ) )
 		amount += spec;
-		
-	if(amount < fillAmount)
-		setDvar("bots_manage_add", 1);
-	else if(amount > fillAmount && getDvarInt("bots_manage_fill_kick"))
+
+	if ( amount < fillAmount )
+		setDvar( "bots_manage_add", 1 );
+	else if ( amount > fillAmount && getDvarInt( "bots_manage_fill_kick" ) )
 	{
-		tempBot = PickRandom(getBotArray());
-		if (isDefined(tempBot))
+		tempBot = PickRandom( getBotArray() );
+
+		if ( isDefined( tempBot ) )
 			kick( tempBot getEntityNumber(), "EXE_PLAYERKICKED" );
 	}
 }
@@ -608,7 +639,7 @@ addBots_loop()
 	pregame:
 		in the ShouldDoPregame sub:
 					 B8 01 00 00 00: mov eax, 1
-change to: B8 00 00 00 00: mov eax, 0
+    change to: B8 00 00 00 00: mov eax, 0
 			0x4F6C77 in rektmp
 			0x4598A7 in bg
 
@@ -616,14 +647,14 @@ change to: B8 00 00 00 00: mov eax, 0
 	spawnbots:
 		in the SV_AddTestClient sub:
 					 0F 85 A4 00 00 00: jnz
-change to: 0F 84 A4 00 00 00: jz
+    change to: 0F 84 A4 00 00 00: jz
 			0x6B6180 in rektmp
 			0x4682F0 in bg
 
 
 	allow changing g_antilag dvar:
 		set the byte from 0x40 to 0x00
-		
+
 		0x53B1B2 in rekt
 		0x59B6F2 in bg
 */
@@ -633,10 +664,10 @@ addBots()
 
 	bot_wait_for_host();
 
-	for (;;)
+	for ( ;; )
 	{
 		wait 1.5;
-		
+
 		addBots_loop();
 	}
 }
@@ -648,7 +679,7 @@ add_bot()
 {
 	bot = addtestclient();
 
-	if (isdefined(bot))
+	if ( isdefined( bot ) )
 	{
 		bot.pers["isBot"] = true;
 		bot.equipment_enabled = true;
@@ -708,19 +739,19 @@ bot_is_idle()
 	{
 		return false;
 	}
-	
+
 	if ( self IsRemoteControlling() || self.bot_lock_goal )
 	{
 		return false;
 	}
-	
-	if(self UseButtonPressed())
+
+	if ( self UseButtonPressed() )
 		return false;
-		
-	if(self isPlanting())
+
+	if ( self isPlanting() )
 		return false;
-			
-	if(self isDefusing())
+
+	if ( self isDefusing() )
 		return false;
 
 	return true;
@@ -731,23 +762,24 @@ bot_is_idle()
 */
 watch_grenade()
 {
-	self endon("disconnect");
-		
-	self.bot_scrambled = false;
-	for(;;)
-	{
-		self waittill("grenade_fire", g, name);
+	self endon( "disconnect" );
 
-		if (!isDefined(g))
+	self.bot_scrambled = false;
+
+	for ( ;; )
+	{
+		self waittill( "grenade_fire", g, name );
+
+		if ( !isDefined( g ) )
 			continue;
 
-		if(name == "scrambler_mp")
+		if ( name == "scrambler_mp" )
 		{
 			g thread watch_scrambler();
 		}
-		else if(name == "nightingale_mp")
+		else if ( name == "nightingale_mp" )
 		{
-			self thread watch_decoy(g);
+			self thread watch_decoy( g );
 		}
 	}
 }
@@ -755,23 +787,24 @@ watch_grenade()
 /*
 	Watch the decoy grenade
 */
-watch_decoy(g)
+watch_decoy( g )
 {
 	g.team = self.team;
-		
+
 	level.bot_decoys[level.bot_decoys.size] = g;
-		
-	g waittill("death");
-		
+
+	g waittill( "death" );
+
 	for ( entry = 0; entry < level.bot_decoys.size; entry++ )
 	{
 		if ( level.bot_decoys[entry] == g )
 		{
-			while ( entry < level.bot_decoys.size-1 )
+			while ( entry < level.bot_decoys.size - 1 )
 			{
-				level.bot_decoys[entry] = level.bot_decoys[entry+1];
+				level.bot_decoys[entry] = level.bot_decoys[entry + 1];
 				entry++;
 			}
+
 			level.bot_decoys[entry] = undefined;
 			break;
 		}
@@ -783,41 +816,42 @@ watch_decoy(g)
 */
 watch_scrambler()
 {
-	trig = spawn( "trigger_radius", self.origin + (0, 0, -1000), 0, 1000, 2000 );
-		
-	self scramble_nearby(trig);
-		
-	trig delete();
+	trig = spawn( "trigger_radius", self.origin + ( 0, 0, -1000 ), 0, 1000, 2000 );
+
+	self scramble_nearby( trig );
+
+	trig delete ();
 }
 
 /*
 	Watch when players enter the scrambler trigger
 */
-scramble_nearby(trig)
+scramble_nearby( trig )
 {
-	self endon("death");
-	self endon("hacked");
-		
-	while(!isDefined(self.owner) || !isDefined(self.owner.team))
-		wait 0.05;
-		
-	self.team = self.owner.team;
-	for(;;)
-	{
-		trig waittill("trigger", player);
+	self endon( "death" );
+	self endon( "hacked" );
 
-		if (!isDefined(player) || !isDefined(player.team))
+	while ( !isDefined( self.owner ) || !isDefined( self.owner.team ) )
+		wait 0.05;
+
+	self.team = self.owner.team;
+
+	for ( ;; )
+	{
+		trig waittill( "trigger", player );
+
+		if ( !isDefined( player ) || !isDefined( player.team ) )
 			continue;
-		
-		if(self maps\mp\gametypes\_weaponobjects::isStunned())
+
+		if ( self maps\mp\gametypes\_weaponobjects::isStunned() )
 			continue;
-		
-		if(isDefined(self.owner) && player == self.owner)
+
+		if ( isDefined( self.owner ) && player == self.owner )
 			continue;
-		
-		if(level.teamBased && self.team == player.team)
+
+		if ( level.teamBased && self.team == player.team )
 			continue;
-		
+
 		player thread scramble_player();
 	}
 }
@@ -827,13 +861,13 @@ scramble_nearby(trig)
 */
 scramble_player()
 {
-	self notify("scramble_nearby");
-	self endon("scramble_nearby");
-		
+	self notify( "scramble_nearby" );
+	self endon( "scramble_nearby" );
+
 	self.bot_scrambled = true;
 	wait 0.1;
-		
-	if(isDefined(self))
+
+	if ( isDefined( self ) )
 		self.bot_scrambled = false;
 }
 
@@ -842,10 +876,11 @@ scramble_player()
 */
 watch_shoot()
 {
-	self endon("disconnect");
-		
+	self endon( "disconnect" );
+
 	self.bot_firing = false;
-	for(;;)
+
+	for ( ;; )
 	{
 		self waittill( "weapon_fired" );
 		self thread doFiringThread();
@@ -857,9 +892,9 @@ watch_shoot()
 */
 doFiringThread()
 {
-	self endon("disconnect");
-	self endon("weapon_fired");
-		
+	self endon( "disconnect" );
+	self endon( "weapon_fired" );
+
 	self.bot_firing = true;
 	wait 1;
 	self.bot_firing = false;
@@ -870,18 +905,19 @@ doFiringThread()
 */
 bot_watch_planes_loop()
 {
-	ents = GetEntArray("script_model", "classname");
-	for(i = 0; i < ents.size; i++)
+	ents = GetEntArray( "script_model", "classname" );
+
+	for ( i = 0; i < ents.size; i++ )
 	{
 		ent = ents[i];
-		
-		if(isDefined(ent.bot_plane))
+
+		if ( isDefined( ent.bot_plane ) )
 			continue;
-		
-		if(ent.model != level.spyplanemodel)
+
+		if ( ent.model != level.spyplanemodel )
 			continue;
-		
-		thread watch_plane(ent);
+
+		thread watch_plane( ent );
 	}
 }
 
@@ -890,10 +926,10 @@ bot_watch_planes_loop()
 */
 bot_watch_planes()
 {
-	for(;;)
+	for ( ;; )
 	{
-		level waittill("uav_update");
-		
+		level waittill( "uav_update" );
+
 		bot_watch_planes_loop();
 	}
 }
@@ -901,23 +937,24 @@ bot_watch_planes()
 /*
 	Watches the plane
 */
-watch_plane(ent)
+watch_plane( ent )
 {
 	ent.bot_plane = true;
-		
+
 	level.bot_planes[level.bot_planes.size] = ent;
-		
-	ent waittill_any("death", "delete", "leaving");
-		
+
+	ent waittill_any( "death", "delete", "leaving" );
+
 	for ( entry = 0; entry < level.bot_planes.size; entry++ )
 	{
 		if ( level.bot_planes[entry] == ent )
 		{
-			while ( entry < level.bot_planes.size-1 )
+			while ( entry < level.bot_planes.size - 1 )
 			{
-				level.bot_planes[entry] = level.bot_planes[entry+1];
+				level.bot_planes[entry] = level.bot_planes[entry + 1];
 				entry++;
 			}
+
 			level.bot_planes[entry] = undefined;
 			break;
 		}
@@ -937,16 +974,18 @@ bot_killBoost()
 */
 fixGamemodes()
 {
-	for(i=0;i<19;i++)
+	for ( i = 0; i < 19; i++ )
 	{
-		if(isDefined(level.bombZones) && level.gametype == "sd")
+		if ( isDefined( level.bombZones ) && level.gametype == "sd" )
 		{
 			level.isKillBoosting = ::bot_killBoost;
-			for(i = 0; i < level.bombZones.size; i++)
+
+			for ( i = 0; i < level.bombZones.size; i++ )
 				level.bombZones[i].onUse = ::bot_onUsePlantObjectFix;
+
 			break;
 		}
-		
+
 		wait 0.05;
 	}
 }
