@@ -2658,9 +2658,8 @@ follow_target_loop()
 	if ( randomInt( 100 ) > 50 )
 		return;
 
-	self thread stop_go_target_on_death( threat );
-
 	self SetBotGoal( threat.origin, 64 );
+	self thread stop_go_target_on_death( threat );
 
 	if ( self waittill_any_return( "new_goal", "goal", "bad_path" ) != "new_goal" )
 		self ClearBotGoal();
