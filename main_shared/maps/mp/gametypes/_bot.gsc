@@ -28,6 +28,9 @@ init()
 	if ( getDvar( "bots_main_waitForHostTime" ) == "" )
 		setDvar( "bots_main_waitForHostTime", 10.0 ); //how long to wait to wait for the host player
 
+	if ( getDvar( "bots_main_kickBotsAtEnd" ) == "" )
+		setDvar( "bots_main_kickBotsAtEnd", false ); //kicks the bots at game end
+
 	if ( getDvar( "bots_manage_add" ) == "" )
 		setDvar( "bots_manage_add", 0 ); //amount of bots to add to the game
 
@@ -97,6 +100,9 @@ init()
 	if ( getDvar( "bots_play_camp" ) == "" ) //bots camp and follow
 		setDvar( "bots_play_camp", true );
 
+	if ( getDvar( "bots_play_aim" ) == "" )
+		setDvar( "bots_play_aim", true );
+
 	level.bots = [];
 	level.bot_decoys = [];
 	level.bot_planes = [];
@@ -141,6 +147,16 @@ handleBots()
 		wait 0.05;
 
 	setDvar( "bots_manage_add", getBotArray().size );
+
+	if ( !getDvarInt( "bots_main_kickBotsAtEnd" ) )
+		return;
+
+	bots = getBotArray();
+
+	for ( i = 0; i < bots.size; i++ )
+	{
+		kick( bots[i] getEntityNumber() );
+	}
 }
 
 /*
@@ -366,6 +382,14 @@ bot_set_difficulty( difficulty )
 
 	if ( !getDvarInt( "bots_play_nade" ) )
 		SetDvar( "sv_botAllowGrenades",		"0"	);
+
+	if ( !getDvarInt( "bots_play_aim" ) )
+	{
+		setdvar( "sv_botYawSpeed", "0" );
+		setdvar( "sv_botYawSpeedAds", "0" );
+		setdvar( "sv_botPitchUp", "0" );
+		setdvar( "sv_botPitchDown", "0" );
+	}
 
 	SetDvar( "bot_difficulty", difficulty );
 	SetDvar( "scr_bot_difficulty", difficulty );

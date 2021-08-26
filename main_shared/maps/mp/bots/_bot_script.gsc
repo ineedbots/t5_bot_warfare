@@ -4517,7 +4517,8 @@ bot_cap()
 getCarrierEntNum()
 {
 	carrierNum = -1;
-	if (isDefined(self.carrier))
+
+	if ( isDefined( self.carrier ) )
 		carrierNum = self.carrier getEntityNumber();
 
 	return carrierNum;
