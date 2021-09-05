@@ -19,6 +19,6 @@ echo To shut down the server close this window first!
 echo (%date%)  -  (%time%) %name% server start.
 
 :server
-start /wait /abovenormal "" "%~dp0rekt\t5m.exe" -console +set dedicated "2" +set net_ip "%ip%" +set net_port "%port%" +set rcon_password "%rcon_password%" +set fs_game "%mod%" +exec "%cfg%"
+start /wait /abovenormal "%name%" "%~dp0rekt\t5m.exe" -console +set dedicated "2" +set net_ip "%ip%" +set net_port "%port%" +set rcon_password "%rcon_password%" +set fs_game "%mod%" +exec "%cfg%"
 echo (%date%)  -  (%time%) WARNING: %name% server closed or dropped... server restarts.
 goto server
