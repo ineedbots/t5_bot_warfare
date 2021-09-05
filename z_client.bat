@@ -1,1 +1,0 @@
-start "" "%~dp0BlackOpsMP.exe" +set r_fullscreen "1" +set drawlagometer "0" +set cg_drawfps "0" +set cg_drawsnapshot "0" +set r_mode "1920x1080" +set r_monitor "0"
