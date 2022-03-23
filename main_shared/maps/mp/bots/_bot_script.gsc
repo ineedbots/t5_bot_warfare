@@ -396,6 +396,8 @@ bot_spawn()
 		self thread bot_dem_attackers();
 		self thread bot_dem_defenders();
 	}
+
+	self thread watch_for_override_stuff();
 }
 
 /*
@@ -5124,4 +5126,91 @@ bot_dem_defend_spawnkill()
 	}
 
 	self notify( "bad_path" );
+}
+
+botMovementOverride( a, b ) {}
+botClearMovementOverride() {}
+botClearButtonOverride( a ) {}
+botButtonOverride( a, b ) {}
+botClearOverrides() {}
+
+/*
+	custom movement stuff
+*/
+watch_for_override_stuff()
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+
+	self botClearOverrides();
+
+	NEAR_DIST = 80;
+	LONG_DIST = 1000;
+	SPAM_JUMP_TIME = 5000;
+
+	diff = self GetBotDiffNum();
+	chance = 0;
+
+	if ( diff == 1 )
+		chance = 25;
+	else if ( diff == 2 )
+		chance = 50;
+	else if ( diff == 3 )
+		chance = 80;
+
+	last_jump_time = 0;
+
+	if ( !getDvarInt( "bots_play_jumpdrop" ) )
+		return;
+
+	for ( ;; )
+	{
+		threat = self getThreat();
+
+		while ( !isDefined( threat ) || !isPlayer( threat ) )
+		{
+			wait 0.05;
+			threat = self getThreat();
+		}
+
+		dist = Distance( threat.origin, self.origin );
+		time = GetTime();
+
+		if ( ( dist > NEAR_DIST ) && ( dist < LONG_DIST ) && ( randomInt( 100 ) < chance ) && ( ( time - last_jump_time ) > SPAM_JUMP_TIME ) )
+		{
+			if ( randomInt( 2 ) )
+			{
+				if ( ( getConeDot( threat.origin, self.origin, self getPlayerAngles() ) > 0.8 ) && ( dist > ( NEAR_DIST * 2 ) ) )
+				{
+					last_jump_time = time;
+
+					// drop shot
+					self botMovementOverride( 0, 0 );
+					self botButtonOverride( "stance", "prone" );
+
+					wait 1.5;
+
+					self botClearMovementOverride();
+					self botClearButtonOverride( "stance" );
+				}
+			}
+			else
+			{
+				last_jump_time = time;
+
+				// jump shot
+				self botButtonOverride( "jump", true );
+				wait 0.1;
+				self botClearButtonOverride( "jump" );
+			}
+		}
+
+		thisThreat = self getThreat();
+
+		while ( isDefined( thisThreat ) && isPlayer( thisThreat ) && thisThreat == threat )
+		{
+			wait 0.05;
+			thisThreat = self getThreat();
+		}
+	}
 }

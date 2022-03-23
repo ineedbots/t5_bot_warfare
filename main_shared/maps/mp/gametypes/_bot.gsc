@@ -103,6 +103,9 @@ init()
 	if ( getDvar( "bots_play_aim" ) == "" )
 		setDvar( "bots_play_aim", true );
 
+	if ( getDvar( "bots_play_jumpdrop" ) == "" ) //bots jump and dropshot
+		setDvar( "bots_play_jumpdrop", true );
+
 	level.bots = [];
 	level.bot_decoys = [];
 	level.bot_planes = [];
@@ -196,6 +199,7 @@ diffBots()
 	{
 		wait 1.5;
 
+		// we dont use 'bots_skill' so that we can still use the .menu dvar
 		bot_set_difficulty( GetDvar( #"bot_difficulty" ) );
 	}
 }
