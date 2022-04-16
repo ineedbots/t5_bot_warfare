@@ -343,6 +343,9 @@ bot_set_difficulty( difficulty )
 	}
 	else // 'normal' difficulty
 	{
+		if ( difficulty != "normal" )
+			return;
+
 		SetDvar( "sv_botMinDeathTime",		"500" );
 		SetDvar( "sv_botMaxDeathTime",		"1000" );
 		SetDvar( "sv_botMinFireTime",		"600" );
