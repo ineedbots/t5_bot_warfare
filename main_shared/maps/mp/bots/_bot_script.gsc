@@ -86,6 +86,14 @@ bot_skip_killcam()
 }
 
 /*
+	bot class t5
+*/
+chooseRandomClass()
+{
+	return "smg_mp";
+}
+
+/*
 	Selects a class for the bot.
 */
 classWatch()
@@ -99,9 +107,12 @@ classWatch()
 
 		wait 0.5;
 
-		self notify( "menuresponse", game["menu_changeclass"], "smg_mp" );
+		if ( !maps\mp\gametypes\_globallogic_utils::isValidClass( self.class ) || !isDefined( self.bot_change_class ) )
+			self notify( "menuresponse", game["menu_changeclass"], self chooseRandomClass() );
 
-		while ( isdefined( self.pers["team"] ) && isdefined( self.pers["class"] ) )
+		self.bot_change_class = true;
+
+		while ( isdefined( self.pers["team"] ) && maps\mp\gametypes\_globallogic_utils::isValidClass( self.class ) && isDefined( self.bot_change_class ) )
 			wait .05;
 	}
 }
@@ -118,8 +129,10 @@ teamWatch()
 		while ( !isdefined( self.pers["team"] ) || !allowTeamChoice() )
 			wait .05;
 
-		wait 0.05;
-		self notify( "menuresponse", game["menu_team"], getDvar( "bots_team" ) );
+		wait 0.1;
+
+		if ( self.team != "axis" && self.team != "allies" )
+			self notify( "menuresponse", game["menu_team"], getDvar( "bots_team" ) );
 
 		while ( isdefined( self.pers["team"] ) )
 			wait .05;

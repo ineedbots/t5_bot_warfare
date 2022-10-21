@@ -249,6 +249,8 @@ bot_rank()
 	self.pers["plevel"] = prestige;
 	self setRank( rankId, prestige );
 
+	self maps\mp\gametypes\_rank::syncxpstat();
+
 	if ( !level.gameEnded )
 		level waittill( "game_ended" );
 
