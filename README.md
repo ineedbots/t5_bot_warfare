@@ -50,9 +50,9 @@ This mod extends the capabilities of the ingame bots and enhances the functional
 3. The mod is now installed. Start Black Ops 1 Multiplayer, go to the 'Mods' menu and select 'mp_bots'.
 4. The mod is now loaded! Go play Combat Training and enjoy the new additions.
 
-## Installation (For the Plutonium version of the game)
-### For the Plutonium version of the game there are two different methods that can be used to install this mod. 
-<br>
+## Installation (For the BO1 Plutonium Client)
+ For BO1 Plutonium there are two different methods that can be used to install this mod. 
+<br> <br>
 
 ### First Method - Recommended:
 0. Download the latest release of this mod from either [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases) or [ModDB](https://www.moddb.com/mods/bot-warfare/downloads/bo1-bot-warfare-latest).
