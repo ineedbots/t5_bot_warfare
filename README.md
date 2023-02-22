@@ -15,7 +15,7 @@ You can find the ModDB release post [here](https://www.moddb.com/mods/bot-warfar
 - [Credits](#Credits)
 
 ## Features
-This mod not only extends the capabilities of the ingame bots, but also adds on too and enhances the functionality of the combat training mode in the multiplayer component of the game.
+This mod extends the capabilities of the ingame bots and enhances the functionality of the combat training mode in the multiplayer component of the game.
 
 - Menu changes (combat training menu):
   - You can select any game mode.
@@ -43,7 +43,7 @@ This mod not only extends the capabilities of the ingame bots, but also adds on 
   - Bots can use the valkyrie rocket carepackage streak.
 
 ## Installation (For the Steam version of the game)
-0. Download the latest release of this mod from either [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases) or [ModDB](https://www.moddb.com/mods/bot-warfare/downloads).
+0. Download the latest release of this mod from either [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases) or [ModDB](https://www.moddb.com/mods/bot-warfare/downloads/bo1-bot-warfare-latest).
 1. Locate the root folder which your game is installed in.
 2. Move the files/folders found in 'Move to root of Black Ops folder' from the Bot Warfare release archive you downloaded to the root of your Black Ops folder.
     - The folder/file structure should follow as '.Black Ops folder\mods\mp_bots\mp_bots.iwd'.
@@ -51,12 +51,26 @@ This mod not only extends the capabilities of the ingame bots, but also adds on 
 4. The mod is now loaded! Go play Combat Training and enjoy the new additions.
 
 ## Installation (For the Plutonium version of the game)
-0. Download the latest release of this mod from either [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases) or [ModDB](https://www.moddb.com/mods/bot-warfare/downloads).
+### For the Plutonium version of the game there are two different methods that can be used to install this mod. 
+<br>
+
+### First Method - Recommended:
+0. Download the latest release of this mod from either [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases) or [ModDB](https://www.moddb.com/mods/bot-warfare/downloads/bo1-bot-warfare-latest).
 1. Press Windows+R on your keyboard and type %localappdata%\Plutonium\storage\t5 then press enter.
 2. Move the mods folder found in 'Move to root of Black Ops folder' from the Bot Warfare release archive you downloaded to the folder you just opened in the previous step.
     - The folder/file structure should follow as '.Plutonium\storage\t5\mods\mp_bots\mp_bots.iwd'.
 3. The mod is now installed. Start Black Ops 1 Multiplayer, go to the 'Mods' menu and select 'mp_bots'.
 4. The mod is now loaded! Go play Combat Training and enjoy the new additions.
+
+### Second Method - Advanced:
+ This method is more complex not and recommended for those that wish to use this mod in combat training. This method of install has the advantage that the mod will autoload on game start and won't require other people to have this mod installed when connecting directly to you.
+
+0. Download the source code of the latest release of this mod from [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases)
+1. Press Windows+R on your keyboard and type %localappdata%\Plutonium\storage\t5 then press enter.
+2. Move the maps folder found in mods\mp_bots from the Bot Warfare source code archive you downloaded to the folder you just opened in the previous step.
+    - The folder/file structure should follow as '.Plutonium\storage\t5\maps\mp\bots.
+3. The mod is now installed. Start Black Ops 1 Multiplayer and launch a private match.
+4. When ingame use the dvars below to spawn and configure the bots using the ingame console.
 
 ## Documentation
 
