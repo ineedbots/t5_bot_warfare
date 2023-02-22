@@ -63,7 +63,7 @@ This mod extends the capabilities of the ingame bots and enhances the functional
 4. The mod is now loaded! Go play Combat Training and enjoy the new additions.
 
 ### Second Method - Advanced:
- This method is more complex not and recommended for those that wish to use this mod in combat training. This method of install has the advantage that the mod will autoload on game start and won't require other people to have this mod installed when connecting directly to you.
+ This method is more complex not and recommended for those that wish to use this mod in combat training. This method of install has the advantage that the mod will autoload on game start and won't require other people to have this mod installed when connecting to your games.
 
 0. Download the source code of the latest release of this mod from [GitHub](https://github.com/ineedbots/bo1_bot_warfare/releases)
 1. Press Windows+R on your keyboard and type %localappdata%\Plutonium\storage\t5 then press enter.
