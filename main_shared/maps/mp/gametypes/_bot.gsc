@@ -46,6 +46,9 @@ init()
 	if ( getDvar( "bots_manage_fill_kick" ) == "" )
 		setDvar( "bots_manage_fill_kick", false ); //kick bots if too many
 
+	if ( getDvar( "bots_skill" ) == "" ) // alias for bot_difficulty
+		setDvar( "bots_skill", "" );
+
 	if ( getDvar( "bots_team" ) == "" )
 		setDvar( "bots_team", "autoassign" ); //which team for bots to join
 
@@ -188,6 +191,50 @@ connected()
 	self thread onDisconnect();
 
 	level notify( "bot_connected", self );
+
+	self thread watchBotDebugEvent();
+}
+
+/*
+	DEBUG
+*/
+watchBotDebugEvent()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "bot_event", msg, str, b, c, d, e, f, g );
+
+		if ( GetDvarInt( "bots_main_debug" ) >= 2 )
+		{
+			big_str = "Bot Warfare debug: " + self.name + ": " + msg + ": " + str;
+
+			if ( isDefined( b ) && isString( b ) )
+				big_str += ": " + b;
+
+			if ( isDefined( c ) && isString( c ) )
+				big_str += ": " + c;
+
+			if ( isDefined( d ) && isString( d ) )
+				big_str += ": " + d;
+
+			if ( isDefined( e ) && isString( e ) )
+				big_str += ": " + e;
+
+			if ( isDefined( f ) && isString( f ) )
+				big_str += ": " + f;
+
+			if ( isDefined( g ) && isString( g ) )
+				big_str += ": " + g;
+
+			Print( big_str );
+		}
+		else if ( msg == "debug" && GetDvarInt( "bots_main_debug" ) )
+		{
+			Print( "Bot Warfare debug: " + self.name + ": " + str );
+		}
+	}
 }
 
 /*
@@ -200,6 +247,13 @@ diffBots()
 		wait 1.5;
 
 		// we dont use 'bots_skill' so that we can still use the .menu dvar
+
+		if ( getDvar( "bots_skill" ) != "" )
+		{
+			SetDvar( "bot_difficulty", getDvar( "bots_skill" ) );
+			setDvar( "bots_skill", "" );
+		}
+
 		bot_set_difficulty( GetDvar( #"bot_difficulty" ) );
 	}
 }

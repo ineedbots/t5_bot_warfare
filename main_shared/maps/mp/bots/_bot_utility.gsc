@@ -333,6 +333,14 @@ botStopMove( what )
 }
 
 /*
+	Notify the bot chat message
+*/
+BotNotifyBotEvent( msg, a, b, c, d, e, f, g )
+{
+	self notify( "bot_event", msg, a, b, c, d, e, f, g );
+}
+
+/*
 	Matches a num to a char
 */
 keyCodeToString( a )
