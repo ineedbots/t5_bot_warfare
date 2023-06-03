@@ -3072,15 +3072,15 @@ bot_uav_think_loop( data )
 			self BotNotifyBotEvent( "uav_target", "start", player );
 
 			/*
-			distSq = self.pers["bots"]["skill"]["help_dist"] * self.pers["bots"]["skill"]["help_dist"];
+			    distSq = self.pers["bots"]["skill"]["help_dist"] * self.pers["bots"]["skill"]["help_dist"];
 
-			if ( distFromPlayer < distSq && bulletTracePassed( self getEye(), player getTagOrigin( "j_spineupper" ), false, player ) )
-			{
+			    if ( distFromPlayer < distSq && bulletTracePassed( self getEye(), player getTagOrigin( "j_spineupper" ), false, player ) )
+			    {
 				self SetAttacker( player );
-			}
+			    }
 
-			if ( !self HasScriptGoal() && !self.bot_lock_goal )
-			{*/
+			    if ( !self HasScriptGoal() && !self.bot_lock_goal )
+			    {*/
 
 			self SetBotGoal( player.origin, 128 );
 
@@ -5387,6 +5387,8 @@ botClearMovementOverride() {}
 botClearButtonOverride( a ) {}
 botButtonOverride( a, b ) {}
 botClearOverrides( a ) {}
+botMantleOverride() {}
+botClearMantleOverride() {}
 
 /*
 	custom movement stuff
@@ -5413,6 +5415,7 @@ watch_for_override_stuff()
 		chance = 80;
 
 	last_jump_time = 0;
+	need_to_clear_mantle_override = false;
 
 	if ( !getDvarInt( "bots_play_jumpdrop" ) )
 		return;
@@ -5430,6 +5433,12 @@ watch_for_override_stuff()
 		dist = Distance( threat.origin, self.origin );
 		time = GetTime();
 
+		if ( need_to_clear_mantle_override && ( time - last_jump_time ) > 3000 )
+		{
+			need_to_clear_mantle_override = false;
+			self botClearMantleOverride();
+		}
+
 		if ( ( dist > NEAR_DIST ) && ( dist < LONG_DIST ) && ( randomInt( 100 ) < chance ) && ( ( time - last_jump_time ) > SPAM_JUMP_TIME ) )
 		{
 			if ( randomInt( 2 ) )
@@ -5437,6 +5446,8 @@ watch_for_override_stuff()
 				if ( ( getConeDot( threat.origin, self.origin, self getPlayerAngles() ) > 0.8 ) && ( dist > ( NEAR_DIST * 2 ) ) )
 				{
 					last_jump_time = time;
+					need_to_clear_mantle_override = true;
+					self botMantleOverride();
 
 					// drop shot
 					self botMovementOverride( 0, 0 );
@@ -5451,6 +5462,8 @@ watch_for_override_stuff()
 			else
 			{
 				last_jump_time = time;
+				need_to_clear_mantle_override = true;
+				self botMantleOverride();
 
 				// jump shot
 				self botButtonOverride( "gostand", "enable" );
