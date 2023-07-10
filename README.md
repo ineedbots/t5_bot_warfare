@@ -55,33 +55,33 @@ This mod extends the functionality and features of Combat Training in Black Ops 
 ### DVARs
 | Dvar                             | Description                                                                                 | Default Value |
 |----------------------------------|---------------------------------------------------------------------------------------------|--------------:|
-| bots_main                        | Enable this mod.                                                                            | true          |
+| bots_main                        | Enable this mod.                                                                            | 1             |
 | bots_main_waitForHostTime        | How many seconds to wait for the host player to connect before adding bots to the match.    | 10            |
-| bots_main_kickBotsAtEnd          | Kick the bots at the end of a match.                                                        | false         |
+| bots_main_kickBotsAtEnd          | Kick the bots at the end of a match.                                                        | 0             |
 | bots_manage_add                  | Amount of bots to add to the game, once bots are added, resets back to `0`.                 | 0             |
 | bots_manage_fill                 | Amount of players/bots (look at `bots_manage_fill_mode`) to maintain in the match.          | 0             |
 | bots_manage_fill_mode            | `bots_manage_fill` players/bots counting method.<ul><li>`0` - counts both players and bots.</li><li>`1` - only counts bots.</li></ul> | 0 |
-| bots_manage_fill_kick            | If the amount of players/bots in the match exceeds `bots_manage_fill`, kick bots until no longer exceeds. | false |
-| bots_manage_fill_spec            | If when counting players for `bots_manage_fill` should include spectators.                  | true          |
+| bots_manage_fill_kick            | If the amount of players/bots in the match exceeds `bots_manage_fill`, kick bots until no longer exceeds. | 0     |
+| bots_manage_fill_spec            | If when counting players for `bots_manage_fill` should include spectators.                  | 1             |
 | bots_team                        | One of `autoassign`, `allies`, `axis`, `spectator`, or `custom`. What team the bots should be on. | autoassign |
 | bots_team_amount                 | When `bots_team` is set to `custom`. The amount of bots to be placed on the axis team. The remainder will be placed on the allies team. | 0 |
-| bots_team_force                  | If the server should force bots' teams according to the `bots_team` value. When `bots_team` is `autoassign`, unbalanced teams will be balanced. This dvar is ignored when `bots_team` is `custom`. | false |
-| bots_team_mode                   | When `bots_team_force` is `true` and `bots_team` is `autoassign`, players/bots counting method. <ul><li>`0` - counts both players and bots.</li><li>`1` - only counts bots</li></ul> | 0 |
-| bots_loadout_reasonable          | If the bots should filter bad performing create-a-class selections.                            | false      |
-| bots_loadout_allow_op            | If the bots should be able to use overpowered and annoying create-a-class selections.          | true       |
+| bots_team_force                  | If the server should force bots' teams according to the `bots_team` value. When `bots_team` is `autoassign`, unbalanced teams will be balanced. This dvar is ignored when `bots_team` is `custom`. | 0     |
+| bots_team_mode                   | When `bots_team_force` is `1` and `bots_team` is `autoassign`, players/bots counting method. <ul><li>`0` - counts both players and bots.</li><li>`1` - only counts bots</li></ul> | 0 |
+| bots_loadout_reasonable          | If the bots should filter bad performing create-a-class selections.                            | 0          |
+| bots_loadout_allow_op            | If the bots should be able to use overpowered and annoying create-a-class selections.          | 1          |
 | bots_loadout_rank                | What rank to set the bots.<ul><li>`-1` - Average of all players in the match.</li><li>`0` - All random.</li><li>`1` or higher - Sets the bots' rank to this.</li></ul> | -1 |
 | bots_loadout_prestige            | What prestige to set the bots.<ul><li>`-1` - Same as host player in the match.</li><li>`-2` - All random.</li><li>`0` or higher - Sets the bots' prestige to this.</li></ul> | -1 |
 | bots_loadout_codpoints           | Bots will be given this amount of codpoints to spend.<ul><li>`-1` - Average of all players in the match.</li><li>`0` - All random.</li><li>`1` or higher - Sets the bots' codpoints to this.</li></ul> | -1 |
-| bots_play_move                   | If the bots can move.                                                                          | true       |
-| bots_play_knife                  | If the bots can knife.                                                                         | true       |
-| bots_play_fire                   | If the bots can fire.                                                                          | true       |
-| bots_play_nade                   | If the bots can grenade.                                                                       | true       |
-| bots_play_take_carepackages      | If the bots can take carepackages.                                                             | true       |
-| bots_play_obj                    | If the bots can play the objective.                                                            | true       |
-| bots_play_camp                   | If the bots can camp.                                                                          | true       |
-| bots_play_target_other           | If the bots can target other entities other than players.                                      | true       |
-| bots_play_killstreak             | If the bots can call in killstreaks.                                                           | true       |
-| bots_play_aim                    | If the bots can aim.                                                                           | true       |
+| bots_play_move                   | If the bots can move.                                                                          | 1          |
+| bots_play_knife                  | If the bots can knife.                                                                         | 1          |
+| bots_play_fire                   | If the bots can fire.                                                                          | 1          |
+| bots_play_nade                   | If the bots can grenade.                                                                       | 1          |
+| bots_play_take_carepackages      | If the bots can take carepackages.                                                             | 1          |
+| bots_play_obj                    | If the bots can play the objective.                                                            | 1          |
+| bots_play_camp                   | If the bots can camp.                                                                          | 1          |
+| bots_play_target_other           | If the bots can target other entities other than players.                                      | 1          |
+| bots_play_killstreak             | If the bots can call in killstreaks.                                                           | 1          |
+| bots_play_aim                    | If the bots can aim.                                                                           | 1          |
 
 ## Changelog
 - v1.1.1

@@ -5389,6 +5389,8 @@ botButtonOverride( a, b ) {}
 botClearOverrides( a ) {}
 botMantleOverride() {}
 botClearMantleOverride() {}
+botClearWeaponOverride() {}
+botWeaponOverride( a ) {}
 
 /*
 	custom movement stuff
