@@ -1,1 +1,0 @@
-Extends functionality of Combat Training.

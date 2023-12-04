@@ -1,11 +1,11 @@
-![GitHub Logo](/main_shared/bw-assets/bw-logo.png)
+![GitHub Logo](/bw-assets/bw-logo.png)
 
-# BO1 Bot Warfare
-Bot Warfare is a GSC mod for [Black Ops 1](https://store.steampowered.com/app/42700/Call_of_Duty_Black_Ops/) (or [this](https://getrektby.us/)).
+# T5 Bot Warfare
+Bot Warfare is a GSC mod for [Black Ops 1](https://store.steampowered.com/app/42700/Call_of_Duty_Black_Ops/) and [PlutoniumT5](https://plutonium.pw/).
 
 It aims to extend the existing AI in the multiplayer games of Black Ops 1.
 
-You can find the ModDB release post [here](https://www.moddb.com/mods/bot-warfare/downloads/bo1-bot-warfare-latest).
+You can find the ModDB release post [here](https://www.moddb.com/mods/bot-warfare/downloads/t5-bot-warfare-latest).
 
 ## Contents
 - [Features](#Features)
@@ -43,7 +43,7 @@ This mod extends the functionality and features of Combat Training in Black Ops 
   - Bots can use the valkyrie rocket carepackage streak.
 
 ## Installation
-0. Download the [latest release](https://github.com/ineedbots/bo1_bot_warfare/releases) of Bot Warfare.
+0. Download the [latest release](https://github.com/ineedbots/t5_bot_warfare/releases) of Bot Warfare.
 1. Locate the root folder which your game is installed in.
 2. Move the files/folders found in 'Move to root of Black Ops folder' from the Bot Warfare release archive you downloaded to the root of your Black Ops folder.
     - The folder/file structure should follow as '.Black Ops folder\mods\mp_bots\mp_bots.iwd'.

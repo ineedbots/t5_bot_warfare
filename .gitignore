@@ -1,40 +1,6 @@
-# Ignore everything in repository root
-/*
-
-# Files to not ignore
-!/.gitignore
-!/.vscode
-!/.editorconfig
-!/.gitattributes
-
-
-!/z_server.bat
-
-!/.astylerc
-!/deploy.bat
-!/deploy.js
-!/z_deploy.bat
-
-!/main/
-/main/*
-!/main/server.cfg
-!/main_shared/
-
-!README.md
-
-# Folder to not ignore
-!/mods/
-/mods/*
-!/mods/mp_bots/
-!/mods/patch_mp/
-!/mods/patch_ui_mp/
-
-*.log
-missingasset.csv
-*.ff
-*.files
-*.iwd
-!/out/
-!/out/**/*.ff
-!/out/**/*.iwd
 *.zip
+*.log
+*.stat
+logs/
+demos/
+missingasset.csv

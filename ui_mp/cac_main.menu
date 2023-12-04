@@ -1,0 +1,437 @@
+#include "ui/menudef.h"
+#include "ui_mp/common_macro.inc"
+#include "ui_mp/item_animate.inc"
+#include "ui_mp/menustyle.inc"
+#include "ui/framestyle.inc"
+#include "ui_mp/newframe.inc"
+#include "ui_mp/cac_player_model.inc"
+
+
+#undef	CHOICE_X_START
+#define CHOICE_X_START				NEW_FRAME_CHOICE_X_START
+
+#undef	CHOICE_Y_START
+#define CHOICE_Y_START				NEW_FRAME_CHOICE_Y_START
+
+#define RECT_ALIGN					;
+
+#undef	CHOICE_SEP_1				
+#define CHOICE_SEP_1				5
+
+
+#undef	CHOICE_SIZE_X
+#define CHOICE_SIZE_X				NEW_FRAME_BUTTON_WIDTH
+
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/cac_viewer.inc"
+
+#define LOCKED_BORDER_COLOR			1 1 1 0.5
+#define LOCAL_UNLOCK_COLOR 			0.31 0.31 0.33 0.55
+#define ORIGIN_DESCRIPTION			(CHOICE_X_START + 15) 320
+
+#define LOCKED_IMAGE_X				100
+#define LOCKED_IMAGE_Y				0
+
+#define LOCKED_TITLE_X				20
+#define LOCKED_TITLE_Y				(LOCKED_IMAGE_Y + 100)
+
+#define LOCKED_DESC_X				(LOCKED_TITLE_X)
+#define LOCKED_DESC_Y				(LOCKED_TITLE_Y + 20)
+
+#define LOCKED_WIDTH 				270
+#define LOCKED_ALIGN 				HORIZONTAL_ALIGN_RIGHT VERTICAL_ALIGN_TOP
+
+#define ORIGIN_LOCKED				((-(LOCKED_WIDTH - RIGHTITEM_OFFSET))-80) 38
+
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/popup_player_info.inc"
+#include "ui_mp/armor.inc"
+#include "ui_mp/cac_stats.inc"
+#include "ui_mp/cac_loadout.inc"
+
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE			ITEM_TEXTSTYLE_NORMAL
+
+#undef	CHOICE_VERTICAL_ALIGN
+#define	CHOICE_VERTICAL_ALIGN		VERTICAL_ALIGN_CENTER
+
+#undef	CHOICE_HORIZONTAL_ALIGN
+#define	CHOICE_HORIZONTAL_ALIGN		HORIZONTAL_ALIGN_CENTER
+
+#define IS_ONLINE_GAME				( dvarInt( splitscreen ) == 0 && dvarInt( systemlink ) == 0 )
+#define IS_BASICTRAINING_GAME		( dvarInt( xblive_basictraining ) > 0 )
+
+#undef ON_ESC
+#ifdef PC
+#define ON_ESC							\
+	execnow "uploadstats";				\
+	setdvar invite_visible "1";			\
+	play uin_navigation_menu_lg_close;	\
+	closeimmediate self;				\
+	setLocalVarBool ui_hideBack 0;
+#else //#ifdef PC
+#define ON_ESC							\
+	execnow "uploadstats";				\
+	setdvar invite_visible "1";			\
+	play uin_navigation_menu_lg_close;	\
+	closeimmediate self;
+#endif //#ifdef PC
+
+#define SET_CLASS_HIGHLIGHT_INDEX( classIndex ) \
+		setdvar ui_custom_class_highlighted classIndex;
+
+
+#define SETUP_ONFOCUS_CAC( classIndex, custom_name )	\
+		show item_info;									\
+		SET_CLASS_HIGHLIGHT_INDEX( classIndex )			\
+		setdvar ui_custom_name custom_name;				\
+		VIEWER_SET_PLAYER( custom_name );				\
+		VIEWER_SET_EQUIP_WEAPON( primary );				\
+		VIEWER_SET_PLAYER_CAMERA( player ); 
+		
+{
+
+// CREATE A CLASS MAIN
+	menuDef	
+	{
+		name					cac_main
+		rect					0 0 640 470 RECT_ALIGN
+		focuscolor				COLOR_FOCUSED
+#ifdef PC_INGAME
+		style					WINDOW_STYLE_EMPTY
+#else
+		style					WINDOW_STYLE_FILLED	
+		blurWorld				7.0
+#endif
+		control					MENU_CONTROL_OPENER
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		popup
+		onOpen
+		{ 
+			execnow "uiViewer_SetControllerIndex";
+			activateBlur;
+			setdvar invite_visible "0"; 
+			setdvar cac_back_menu_name "cac_main";
+			setdvar ui_useCustomClassInfo 0;
+			if ( dvarString( ui_faction ) == "" ) { setdvar ui_faction FIRST_FACTION; }
+			
+#ifdef PC
+			if ( dvarString( ui_custom_name ) == "" )
+			{
+				SETUP_ONFOCUS_CAC( 0, customclass1 );
+			}
+			
+			setLocalVarBool ui_hide_cac_item_info_highlights 1;
+			setLocalVarBool ui_hideBack 1;
+#endif
+			SHOW_VIEWER;
+			SET_VIEWER_MODE_PLAYER;
+			play uin_navigation_menu_lg_open;
+			focusFirst;
+		}
+		onEsc
+		{
+			ON_ESC
+		}
+		onClose
+		{
+			if( !IS_ONLINE_GAME )
+			{
+				execNow "updategamerprofile";
+			}
+			deactivateBlur;
+			HIDE_VIEWER;
+#ifdef PC
+			execNow "updategamerprofile";
+			setLocalVarBool ui_hide_cac_item_info_highlights 0;
+#endif //#ifdef PC
+		}
+		onFocus
+		{ 
+			activateBlur;
+			execnow changemenuopenslidedirection cac_main MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;
+			execnow changemenucloseslidedirection cac_main MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM;
+		}
+
+		#define CAC_HEIGHT NEW_FRAME_DEFAULT_HEIGHT
+		#define CAC_WIDTH ( CAC_HEIGHT * FRAME_ASPECT_RATIO )
+		#define IS_CUSTOM_CLASS_MODE dvarInt( ui_useCustomClassInfo ) == 1
+
+		NEW_FRAME( CAC_WIDTH, CAC_HEIGHT )
+		
+		// ------------------  statics ------------------------
+
+		NEW_FRAME_TITLE( CAC_WIDTH, CAC_HEIGHT, "@MPUI_CREATE_A_CLASS_CAPS", when( !IS_CUSTOM_CLASS_MODE ) )
+		NEW_FRAME_TITLE( CAC_WIDTH, CAC_HEIGHT, "@CUSTOM_EDIT_CLASS_LOADOUT_CAPS", when( IS_CUSTOM_CLASS_MODE ) )
+		
+		PLAYER_INFO_VIS( CAC_WIDTH, CAC_HEIGHT, 1 )
+
+#define DIRT_IMAGE_WIDTH	400
+#define DIRT_IMAGE_HEIGHT	128
+#define DIRT_IMAGE_X		(-DIRT_IMAGE_WIDTH/2)
+#define DIRT_IMAGE_Y		60
+#ifndef PC_INGAME
+		/* dirt image */
+		PREPROC_SHADER_DRAW( DIRT_IMAGE_X DIRT_IMAGE_Y DIRT_IMAGE_WIDTH DIRT_IMAGE_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, "menu_mp_lobby_cac_dirt", 1 1 1 0.2 )
+
+		CAC_FACTION_MODEL
+		
+#ifdef PC
+		CAC_ROTATE_ARROWS
+#endif // #ifdef PC
+#endif
+		//=========================================================
+		//===================== MENU SELECTION ====================
+		//=========================================================
+		#define SETUP_ACTION_CAC																									\
+				execnow changemenucloseslidedirection ( dvarString( "cac_back_menu_name" ) ) MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;	\
+				execnow changemenuopenslidedirection menu_cac_custom MENU_SLIDE_DIRECTION_RIGHT_TO_LEFT;							\
+				closeimmediate self;																								\
+				openimmediate menu_cac_custom;
+		
+		#define SETUP_HL_CAC( classIndex ) \
+				( dvarInt( "ui_custom_class_highlighted" ) == classIndex )
+				
+		#define PRESTIGE_FOCUS( pname, class_name_dvar )				\
+				hide item_info;											\
+				setdvar ui_show_arrow 1;								\
+				setdvar ui_custom_name dvarString( class_name_dvar );	\
+				execnow set ui_prestige_unlock_desc GET_UNLOCK_PLEVEL_STRING( pname );
+
+		#define PRESTIGE_LEAVE_FOCUS		\
+				setdvar ui_show_arrow 0;	\
+				setdvar ui_prestige_unlock_desc "@NULL_EMPTY";
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	1, dvarString( customclass1 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 0, customclass1 ), 
+											;, 
+											IS_ONLINE_GAME && !IS_BASICTRAINING_GAME, ;,
+											SETUP_HL_CAC( 0 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	1, dvarString( offline_customclass1 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 0, customclass1 ); setdvar offline_custom_name offline_customclass1, 
+											;, 
+											!IS_ONLINE_GAME, ;,
+											SETUP_HL_CAC( 0 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	1, dvarString( offline_customclass1 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 0, customclass1 ); setdvar offline_custom_name offline_customclass1, 
+											;, 
+											IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 0 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	2, dvarString( customclass2 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 1, customclass2 ), 
+											;, 
+											IS_ONLINE_GAME && !IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 1 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	2, dvarString( offline_customclass2 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 1, customclass2 ); setdvar offline_custom_name offline_customclass2, 
+											;, 
+											IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 1 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	2, dvarString( offline_customclass2 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 1, customclass2 ); setdvar offline_custom_name offline_customclass2, 
+											;, 
+											!IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 1 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	3, dvarString( customclass3 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 2, customclass3 ), 
+											;, 
+											IS_ONLINE_GAME && !IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 2 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	3, dvarString( offline_customclass3 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 2, customclass3 ); setdvar offline_custom_name offline_customclass3, 
+											;, 
+											IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 2 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	3, dvarString( offline_customclass3 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 2, customclass3 ); setdvar offline_custom_name offline_customclass3, 
+											;, 
+											!IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 2 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	4, dvarString( customclass4 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 3, customclass4 ), 
+											;, 
+											IS_ONLINE_GAME && !IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 3 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	4, dvarString( offline_customclass4 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 3, customclass4 ); setdvar offline_custom_name offline_customclass4, 
+											;, 
+											IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 3 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	4, dvarString( offline_customclass4 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 3, customclass4 ); setdvar offline_custom_name offline_customclass4, 
+											;, 
+											!IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 3 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	5, dvarString( customclass5 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 4, customclass5 ), 
+											;, 
+											IS_ONLINE_GAME && !IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 4 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	5, dvarString( offline_customclass5 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 4, customclass5 ); setdvar offline_custom_name offline_customclass5, 
+											;, 
+											IS_BASICTRAINING_GAME, ;,
+ 											SETUP_HL_CAC( 4 ) )
+											
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	5, dvarString( offline_customclass5 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 4, customclass5 ); setdvar offline_custom_name offline_customclass5, 
+											;, 
+											!IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 4 ) )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	6, dvarString( prestigeclass1 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 5, prestigeclass1 ) CLEAR_ITEM_NEW( FEATURE_PRESTIGE_CLASS_1 ), 
+											;, 
+											!IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_1 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 5 ) )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX_CUSTOMHL(	6, dvarString( prestigeclass1 ), 
+											SET_CLASS_HIGHLIGHT_INDEX( 5 ) PRESTIGE_FOCUS( "FEATURE_PRESTIGE_CLASS_1", prestigeclass1 );, 
+											PRESTIGE_LEAVE_FOCUS;, 
+											IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_1 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 5 ) ) 
+		CHOICE_NEWICON_VIS(		6, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_PRESTIGE_CLASS_1 )		&& IS_ONLINE_GAME ) )
+		CHOICE_LOCKEDICON_VIS(	6, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_1 )	&& IS_ONLINE_GAME ) )
+
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	7, dvarString( prestigeclass2 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 6, prestigeclass2 ) CLEAR_ITEM_NEW( FEATURE_PRESTIGE_CLASS_2 ), 
+											;, 
+											!IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_2 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 6 ) )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX_CUSTOMHL(	7, dvarString( prestigeclass2 ), 
+											SET_CLASS_HIGHLIGHT_INDEX( 6 ) PRESTIGE_FOCUS( "FEATURE_PRESTIGE_CLASS_2", prestigeclass2 );,  
+											PRESTIGE_LEAVE_FOCUS;, 
+											IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_2 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 6 ) )
+		CHOICE_NEWICON_VIS(		7, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_PRESTIGE_CLASS_2 )		&& IS_ONLINE_GAME )	)
+		CHOICE_LOCKEDICON_VIS(	7, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_2 )	&& IS_ONLINE_GAME ) )
+
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	8, dvarString( prestigeclass3 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 7, prestigeclass3 ) CLEAR_ITEM_NEW( FEATURE_PRESTIGE_CLASS_3 ), 
+											;, 
+											!IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_3 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 7 ) )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX_CUSTOMHL(	8, dvarString( prestigeclass3 ), 
+											SET_CLASS_HIGHLIGHT_INDEX( 7 ) PRESTIGE_FOCUS( "FEATURE_PRESTIGE_CLASS_3", prestigeclass3 );, 
+											PRESTIGE_LEAVE_FOCUS;, 
+											IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_3 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 7 ) )
+		CHOICE_NEWICON_VIS(		8, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_PRESTIGE_CLASS_3 )		&& IS_ONLINE_GAME )	)
+		CHOICE_LOCKEDICON_VIS(	8, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_3 )	&& IS_ONLINE_GAME ) )
+
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	9, dvarString( prestigeclass4 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 8, prestigeclass4 ) CLEAR_ITEM_NEW( FEATURE_PRESTIGE_CLASS_4 ), 
+											;, 
+											!IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_4 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 8 ) )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX_CUSTOMHL(	9, dvarString( prestigeclass4 ), 
+											SET_CLASS_HIGHLIGHT_INDEX( 8 ) PRESTIGE_FOCUS( "FEATURE_PRESTIGE_CLASS_4", prestigeclass4 );, 
+											PRESTIGE_LEAVE_FOCUS;, 
+											IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_4 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 8 ) )
+		CHOICE_NEWICON_VIS(		9, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_PRESTIGE_CLASS_4 )		&& IS_ONLINE_GAME )	)
+		CHOICE_LOCKEDICON_VIS(	9, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_4 )	&& IS_ONLINE_GAME ) )
+
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX_CUSTOMHL(	10, dvarString( prestigeclass5 ), 
+											SETUP_ACTION_CAC, 
+											SETUP_ONFOCUS_CAC( 9, prestigeclass5 ) CLEAR_ITEM_NEW( FEATURE_PRESTIGE_CLASS_5 ), 
+											;, 
+											!IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_5 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 9 ) )
+		FRAME_CHOICE_DBUTTON_FOCUS_VIS_EX_CUSTOMHL(	10, dvarString( prestigeclass5 ), 
+											SET_CLASS_HIGHLIGHT_INDEX( 9 ) PRESTIGE_FOCUS( "FEATURE_PRESTIGE_CLASS_5", prestigeclass5 );, 
+											PRESTIGE_LEAVE_FOCUS;, 
+											IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_5 ) && IS_ONLINE_GAME, ;,
+ 											SETUP_HL_CAC( 9 ) )
+		CHOICE_NEWICON_VIS(		10, "menu_mp_lobby_new",		when( IS_ITEM_NEW( FEATURE_PRESTIGE_CLASS_5 )		&& IS_ONLINE_GAME )	)
+		CHOICE_LOCKEDICON_VIS(	10, "menu_mp_lobby_locked",		when( IS_ITEM_LOCKED( FEATURE_PRESTIGE_CLASS_5 )	&& IS_ONLINE_GAME ) )
+		
+		HINT_TEXT( 12, CHOICE_X_START, dvarString( ui_prestige_unlock_desc ), ( dvarBool( ui_show_arrow ) && ( dvarString( ui_prestige_unlock_desc ) != "" ) ) )
+
+#include "ui_mp/cac_item_info.inc"
+
+#ifndef PC
+		// RENAME BUTTON =============================================================
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			-165 ( CAC_HEIGHT / 2 ) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			text			"@PLATFORM_RENAME"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_BOTTOM_LEFT
+			execkeyint		BUTTON_X {CAC_SETUP_ACTION_RENAME}
+			visible			when( IS_ONLINE_GAME && !IS_BASICTRAINING_GAME )
+			decoration
+		}
+		// ROTATE =============================================================		
+		PREPROC_TEXT_DRAW(	95 (CAC_HEIGHT/2) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+							"@PLATFORM_ROTATE", 
+							TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_BOTTOM_LEFT, 1 1 1 1 )
+
+		itemDef
+		{
+			type			ITEM_TYPE_BUTTON
+			rect			190 ( CAC_HEIGHT / 2 ) 50 17 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER
+			text			"@PLATFORM_COPY_CLASS"
+			textfont		CHOICE_TEXTFONT
+			textscale		TEXTSIZE_DEFAULT
+			textalign		ITEM_ALIGN_BOTTOM_LEFT
+			execkeyint		BUTTON_Y { open copyClassPopup; }
+			visible			when( IS_ONLINE_GAME && !IS_BASICTRAINING_GAME )
+			decoration
+		}
+
+		NEW_FRAME_BACK_BUTTON( CAC_WIDTH, CAC_HEIGHT )
+#else // #ifndef PC
+		#undef CHOICE_TEXTSIZE
+		#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+		
+		#undef CHOICE_TEXTFONT
+		#define CHOICE_TEXTFONT			UI_FONT_NORMAL
+		// back button
+		NEW_FRAME_BACK_BUTTON_ACTION( CAC_WIDTH, CAC_HEIGHT, ON_ESC )
+		// moved copy class into menu_cac_custom
+#endif // #ifndef PC
+		#include "ui/safearea.menu"
+	}
+}

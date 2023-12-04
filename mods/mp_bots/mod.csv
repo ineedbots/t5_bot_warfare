@@ -1,5 +1,0 @@
-menufile,ui_mp/cac_main.menu
-menufile,ui_mp/playercards.menu
-stringtable,mp/gametypesTable.csv
-menufile,ui_mp/custom_game_create.menu
-menufile,ui_mp/pc_basictraining.menu

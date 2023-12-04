@@ -1,0 +1,538 @@
+#include "ui/menudef.h"
+#include "ui_mp/newframe.inc"
+
+#define CHOICE_X_START					-258
+#define CHOICE_Y_START					35
+#define BUTTON_BG_WIDTH					180
+
+#define CHOICE_SEP_OFFSET_X				20
+#define CHOICE_SEP_OFFSET_Y				-2
+#define CHOICE_SEP_1					1
+#define CHOICE_SEP_2					4
+#define CHOICE_GROUP					"xboxlive_basictraining"
+
+#define FLYOUT_NONE				0
+#define FLYOUT_TRAINING			3
+
+#include "ui_mp/menustyle.inc"
+#include "ui/choices_setup_common.menu"
+#include "ui_mp/stats_info.inc"
+#include "ui_mp/friendslist.inc"
+
+#define MENU_FONT_SIZE					TEXTSIZE_DEFAULT
+#define HIGHLIGHT_SIZE					142 22
+#define MENU_FONT_COLOR					1 1 1 0.5
+#define MENU_FONT_COLOR2				1 1 1 0.5
+#define MENU_LOCKED_COLOR				0.25 0.25 0.25 1
+
+#undef  CHOICE_SIZE_X
+#define CHOICE_SIZE_X					BUTTON_BG_WIDTH
+#undef	CHOICE_TEXTSTYLE
+#define	CHOICE_TEXTSTYLE				ITEM_TEXTSTYLE_NORMAL
+
+#undef CHOICE_HORIZONTAL_ALIGN
+#define CHOICE_HORIZONTAL_ALIGN			HORIZONTAL_ALIGN_CENTER
+#undef	CHOICE_Y_SPACING
+#define CHOICE_Y_SPACING				CHOICE_SIZE_Y
+
+#define FLYOUT_BG_COLOR					0 0 0 0.3 
+
+#define SELECTION_IMAGE_BIG( materialArg )	( "menu_" + materialArg + "_map_select_big" )
+
+#define BOT_DVAR_CHECK																			\
+		execNow if ( dvarInt( bot_friends ) > 11 ) set bot_friends 11; exec "updategamerprofile";	\
+		execNow if ( dvarInt( bot_enemies ) > 11 ) set bot_enemies 11; exec "updategamerprofile";	
+#include "ui_mp/common_macro.inc"
+
+#undef ON_ESC
+#define ON_ESC							\
+	setdvar xblive_basictraining "0";	\
+	setDvar xblive_privatematch "0"		\
+	setDvar leaveImmediately "0";		\
+	close self;							\
+	open main_text;
+
+{
+	menuDef
+	{
+		name			menu_xboxlive_basictraining
+		fullscreen		1
+		rect			0 0 640 480
+		focuscolor		COLOR_FOCUSED
+		style			WINDOW_STYLE_FILLED
+		border			0
+		soundloop 		MENU_MUSIC
+		control			MENU_CONTROL_USED
+		allowSignIn
+
+		onOpen
+		{
+			execnow "validatePrivateMatchGametype";
+			exec "exec dvar_defaults.cfg";
+			setDvar onlinegame "1";
+			setdvar xblive_rankedmatch "0";
+			setdvar xblive_basictraining "1";
+			setdvar ui_inviteonly "0";
+			setdvar invite_visible "1";
+			setdvar ui_selectlobby "0";
+			setdvar popup_open "0";
+			
+			execNow set	scr_hc_tdm_scorelimit ( dvarString( scr_tdm_scorelimit ) );		
+			execNow set	scr_hc_dm_scorelimit ( dvarString( scr_dm_scorelimit ) );
+			execNow set	scr_hc_tdm_timelimit ( dvarString( scr_tdm_timelimit ) );
+			execNow set	scr_hc_dm_timelimit ( dvarString( scr_dm_timelimit ) );
+
+			execNow if ( !dvarbool( "xblive_basictraining_popup" ) ) openmenu "basictraining_msg";
+			
+			exec set ui_bg_image SELECTION_IMAGE_BIG( dvarString( ui_mapname ) );
+
+			exec set show_list_player_info 0;
+			CLEARUIHINT
+			if ( dvarInt( scr_hardcore ) == 1 )
+			{
+				if ( dvarString( ui_gametype ) == "dm" )
+				{
+					execNow set ui_gametype( "hc_dm" );
+				}
+				
+				if ( dvarString( ui_gametype ) == "tdm" )
+				{
+					execNow set ui_gametype( "hc_tdm" );
+				}
+			}
+		}
+		onFocus
+		{
+			if ( dvarString( ui_gametype ) != dm && dvarString( ui_gametype ) != hc_dm )
+			{
+				//BOT_DVAR_CHECK;
+			}
+		
+			setDvar ui_flyoutHasFocus FLYOUT_NONE;
+			exec set ui_bg_image SELECTION_IMAGE_BIG( dvarString( ui_mapname ) );
+		}
+		onClose	
+		{ 
+			play "uin_navigation_backout";
+			setdvar popup_open "1";
+			setfocus popup_hide;
+			hide selection_right;	
+			setdvar ui_bg_image "";
+		}
+		onEsc
+		{
+			ON_ESC
+		}
+
+		// ------------------ statics ------------------------
+		#include "ui_mp/blurredbg.inc"
+		
+		// ----------------- Scroller --------------------------		
+		#include "ui/scroller.inc"
+
+		// ----------------- title --------------------------	
+		CHOICE_MENU_TITLE_CENTER_ALIGN_VIS( "@MPUI_BASICTRAINING_LOBBY_CAPS", ITEM_ALIGN_TOP_RIGHT, 1 )
+
+		// ---------------------------- map ------------------------------------
+		#define GAMEINFO_ORIENTATION	1
+		#define GAMEINFO_X				CHOICE_X_START
+		#define GAMEINFO_Y				235
+		#define GAMEINFO_ORIGIN			GAMEINFO_X GAMEINFO_Y
+		#define GAMEINFO_WIDTH			BUTTON_BG_WIDTH
+		#define GAMEINFO_WIDTH2			GAMEINFO_WIDTH
+		#define GAMEINFO_HEIGHT			80
+		
+		#include "ui_mp/game_info.inc"
+		#define MAPIMAGE				SELECTION_IMAGE_FINAL( dvarString( ui_mapname ) )
+		#define MAPNAME					locString( tableLookup( "mp/mapstable.csv", 0, dvarString( ui_mapname ), 3 ) )
+		#define GAMETYPENAME			locString( tableLookup( "mp/gametypesTable.csv", 0, dvarString( ui_gametype ), 1 ) )
+
+		#define VOTE_BG_SIZE			20
+
+		#define SELECTION_IMAGE_FINAL( materialArg )	\
+				( "menu_" + materialArg + "_map_select_final" )
+
+		#define MAP_SELECTION_INFO( xPos, yPos, widthArg, heightArg, mapName, gametypeName, visArg )															\
+				PREPROC_TEXT_DRAW_ALL(	(xPos+widthArg-96-8) (yPos+heightArg-VOTE_BG_SIZE+1-18) 96 24 CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_BOTTOM,			\
+										0 0, toUpper( mapName ), TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_TOP_RIGHT, 1 1 1 1, UI_FONT_EXTRABIG, ITEM_TEXTSTYLE_NORMAL,	\
+										visArg, ; )																												\
+				PREPROC_TEXT_DRAW_VIS(	(xPos+widthArg-96-8) (yPos+heightArg-VOTE_BG_SIZE+1) 96 20 CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_BOTTOM,				\
+										0 0, gametypeName, TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_RIGHT, 1 1 1 1,													\
+										visArg )
+
+		#define MAP_X_START				(-MAP_WIDTH-112)
+		#define MAP_Y_START				(-MAP_HEIGHT-25)
+		#define MAP_WIDTH				183
+		#define MAP_ASPECT_RATIO		(203/275)
+		#define MAP_HEIGHT				(MAP_WIDTH*MAP_ASPECT_RATIO)
+					
+		PREPROC_SHADER_DRAW_VIS_EX(	MAP_X_START MAP_Y_START MAP_WIDTH MAP_HEIGHT CHOICE_HORIZONTAL_ALIGN VERTICAL_ALIGN_BOTTOM,
+									MAPIMAGE, 1 1 1 1, 
+									1, ; )
+
+		MAP_SELECTION_INFO( MAP_X_START, MAP_Y_START, MAP_WIDTH, MAP_HEIGHT, MAPNAME, GAMETYPENAME, 1 )
+
+		// ---------------------- locked hint -------------------------
+		#define	HINT_X_START	( CHOICE_X_START - 13 )
+		HINT_TEXT_ALL( 9, HINT_X_START, 7, CHOICE_SIZE_X, dvarString( ui_hint_text ), 1 1 1 1, dvarBool( ui_show_arrow ), ; )
+		
+			
+		// ---------------------- party status description -------------------------
+		#define STATUS_START_X			145
+		#define STATUS_START_Y			-48
+		#define STATUS_RECT				STATUS_START_X STATUS_START_Y 150 25 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_BOTTOM
+
+		PREPROC_TEXT_DRAW_VIS(	STATUS_RECT, 0 0, "@MENU_STATUS_OPEN_DESC_CAPS",			TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, MEDIUM_GRAY, when( dvarint( "party_privacyStatus" ) == 0 && !dvarbool( "xblive_basictraining" ) ) )
+		PREPROC_TEXT_DRAW_VIS(	STATUS_RECT, 0 0, "@MENU_STATUS_OPEN_FRIENDS_DESC_CAPS",	TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, MEDIUM_GRAY, when( dvarint( "party_privacyStatus" ) == 1 && !dvarbool( "xblive_basictraining" ) ) )
+		PREPROC_TEXT_DRAW_VIS(	STATUS_RECT, 0 0, "@MENU_STATUS_INVITE_ONLY_DESC_CAPS",		TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, MEDIUM_GRAY, when( dvarint( "party_privacyStatus" ) == 2 && !dvarbool( "xblive_basictraining" ) ) )
+		PREPROC_TEXT_DRAW_VIS(	STATUS_RECT, 0 0, "@MENU_STATUS_CLOSE_DESC_CAPS",			TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_RIGHT, MEDIUM_GRAY, when( dvarint( "party_privacyStatus" ) == 3 && !dvarbool( "xblive_basictraining" ) ) )
+
+
+		//=========================================================
+		//================= MENU SELECTION ACTIONS ================
+		//=========================================================
+		#define SETUP_GAME_MODE \
+				resetdvar scr_hardcore;	\
+				resetdvar scr_team_fftype; \
+				resetdvar scr_player_healthregentime; \
+				resetdvar scr_player_maxhealth; \
+				resetdvar scr_tdm_waverespawndelay; \
+				resetdvar scr_game_allowkillcam; \
+				resetdvar scr_allowbattlechatter; \
+				resetdvar scr_team_kickteamkillers; \
+				resetdvar scr_game_suicidepointloss; \
+				resetdvar scr_team_teamkillpointloss; \
+				resetdvar scr_dog_health; \
+				resetdvar scr_dm_playerrespawndelay; \
+				resetdvar scr_disable_tacinsert; \
+				if ( dvarString( ui_gametype ) == "hc_tdm" )\
+				{ \
+					execNow set	scr_tdm_scorelimit ( dvarFloat( scr_hc_tdm_scorelimit ) ); \		
+					execNow set	scr_tdm_timelimit ( dvarFloat( scr_hc_tdm_timelimit ) ); \
+					execNow set g_gametype "tdm";	\
+					execNow set ui_gametype "tdm";	\
+					execNow set scr_hardcore 1; \
+					execNow set scr_team_fftype 1; \
+					execNow set scr_player_healthregentime 0; \
+					execNow set scr_player_maxhealth 30; \
+					execNow set scr_tdm_waverespawndelay 15; \
+					execNow set scr_game_allowkillcam 0; \
+					execNow set scr_allowbattlechatter	0; \
+					execNow set scr_team_kickteamkillers 1; \
+					execNow set scr_game_suicidepointloss -100; \
+					execNow set scr_team_teamkillpointloss -100; \
+					execNow set scr_dog_health 30; \
+				} \
+				if ( dvarString( ui_gametype ) == "hc_dm" )\
+				{ \
+					execNow set	scr_dm_scorelimit ( dvarFloat( scr_hc_dm_scorelimit ) ); \		
+					execNow set	scr_dm_timelimit ( dvarFloat( scr_hc_dm_timelimit ) ); \
+					execNow set g_gametype "dm";	\
+					execNow set ui_gametype "dm";	\
+					execNow set scr_hardcore 1; \
+					execNow set scr_player_healthregentime 0; \
+					execNow set scr_player_maxhealth 30; \
+					execNow set scr_game_allowkillcam 0; \
+					execNow set scr_allowbattlechatter	0; \
+					execNow set scr_dm_playerrespawndelay 7; \
+					execNow set scr_game_suicidepointloss -50; \
+					execNow set scr_dog_health 30; \
+					execNow set scr_disable_tacinsert 1; \
+				} \
+				if ( dvarString( ui_gametype ) == "shrp" || dvarString( ui_gametype ) == "gun" || dvarString( ui_gametype ) == "oic" || dvarString( ui_gametype ) == "hlnd" ) \
+				{ \
+					execNow set bot_wager "1";	\
+				} \
+				else \
+				{ \
+					execNow set bot_wager "0";	\
+				} \
+				execNow set scr_hlnd_timelimit "";	\
+				execNow set scr_hlnd_scorelimit "";	\
+				execNow set scr_oic_timelimit "";	\
+				execNow set scr_oic_scorelimit "";	\
+				execNow set scr_gun_timelimit "";	\
+				execNow set scr_gun_scorelimit "";	\
+				execNow set scr_shrp_timelimit "";	\
+				execNow set scr_shrp_scorelimit "";	
+		
+
+		#define SETUP_ACTION_STARTMATCH	\
+				SETUP_GAME_MODE			\
+				exec "selectStringTableEntryInDvar mp/didyouknow.csv 0 didyouknow";	\
+				uiscript StartListenServer;
+
+		#define SETUP_ACTION_GAMESETUP \
+				open basictraining_settings;
+
+		#define SETUP_ACTION_CREATEACLASS		\				
+				execnow "set ui_cac_ingame 0";	\
+				setdvar invite_visible "0";		\
+				/*exec "uploadstats";*/			\
+				open cac_main;
+
+		#define SETUP_ACTION_CONTRACTS			\				
+				exec "endsplitscreensignin";	\
+				open menu_xboxlive_contracts;
+				
+		#define SETUP_ACTION_KILLSTREAKS		\				
+				exec "endsplitscreensignin";	\
+				open menu_xboxlive_killstreaks;
+
+
+		//=========================================================
+		//===================== MENU SELECTION ====================
+		//=========================================================
+		#define ANY_NEW_TRAINING_PLAYERCARD_FEATURE	\
+						( ANY_NEW_CHALLENGES || IS_ITEM_NEW( FEATURE_COMBAT_RECORD ) )
+
+		#define IS_LOBBY_HOST		1
+		#define IS_NOT_LOBBY_HOST	0
+		
+		// HOST BUTTONS
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	1, "@MPUI_START_MATCH_CAPS", 
+										SETUP_ACTION_STARTMATCH,
+										SET_HINT_TEXT( "@MPUI_START_MATCH_DESC" ),
+										CLEARUIHINT,
+										dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 1 ), 0 0, "@MPUI_START_MATCH_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	2, "@MPUI_CHANGE_MAP_CAPS", 
+										open select_map, 
+										SET_HINT_TEXT( "@MPUI_CHANGE_MAP_DESC" ),
+										CLEARUIHINT,
+										dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 2 ), 0 0, "@MPUI_CHANGE_MAP_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+		
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	3, "@MPUI_CHANGE_GAME_MODE_CAPS", 
+										open select_game_mode, 
+										SET_HINT_TEXT( "@MPUI_CHANGE_GAME_MODE_DESC" ),
+										CLEARUIHINT,
+										dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 3 ), 0 0, "@MPUI_CHANGE_GAME_MODE_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	4, "@MPUI_EDIT_GAME_OPTIONS_CAPS", 
+										SETUP_ACTION_GAMESETUP,
+										SET_HINT_TEXT( "@MPUI_EDIT_GAME_OPTIONS_DESC" ),
+										CLEARUIHINT,
+										dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 4 ), 0 0, "@MPUI_EDIT_GAME_OPTIONS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+	
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	5, "@MPUI_CREATE_A_CLASS_CAPS", 
+										SETUP_ACTION_CREATEACLASS, 
+										SET_HINT_TEXT( "@MPUI_CAC_DESC" ) CLEAR_ITEM_NEW( FEATURE_CREATE_A_CLASS ),
+										CLEARUIHINT,
+										!IS_ITEM_LOCKED( FEATURE_CREATE_A_CLASS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		TEMP_CHOICE_DBUTTON_FOCUS_VIS_EX(	5, "@MPUI_CREATE_A_CLASS_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_CREATE_A_CLASS ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_CREATE_A_CLASS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE, ; ) 
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 5 ), 0 0, "@MPUI_CREATE_A_CLASS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+		CHOICE_NEWICON_VIS(		5, "menu_mp_lobby_new",		when( ANY_NEW_CAC	&& dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE ) )
+		CHOICE_LOCKEDICON_VIS(	5, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_CREATE_A_CLASS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE ) ) 		
+				
+
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	6, "@MENU_KILLSTREAKS_CAPS", 
+										SETUP_ACTION_KILLSTREAKS, 
+										SET_HINT_TEXT( "@MPUI_KILLSTREAKS_DESC" ) CLEAR_ITEM_NEW( FEATURE_KILLSTREAKS ),
+										CLEARUIHINT,
+										!IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		TEMP_CHOICE_DBUTTON_FOCUS_VIS_EX(	6, "@MENU_KILLSTREAKS_CAPS", 
+											SET_HINT_TEXT( GET_UNLOCK_LEVEL_STRING( FEATURE_KILLSTREAKS ) ), 
+											CLEARUIHINT, 
+											IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE, ; ) 
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 6 ), 0 0, "@MENU_KILLSTREAKS_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+		CHOICE_NEWICON_VIS( 6, "menu_mp_lobby_new",			when( IS_ITEM_NEW( FEATURE_KILLSTREAKS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE ) )
+		CHOICE_LOCKEDICON_VIS(	6, "menu_mp_lobby_locked",	when( IS_ITEM_LOCKED( FEATURE_KILLSTREAKS ) && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE ) ) 		
+
+		
+		TEMP_CHOICE_BUTTON_FOCUS_VIS(	8, "@MENU_PLAYERCARD_CAPS", 
+										SETUP_ACTION_PLAYERCARD, 
+										SET_HINT_TEXT( "@MPUI_PLAYERCARD_DESC" ),
+										CLEARUIHINT,
+										dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE )
+		PREPROC_TEXT_DRAW_VIS( CHOICE_RECT( 8 ), 0 0, "@MENU_PLAYERCARD_CAPS", CHOICE_TEXTSIZE, CHOICE_TEXT_OFFSET_X, 0, CHOICE_TEXTALIGN, MEDIUM_GRAY, when( dvarInt( ui_flyoutHasFocus ) != FLYOUT_NONE ); )
+		CHOICE_NEWICON_VIS(		8, "menu_mp_lobby_new",		when( ANY_NEW_TRAINING_PLAYERCARD_FEATURE && IS_LOBBY_HOST && dvarInt( ui_flyoutHasFocus ) == FLYOUT_NONE ) )
+		
+		#undef CHOICE_TEXTSIZE
+		#define CHOICE_TEXTSIZE			TEXTSIZE_DEFAULT
+		
+		#undef CHOICE_TEXTFONT
+		#define CHOICE_TEXTFONT			UI_FONT_NORMAL
+	
+		// Friends button
+		FRIENDS_BUTTON
+
+		// back button
+		NEW_FRAME_BACK_BUTTON_ACTION_PC( ON_ESC )
+
+		#include "ui/safearea.menu"
+	}
+
+
+	#include "ui/framestyle.inc"
+	#include "ui/frame.inc"
+
+	#undef CHOICE_GROUP
+	#define CHOICE_GROUP					"basictraining_difficulty"
+
+	#undef	CHOICE_X_START
+	#define CHOICE_X_START				(-FRAME_DEFAULT_WIDTH/2+15)
+
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START				( -FRAME_DEFAULT_HEIGHT / 2 + 15 + NEW_FRAME_BG_Y_OFFSET( FRAME_DEFAULT_HEIGHT ) )
+	
+	#define DIFFICULTY_NAME_X			0
+	#define DIFFICULTY_NAME_Y			CHOICE_Y_START
+
+	#define ITEM_IMAGE_X				DIFFICULTY_NAME_X
+	#define ITEM_IMAGE_Y				(CHOICE_Y_START-5)
+	#define ITEM_IMAGE_ASPECT_RATIO		1
+	#define ITEM_IMAGE_WIDTH			(ITEM_IMAGE_HEIGHT * ITEM_IMAGE_ASPECT_RATIO)
+	#define ITEM_IMAGE_HEIGHT			240
+	#define ITEM_IMAGE_SIZE				ITEM_IMAGE_WIDTH ITEM_IMAGE_HEIGHT
+
+	#define DIFFICULTY_NAME_SIZE		ITEM_IMAGE_WIDTH 30
+
+	#define DIFFICULTY_DESC_X			(ITEM_IMAGE_X + 20)
+	#define DIFFICULTY_DESC_Y			(ITEM_IMAGE_Y + ITEM_IMAGE_HEIGHT - 20)
+	#define DIFFICULTY_DESC_SIZE		200 75
+
+	#define DIFFICULTY_INFO																														\
+	/* Name */																																	\
+	PREPROC_TEXT_DRAW(	DIFFICULTY_NAME_X DIFFICULTY_NAME_Y DIFFICULTY_NAME_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,			\
+						localVarString( ui_info_name ),																							\
+						TEXTSIZE_LARGE, 0, 0, ITEM_ALIGN_TOP_CENTER, 1 1 1 1 )																	\
+	/* Image */																																	\
+	PREPROC_SHADER_DRAW(	ITEM_IMAGE_X ITEM_IMAGE_Y ITEM_IMAGE_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN,							\
+							localVarString( ui_diff_pic ), 1 1 1 0.9 )																			\
+	/* Description */																															\
+	PREPROC_TEXT_DRAW_VIS_EX(	DIFFICULTY_DESC_X DIFFICULTY_DESC_Y DIFFICULTY_DESC_SIZE CHOICE_HORIZONTAL_ALIGN CHOICE_VERTICAL_ALIGN, 0 0,	\
+								localVarString( ui_info ),																						\
+								TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_CENTER, FRAME_LT_GREY_RGB 1,												\
+								1, autowrapped )
+	
+	#define DIFFICULTY_ONFOCUS( descArg, nameArg, imageArg )\
+			setLocalVarString ui_info descArg;				\
+			setLocalVarString ui_info_name nameArg;			\
+			setLocalVarString ui_diff_pic imageArg
+
+	#define SET_DIFFICULTY( difficulty )			\
+			exec set bot_difficulty difficulty;	\
+			close self;
+
+#undef CHOICE_SEP_SPACING
+#define CHOICE_SEP_SPACING 0
+
+	menuDef
+	{
+		name					basictraining_difficulty
+		rect					0 0 640 480
+		focuscolor				COLOR_FOCUSED
+		style					WINDOW_STYLE_FILLED
+		soundloop 				MENU_MUSIC
+		openSlideSpeed			DEFAULT_SLIDE_IN_SPEED
+		closeSlideSpeed			DEFAULT_SLIDE_OUT_SPEED
+		openSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+		closeSlideDirection		MENU_SLIDE_DIRECTION_TOP_TO_BOTTOM
+
+		onOpen	
+		{
+			activateBlur;
+			focusFirst;
+			play uin_navigation_menu_lg_open;
+		}
+		onFocus { }
+		onClose	
+		{
+			deactivateBlur;
+			execNow "updategamerprofile";
+		}
+		onESC 
+		{
+			close self;
+		}
+		execKeyInt BUTTON_B { }
+
+		FRAME_DEFAULT
+		FRAME_TITLE_DEFAULT( "@MENU_SELECT_DIFFICULTY_CAPS", 1 )
+
+		//FRAME_SUBTITLE_DEFAULT( "@MENU_SELECT_DIFF_DESC", 1 ) This was commented out in the main basictraining/difficulty menus on all platforms in cl#702108, so there doesn't seem to be a good reason to have it here any longer
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	1, "@MENU_RECRUIT_CAPS",
+											SET_DIFFICULTY( "easy" ), 
+											DIFFICULTY_ONFOCUS( "@MENU_DIFF_RECRUIT_DESC", "@MENU_RECRUIT_CAPS", "playlist_sp_recr" ),
+											;, 1, ; )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	2, "@MENU_REGULAR_CAPS",
+											SET_DIFFICULTY( "normal" ), 
+											DIFFICULTY_ONFOCUS( "@MENU_DIFF_REGULAR_DESC", "@MENU_REGULAR_CAPS", "playlist_sp_reg" ),
+											;, 1, ; )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	3, "@MENU_HARDENED_CAPS",
+											SET_DIFFICULTY( "hard" ), 
+											DIFFICULTY_ONFOCUS( "@MENU_DIFF_HARDENED_DESC", "@MENU_HARDENED_CAPS", "playlist_sp_hard" ),
+											;, 1, ; )
+
+		FRAME_CHOICE_BUTTON_FOCUS_VIS_EX(	4, "@MENU_VETERAN_CAPS",
+											SET_DIFFICULTY( "fu" ), 
+											DIFFICULTY_ONFOCUS( "@MENU_DIFF_VETERAN_DESC", "@MENU_VETERAN_CAPS", "playlist_sp_vet" ),
+											;, 1, ; )
+
+		DIFFICULTY_INFO
+	}
+
+
+	#undef	CHOICE_FOCUS_SOUND
+	#define CHOICE_FOCUS_SOUND		"uin_navigation_over"
+	
+	#undef	CHOICE_Y_SPACING
+	#define CHOICE_Y_SPACING		(CHOICE_SIZE_Y + 2)
+	
+	#include "ui_mp/popupstyle.inc"
+	#include "ui/choices_setup_popmenu.menu"
+
+	#undef	POPUP_WIDTH
+	#define	POPUP_WIDTH								MEDIUM_POPUP_WIDTH		
+	#undef	POPUP_HEIGHT
+	#define	POPUP_HEIGHT							MEDIUM_POPUP_HEIGHT
+	#undef	MEDIUM_POPUP_TITLE_X_START
+	#define MEDIUM_POPUP_TITLE_X_START				POPUP_SIDE_PAD
+	#undef	MEDIUM_POPUP_TITLE_Y_START
+	#define MEDIUM_POPUP_TITLE_Y_START				POPUP_SIDE_PAD
+	#undef	CHOICE_SIZE_X			
+	#define CHOICE_SIZE_X							( (MEDIUM_POPUP_WIDTH - (POPUP_SIDE_PAD * 2) ) / 2 )
+
+	#undef	POPUP_BUTTON_COUNT
+	#define	POPUP_BUTTON_COUNT		1
+	#undef	CHOICE_Y_START
+	#define CHOICE_Y_START			POPUP_Y_START_BOTTOM
+	menuDef
+	{
+		MEDIUM_POPUP_SETUP_VIS( basictraining_msg, ;, close self;, POPUP_GLOW_WHITE, 0, 1 )		
+		onClose
+		{
+			setDvar xblive_basictraining_popup "1";
+			open basictraining_difficulty;
+		}
+		execkeyint BUTTON_START {}
+		execKeyInt APAD_UP {}
+		execKeyInt DPAD_UP {}
+		execKeyInt APAD_DOWN {}
+		execKeyInt DPAD_DOWN {}
+		execKeyInt APAD_LEFT {}
+		execKeyInt DPAD_LEFT {}
+		execKeyInt APAD_RIGHT {}
+		execKeyInt DPAD_RIGHT {}
+
+		PREPROC_TEXT_DRAW_VIS_EX(	MEDIUM_POPUP_TITLE_X_START MEDIUM_POPUP_TITLE_Y_START (MEDIUM_POPUP_WIDTH-30) MEDIUM_POPUP_TITLE_HEIGHT HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+									"@MPUI_BASICTRAINING_LOBBY_CAPS", TEXTSIZE_DEFAULT, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, 1, autowrapped )
+
+		PREPROC_TEXT_DRAW_VIS_EX(	MEDIUM_POPUP_TITLE_X_START (MEDIUM_POPUP_TITLE_Y_START+MEDIUM_POPUP_TITLE_HEIGHT+10) (MEDIUM_POPUP_WIDTH-30) 100 HORIZONTAL_ALIGN_CENTER VERTICAL_ALIGN_CENTER, 0 0, 
+									"@MPUI_BASICTRAINING_POPUP_DESC", TEXTSIZE_SMALL, 0, 0, ITEM_ALIGN_TOP_LEFT, 1 1 1 1, 1, autowrapped )
+
+		FRAME_CHOICE_BUTTON_VIS_EX( 1, "@MENU_CONTINUE", close self;, 1, ; ) 
+	}
+}  
