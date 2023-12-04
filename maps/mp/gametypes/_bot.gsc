@@ -25,6 +25,9 @@ init()
 	if ( !getDvarInt( "bots_main" ) )
 		return;
 
+	if ( !wait_for_builtins() )
+		PrintLn( "FATAL: NO BUILT-INS FOR BOTS" );
+
 	if ( getDvar( "bots_main_waitForHostTime" ) == "" )
 		setDvar( "bots_main_waitForHostTime", 10.0 ); //how long to wait to wait for the host player
 
@@ -228,11 +231,11 @@ watchBotDebugEvent()
 			if ( isDefined( g ) && isString( g ) )
 				big_str += ": " + g;
 
-			Println( big_str );
+			BotBuiltinPrintConsole( big_str );
 		}
 		else if ( msg == "debug" && GetDvarInt( "bots_main_debug" ) )
 		{
-			Println( "Bot Warfare debug: " + self.name + ": " + str );
+			BotBuiltinPrintConsole( "Bot Warfare debug: " + self.name + ": " + str );
 		}
 	}
 }

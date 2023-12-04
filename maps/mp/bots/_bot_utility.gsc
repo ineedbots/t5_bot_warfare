@@ -10,6 +10,130 @@
 #include maps\mp\gametypes\_hud_util;
 
 /*
+	Waits for the built-ins to be defined
+*/
+wait_for_builtins()
+{
+	for ( i = 0; i < 20; i++ )
+	{
+		if ( isDefined( level.bot_builtins ) )
+			return true;
+
+		if ( i < 18 )
+			waittillframeend;
+		else
+			wait 0.05;
+	}
+
+	return false;
+}
+
+/*
+	Prints to console without dev script on
+*/
+BotBuiltinPrintConsole( s )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "printconsole" ] ) )
+	{
+		[[ level.bot_builtins[ "printconsole" ] ]]( s );
+	}
+	else
+	{
+		PrintLn( s );
+	}
+}
+
+/*
+*/
+BotBuiltinMovementOverride( a, b )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmovementoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botmovementoverride" ] ]]( a, b );
+	}
+}
+
+/*
+*/
+BotBuiltinClearMovementOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearmovementoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearmovementoverride" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinClearButtonOverride( a )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearbuttonoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearbuttonoverride" ] ]]( a );
+	}
+}
+
+/*
+*/
+BotBuiltinButtonOverride( a, b )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botbuttonoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botbuttonoverride" ] ]]( a, b );
+	}
+}
+
+/*
+*/
+BotBuiltinClearOverrides( a )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearoverrides" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearoverrides" ] ]]( a );
+	}
+}
+
+/*
+*/
+BotBuiltinMantleOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmantleoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botmantleoverride" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinClearMantleOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearmantleoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearmantleoverride" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinClearWeaponOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearweaponoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearweaponoverride" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinWeaponOverride( a )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botweaponoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botweaponoverride" ] ]]( a );
+	}
+}
+
+/*
 	Returns an array of all the bots in the game.
 */
 getBotArray()

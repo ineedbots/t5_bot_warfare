@@ -5382,16 +5382,6 @@ bot_dem_defend_spawnkill()
 	self notify( "bad_path" );
 }
 
-botMovementOverride( a, b ) {}
-botClearMovementOverride() {}
-botClearButtonOverride( a ) {}
-botButtonOverride( a, b ) {}
-botClearOverrides( a ) {}
-botMantleOverride() {}
-botClearMantleOverride() {}
-botClearWeaponOverride() {}
-botWeaponOverride( a ) {}
-
 /*
 	custom movement stuff
 */
@@ -5400,7 +5390,7 @@ watch_for_override_stuff()
 	self endon( "disconnect" );
 	self endon( "death" );
 
-	self botClearOverrides( true );
+	self BotBuiltinClearOverrides( true );
 
 	NEAR_DIST = 80;
 	LONG_DIST = 1000;
@@ -5438,7 +5428,7 @@ watch_for_override_stuff()
 		if ( need_to_clear_mantle_override && ( time - last_jump_time ) > 3000 )
 		{
 			need_to_clear_mantle_override = false;
-			self botClearMantleOverride();
+			self BotBuiltinClearMantleOverride();
 		}
 
 		if ( ( dist > NEAR_DIST ) && ( dist < LONG_DIST ) && ( randomInt( 100 ) < chance ) && ( ( time - last_jump_time ) > SPAM_JUMP_TIME ) )
@@ -5449,28 +5439,28 @@ watch_for_override_stuff()
 				{
 					last_jump_time = time;
 					need_to_clear_mantle_override = true;
-					self botMantleOverride();
+					self BotBuiltinMantleOverride();
 
 					// drop shot
-					self botMovementOverride( 0, 0 );
-					self botButtonOverride( "prone", "enable" );
+					self BotBuiltinMovementOverride( 0, 0 );
+					self BotBuiltinButtonOverride( "prone", "enable" );
 
 					wait 1.5;
 
-					self botClearMovementOverride();
-					self botClearButtonOverride( "prone" );
+					self BotBuiltinClearMovementOverride();
+					self BotBuiltinClearButtonOverride( "prone" );
 				}
 			}
 			else
 			{
 				last_jump_time = time;
 				need_to_clear_mantle_override = true;
-				self botMantleOverride();
+				self BotBuiltinMantleOverride();
 
 				// jump shot
-				self botButtonOverride( "gostand", "enable" );
+				self BotBuiltinButtonOverride( "gostand", "enable" );
 				wait 0.1;
-				self botClearButtonOverride( "gostand" );
+				self BotBuiltinClearButtonOverride( "gostand" );
 			}
 		}
 
