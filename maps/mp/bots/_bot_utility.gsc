@@ -134,6 +134,36 @@ BotBuiltinWeaponOverride( a )
 }
 
 /*
+*/
+BotBuiltinClearButtonOverrides()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearbuttonoverrides" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearbuttonoverrides" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinAimOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botaimoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botaimoverride" ] ]]();
+	}
+}
+
+/*
+*/
+BotBuiltinClearAimOverride()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearaimoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearaimoverride" ] ]]();
+	}
+}
+
+/*
 	Returns an array of all the bots in the game.
 */
 getBotArray()

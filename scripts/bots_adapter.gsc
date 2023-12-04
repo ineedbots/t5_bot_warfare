@@ -10,6 +10,9 @@ init()
 	level.bot_builtins["botclearmantleoverride"] = ::do_botclearmantleoverride;
 	level.bot_builtins["botclearweaponoverride"] = ::do_botclearweaponoverride;
 	level.bot_builtins["botweaponoverride"] = ::do_botweaponoverride;
+	level.bot_builtins["botclearbuttonoverrides"] = ::do_botclearbuttonoverrides;
+	level.bot_builtins["botaimoverride"] = ::do_botaimoverride;
+	level.bot_builtins["botclearaimoverride"] = ::do_botclearaimoverride;
 }
 
 do_printconsole( s )
@@ -60,4 +63,19 @@ do_botclearweaponoverride()
 do_botweaponoverride( a )
 {
 	self botWeaponOverride( a );
+}
+
+do_botclearbuttonoverrides()
+{
+	self botClearButtonOverrides();
+}
+
+do_botaimoverride()
+{
+	self botAimOverride();
+}
+
+do_botclearaimoverride()
+{
+	self botClearAimOverride();
 }
