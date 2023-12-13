@@ -13,6 +13,7 @@ init()
 	level.bot_builtins["botclearbuttonoverrides"] = ::do_botclearbuttonoverrides;
 	level.bot_builtins["botaimoverride"] = ::do_botaimoverride;
 	level.bot_builtins["botclearaimoverride"] = ::do_botclearaimoverride;
+	level.bot_builtins["botmeleeparams"] = ::do_botmeleeparams;
 }
 
 do_printconsole( s )
@@ -78,4 +79,9 @@ do_botaimoverride()
 do_botclearaimoverride()
 {
 	self botClearAimOverride();
+}
+
+do_botmeleeparams( yaw, dist )
+{
+	// self botMeleeParams( yaw, dist );
 }

@@ -164,6 +164,17 @@ BotBuiltinClearAimOverride()
 }
 
 /*
+	Sets melee params
+*/
+BotBuiltinBotMeleeParams( yaw, dist )
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins["botmeleeparams"] ) )
+	{
+		self [[ level.bot_builtins["botmeleeparams" ]]]( yaw, dist );
+	}
+}
+
+/*
 	Returns an array of all the bots in the game.
 */
 getBotArray()
