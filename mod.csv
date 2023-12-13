@@ -3,7 +3,3 @@ menufile,ui_mp/playercards.menu
 stringtable,mp/gametypesTable.csv
 menufile,ui_mp/custom_game_create.menu
 menufile,ui_mp/pc_basictraining.menu
-rawfile,maps/mp/gametypes/_bot.gsc
-rawfile,maps/mp/bots/_bot_utility.gsc
-rawfile,maps/mp/bots/_bot_loadout.gsc
-rawfile,maps/mp/bots/_bot_script.gsc
