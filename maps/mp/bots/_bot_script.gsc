@@ -5440,7 +5440,6 @@ watch_for_melee_override()
 					self setPlayerAngles( VectorToAngles( threat getTagOrigin( "j_spine4" ) - self getEye() ) );
 					time_left -= 0.05;
 					wait 0.05;
-					self BotBuiltinClearMeleeParams();
 					self BotBuiltinClearButtonOverride( "melee" );
 				}
 
