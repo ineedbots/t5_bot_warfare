@@ -14,6 +14,7 @@ init()
 	level.bot_builtins["botaimoverride"] = ::do_botaimoverride;
 	level.bot_builtins["botclearaimoverride"] = ::do_botclearaimoverride;
 	level.bot_builtins["botmeleeparams"] = ::do_botmeleeparams;
+	level.bot_builtins["clearbotmeleeparams"] = ::do_clearbotmeleeparams;
 }
 
 do_printconsole( s )
@@ -84,4 +85,9 @@ do_botclearaimoverride()
 do_botmeleeparams( yaw, dist )
 {
 	// self botMeleeParams( yaw, dist );
+}
+
+do_clearbotmeleeparams()
+{
+	// self botClearMeleeParams();
 }

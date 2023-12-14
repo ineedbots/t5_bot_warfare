@@ -178,6 +178,17 @@ bot_watch_stop_move()
 
 		if ( !getDvarInt( "bots_play_move" ) )
 			self thread botStopMove( true );
+
+		if ( !getDvarInt( "bots_play_fire" ) )
+		{
+			weaps = self getweaponslist();
+
+			for ( i = 0; i < weaps.size; i++ )
+			{
+				self SetWeaponAmmoClip( weaps[i], 0 );
+				self SetWeaponAmmoStock( weaps[i], 0 );
+			}
+		}
 	}
 }
 
@@ -415,6 +426,7 @@ bot_spawn()
 	}
 
 	self thread watch_for_override_stuff();
+	self thread watch_for_melee_override();
 }
 
 /*
@@ -2846,11 +2858,25 @@ bot_watch_think_mw2()
 */
 bot_weapon_think_loop( data )
 {
+	ret = self waittill_any_timeout( randomIntRange( 2, 4 ), "bot_force_check_switch" );
+
+	if ( self isDefusing() || self isPlanting() )
+		return;
+
+	if ( self IsRemoteControlling() )
+		return;
+
+	if ( self InLastStand() )
+		return;
+
 	curWeap = self GetCurrentWeapon();
 	threat = self getThreat();
 
-	if ( isDefined( threat ) && !isPlayer( threat ) )
+	// code handles vehicle weapon switching
+	if ( isDefined( threat ) && !isPlayer( threat ) && !isAi( threat ) )
 		return;
+
+	force = ( ret == "bot_force_check_switch" );
 
 	if ( data.first )
 	{
@@ -2869,6 +2895,8 @@ bot_weapon_think_loop( data )
 			if ( isDefined( threat ) )
 				return;
 		}
+		else
+			force = true;
 	}
 
 	weaponslist = self getweaponslist();
@@ -2879,7 +2907,7 @@ bot_weapon_think_loop( data )
 		weapon = weaponslist[randomInt( weaponslist.size )];
 		weaponslist = array_remove( weaponslist, weapon );
 
-		if ( !self getAmmoCount( weapon ) )
+		if ( !self getAmmoCount( weapon ) && !force )
 			continue;
 
 		if ( !maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ) && !isWeaponAltmode( weapon ) )
@@ -2913,17 +2941,6 @@ bot_weapon_think()
 
 	for ( ;; )
 	{
-		self waittill_any_timeout( randomIntRange( 2, 4 ), "bot_force_check_switch" );
-
-		if ( self isDefusing() || self isPlanting() )
-			continue;
-
-		if ( self IsRemoteControlling() )
-			continue;
-
-		if ( self InLastStand() )
-			continue;
-
 		self bot_weapon_think_loop( data );
 	}
 }
@@ -5385,6 +5402,64 @@ bot_dem_defend_spawnkill()
 /*
 	custom movement stuff
 */
+watch_for_melee_override()
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+
+	self BotBuiltinClearMeleeParams();
+
+	for ( ;; )
+	{
+		threat = self getThreat();
+
+		while ( !isDefined( threat ) || ( !isPlayer( threat ) && !isAi( threat ) ) || self IsRemoteControlling() || !self HasWeapon( "knife_mp" ) || !getDvarInt( "aim_automelee_enabled" ) )
+		{
+			wait 0.05;
+			threat = self getThreat();
+		}
+
+		thisThreat = self getThreat();
+
+		while ( isDefined( thisThreat ) && isDefined( threat ) && thisThreat == threat )
+		{
+			dist = distance( self.origin, threat.origin );
+
+			if ( self isOnGround() && self GetStance() != "prone" && !self InLastStand() && dist < getDvarFloat( "aim_automelee_range" ) && ( getConeDot( threat.origin, self.origin, self getPlayerAngles() ) > 0.9 || dist < 10 ) )
+			{
+				angles = VectorToAngles( threat.origin - self.origin );
+
+				self BotBuiltinBotMeleeParams( angles[1], dist );
+				self BotBuiltinButtonOverride( "melee", "enable" );
+
+				time_left = 1;
+
+				while ( time_left > 0 && isDefined( threat ) && isAlive( threat ) )
+				{
+					self BotBuiltinAimOverride();
+					self setPlayerAngles( VectorToAngles( threat getTagOrigin( "j_spine4" ) - self getEye() ) );
+					time_left -= 0.05;
+					wait 0.05;
+					self BotBuiltinClearMeleeParams();
+					self BotBuiltinClearButtonOverride( "melee" );
+				}
+
+				self BotBuiltinClearButtonOverride( "melee" );
+				self BotBuiltinClearMeleeParams();
+				self BotBuiltinClearAimOverride();
+				wait 1;
+				break;
+			}
+
+			wait 0.05;
+			thisThreat = self getThreat();
+		}
+	}
+}
+
+/*
+	custom movement stuff
+*/
 watch_for_override_stuff()
 {
 	self endon( "disconnect" );
@@ -5416,7 +5491,7 @@ watch_for_override_stuff()
 	{
 		threat = self getThreat();
 
-		while ( !isDefined( threat ) || !isPlayer( threat ) )
+		while ( !isDefined( threat ) || !isPlayer( threat ) || self IsRemoteControlling() )
 		{
 			wait 0.05;
 			threat = self getThreat();
@@ -5424,6 +5499,7 @@ watch_for_override_stuff()
 
 		dist = Distance( threat.origin, self.origin );
 		time = GetTime();
+		weap = self GetCurrentWeapon();
 
 		if ( need_to_clear_mantle_override && ( time - last_jump_time ) > 3000 )
 		{
@@ -5431,7 +5507,12 @@ watch_for_override_stuff()
 			self BotBuiltinClearMantleOverride();
 		}
 
-		if ( ( dist > NEAR_DIST ) && ( dist < LONG_DIST ) && ( randomInt( 100 ) < chance ) && ( ( time - last_jump_time ) > SPAM_JUMP_TIME ) )
+		weapon_is_good = true;
+
+		if ( weap == "none" || !self GetWeaponAmmoClip( weap ) )
+			weapon_is_good = false;
+
+		if ( weapon_is_good && ( dist > NEAR_DIST ) && ( dist < LONG_DIST ) && ( randomInt( 100 ) < chance ) && ( ( time - last_jump_time ) > SPAM_JUMP_TIME ) )
 		{
 			if ( randomInt( 2 ) )
 			{
@@ -5466,7 +5547,7 @@ watch_for_override_stuff()
 
 		thisThreat = self getThreat();
 
-		while ( isDefined( thisThreat ) && isPlayer( thisThreat ) && thisThreat == threat )
+		while ( isDefined( thisThreat ) && isDefined( threat ) && thisThreat == threat )
 		{
 			wait 0.05;
 			thisThreat = self getThreat();

@@ -175,6 +175,16 @@ BotBuiltinBotMeleeParams( yaw, dist )
 }
 
 /*
+*/
+BotBuiltinClearMeleeParams()
+{
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins["clearbotmeleeparams"] ) )
+	{
+		self [[ level.bot_builtins["clearbotmeleeparams" ]]]();
+	}
+}
+
+/*
 	Returns an array of all the bots in the game.
 */
 getBotArray()
