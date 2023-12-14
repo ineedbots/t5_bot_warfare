@@ -5431,19 +5431,27 @@ watch_for_melee_override()
 
 				self BotBuiltinBotMeleeParams( angles[1], dist );
 				self BotBuiltinButtonOverride( "melee", "enable" );
+				self BotBuiltinAimOverride();
 
 				time_left = 1;
+				once = false;
 
 				while ( time_left > 0 && isDefined( threat ) && isAlive( threat ) )
 				{
-					self BotBuiltinAimOverride();
 					self setPlayerAngles( VectorToAngles( threat getTagOrigin( "j_spine4" ) - self getEye() ) );
 					time_left -= 0.05;
 					wait 0.05;
-					self BotBuiltinClearButtonOverride( "melee" );
+
+					if ( !once )
+					{
+						once = true;
+						self BotBuiltinClearButtonOverride( "melee" );
+					}
 				}
 
-				self BotBuiltinClearButtonOverride( "melee" );
+				if ( !once )
+					self BotBuiltinClearButtonOverride( "melee" );
+
 				self BotBuiltinClearMeleeParams();
 				self BotBuiltinClearAimOverride();
 				wait 1;
