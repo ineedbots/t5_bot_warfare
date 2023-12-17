@@ -1,7 +1,7 @@
 ![GitHub Logo](/bw-assets/bw-logo.png)
 
 # T5 Bot Warfare
-Bot Warfare is a GSC mod for [Black Ops 1](https://store.steampowered.com/app/42700/Call_of_Duty_Black_Ops/) and [PlutoniumT5](https://plutonium.pw/).
+Bot Warfare is a GSC mod for [PlutoniumT5](https://plutonium.pw/).
 
 It aims to extend the existing AI in the multiplayer games of Black Ops 1.
 

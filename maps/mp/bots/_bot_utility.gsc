@@ -352,11 +352,98 @@ isWeaponAltmode( weap )
 }
 
 /*
+	Bot will change to angles with speed
+*/
+bot_lookat( pos, time, vel, doAimPredict )
+{
+	self notify( "bots_aim_overlap" );
+	self endon( "bots_aim_overlap" );
+	self endon( "disconnect" );
+	self endon( "death" );
+	self endon( "spawned_player" );
+	level endon ( "game_ended" );
+
+	if ( level.gameEnded || level.inPrematchPeriod || self BotIsFrozen() || !getDvarInt( "bots_play_aim" ) )
+		return;
+
+	if ( !isDefined( pos ) )
+		return;
+
+	if ( !isDefined( doAimPredict ) )
+		doAimPredict = false;
+
+	if ( !isDefined( time ) )
+		time = 0.05;
+
+	if ( !isDefined( vel ) )
+		vel = ( 0, 0, 0 );
+
+	steps = int( time * 20 );
+
+	if ( steps < 1 )
+		steps = 1;
+
+	myEye = self GetEye(); // get our eye pos
+
+	if ( doAimPredict )
+	{
+		myEye += ( self getVelocity() * 0.05 ) * ( steps - 1 ); // account for our velocity
+
+		pos += ( vel * 0.05 ) * ( steps - 1 ); // add the velocity vector
+	}
+
+	myAngle = self getPlayerAngles();
+	angles = VectorToAngles( ( pos - myEye ) - anglesToForward( myAngle ) );
+
+	X = AngleClamp180( angles[0] - myAngle[0] );
+	X = X / steps;
+
+	Y = AngleClamp180( angles[1] - myAngle[1] );
+	Y = Y / steps;
+
+	for ( i = 0; i < steps; i++ )
+	{
+		myAngle = ( AngleClamp180( myAngle[0] + X ), AngleClamp180( myAngle[1] + Y ), 0 );
+		self setPlayerAngles( myAngle );
+		wait 0.05;
+	}
+}
+
+/*
+	Includes altmode weapons
+*/
+getweaponslistall()
+{
+	weaps = self getweaponslist();
+
+	for ( i = 0; i < weaps.size; i++ )
+	{
+		weap = weaps[i];
+		toks = strTok( weap, "_" );
+
+		if ( isSubStr( weap, "_gl_" ) )
+		{
+			weaps[weaps.size] = "gl_" + toks[0] + "_mp";
+		}
+		else if ( isSubStr( weap, "_ft_" ) )
+		{
+			weaps[weaps.size] = "ft_" + toks[0] + "_mp";
+		}
+		else if ( isSubStr( weap, "_mk_" ) )
+		{
+			weaps[weaps.size] = "mk_" + toks[0] + "_mp";
+		}
+	}
+
+	return weaps;
+}
+
+/*
 	Returns a valid grenade launcher weapon
 */
 getValidTube()
 {
-	weaps = self getweaponslist();
+	weaps = self getweaponslistall();
 
 	for ( i = 0; i < weaps.size; i++ )
 	{
@@ -563,9 +650,48 @@ ClearBotGoal()
 }
 
 /*
+	Presses the use button
+*/
+BotPressUse( time )
+{
+	self PressUseButton( time );
+}
+
+/*
+	Freeze controls
+*/
+BotFreezeControls( what )
+{
+	self freeze_player_controls( what );
+}
+
+/*
+	Bot is frozen
+*/
+BotIsFrozen()
+{
+	return false;
+}
+
+/*
+	Bot stops moving
+*/
+BotStopMove( what )
+{
+	self thread botStopMove2( what );
+}
+
+/*
+	Sets the stance
+*/
+BotSetStance( what )
+{
+}
+
+/*
 	Freezes bot in place
 */
-botStopMove( what )
+botStopMove2( what )
 {
 	self endon( "disconnect" );
 	self endon( "death" );

@@ -84,10 +84,10 @@ do_botclearaimoverride()
 
 do_botmeleeparams( yaw, dist )
 {
-	// self botMeleeParams( yaw, dist );
+	self botMeleeParams( yaw, dist );
 }
 
 do_clearbotmeleeparams()
 {
-	// self botClearMeleeParams();
+	self botClearMeleeParams();
 }

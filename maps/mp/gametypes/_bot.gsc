@@ -743,8 +743,6 @@ add_bot()
 	if ( isdefined( bot ) )
 	{
 		bot.pers["isBot"] = true;
-		bot.equipment_enabled = true;
-		bot.pers[ "bot_perk" ] = true;
 		bot.pers["isBotWarfare"] = true;
 		bot thread maps\mp\bots\_bot_script::added();
 	}

@@ -154,41 +154,15 @@ bot_on_spawn()
 	for ( ;; )
 	{
 		self waittill( "spawned_player" );
+		self BotBuiltinClearOverrides( true );
+		self BotBuiltinWeaponOverride( self getCurrentWeapon() );
 
 		self.bot_lock_goal = false;
 		self.help_time = undefined;
 		self.bot_was_follow_script_update = undefined;
-		self thread bot_watch_stop_move();
+		self.bot_attacking_plane = false;
 
 		self thread bot_spawn();
-	}
-}
-
-/*
-	BOt stop moving on dvar
-*/
-bot_watch_stop_move()
-{
-	self endon( "disconnect" );
-	self endon( "death" );
-
-	for ( ;; )
-	{
-		wait 0.05;
-
-		if ( !getDvarInt( "bots_play_move" ) )
-			self thread botStopMove( true );
-
-		if ( !getDvarInt( "bots_play_fire" ) )
-		{
-			weaps = self getweaponslist();
-
-			for ( i = 0; i < weaps.size; i++ )
-			{
-				self SetWeaponAmmoClip( weaps[i], 0 );
-				self SetWeaponAmmoStock( weaps[i], 0 );
-			}
-		}
 	}
 }
 
@@ -339,21 +313,21 @@ bot_spawn()
 				break;
 
 			case 0:
-				self freeze_player_controls( true );
-				wait 0.6;
-				self freeze_player_controls( false );
+				self BotFreezeControls( true );
+				wait 0.8;
+				self BotFreezeControls( false );
 				break;
 
 			case 1:
-				self freeze_player_controls( true );
-				wait 0.4;
-				self freeze_player_controls( false );
+				self BotFreezeControls( true );
+				wait 0.5;
+				self BotFreezeControls( false );
 				break;
 
 			case 2:
-				self freeze_player_controls( true );
-				wait 0.2;
-				self freeze_player_controls( false );
+				self BotFreezeControls( true );
+				wait 0.25;
+				self BotFreezeControls( false );
 				break;
 		}
 	}
@@ -404,6 +378,7 @@ bot_spawn()
 
 	self thread bot_uav_think();
 	self thread bot_weapon_think();
+	// reload cancel
 	self thread bot_listen_to_steps();
 	self thread bot_revenge_think();
 	self thread follow_target();
@@ -613,116 +588,88 @@ bot_go_defuse( plant )
 }
 
 /*
-	Creates a bomb use thread and waits for an output
+	Waits for the bot to stop moving
 */
-bot_use_bomb_thread( bomb )
+bot_wait_stop_move()
 {
-	self thread bot_use_bomb( bomb );
-	self waittill_any( "bot_try_use_fail", "bot_try_use_success" );
+	while ( !self isOnGround() || lengthSquared( self getVelocity() ) > 1 )
+		wait 0.25;
 }
 
 /*
-	Waits for the time to call bot_try_use_success or fail
+	Bots will use a random equipment
 */
-bot_bomb_use_time( wait_time )
+BotUseRandomEquipment()
 {
-	level endon( "game_ended" );
-	self endon( "death" );
-	self endon( "disconnect" );
-	self endon( "bot_try_use_fail" );
-	self endon( "bot_try_use_success" );
-
-	self waittill( "bot_try_use_weapon" );
-
-	wait 0.05;
-	elapsed = 0;
-
-	while ( wait_time > elapsed )
-	{
-		wait 0.05;//wait first so waittill can setup
-		elapsed += 0.05;
-
-		if ( self InLastStand() )
-		{
-			self notify( "bot_try_use_fail" );
-			return;//needed?
-		}
-	}
-
-	self notify( "bot_try_use_success" );
 }
 
 /*
-	Bot switches to the bomb weapon
+	Bots will look at a random thing
 */
-bot_use_bomb_weapon( weap )
+BotLookAtRandomThing( obj_target )
 {
-	level endon( "game_ended" );
+}
+
+/*
+	Bots will do stuff while waiting for objective
+*/
+bot_do_random_action_for_objective( obj_target )
+{
 	self endon( "death" );
 	self endon( "disconnect" );
+	self notify( "bot_do_random_action_for_objective" );
+	self endon( "bot_do_random_action_for_objective" );
 
-	lastWeap = self getCurrentWeapon();
-
-	if ( self getCurrentWeapon() != weap )
+	if ( !isDefined( self.bot_random_obj_action ) )
 	{
-		self GiveWeapon( weap );
+		self.bot_random_obj_action = true;
 
-		if ( !self ChangeToWeapon( weap ) )
-		{
-			self notify( "bot_try_use_fail" );
-			return;
-		}
+		if ( randomInt( 100 ) < 80 )
+			self thread BotUseRandomEquipment();
+
+		if ( randomInt( 100 ) < 75 )
+			self thread BotLookAtRandomThing( obj_target );
 	}
 	else
 	{
-		wait 0.05;//allow a waittill to setup as the notify may happen on the same frame
+		if ( self GetStance() != "prone" && randomInt( 100 ) < 15 )
+			self BotSetStance( "prone" );
+		else if ( randomInt( 100 ) < 5 )
+			self thread BotLookAtRandomThing( obj_target );
 	}
 
-	self notify( "bot_try_use_weapon" );
-	ret = self waittill_any_return( "bot_try_use_fail", "bot_try_use_success" );
-
-	if ( lastWeap != "none" )
-		self thread ChangeToWeapon( lastWeap );
-	else
-		self takeWeapon( weap );
+	wait 2;
+	self.bot_random_obj_action = undefined;
 }
 
 /*
-	Bot tries to use the bomb site
+	Fires the bots c4
 */
-bot_use_bomb( bomb )
+fire_c4()
 {
-	level endon( "game_ended" );
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon( "weapon_change" );
+	self endon( "stop_firing_weapon" );
 
-	bomb.inUse = true;
-
-	myteam = self.team;
-
-	self thread botStopMove( true );
-
-	bomb [[bomb.onBeginUse]]( self );
-
-	self clientClaimTrigger( bomb.trigger );
-	self.claimTrigger = bomb.trigger;
-
-	self thread bot_bomb_use_time( bomb.useTime / 1000 );
-	self thread bot_use_bomb_weapon( bomb.useWeapon );
-
-	result = self waittill_any_return( "death", "disconnect", "bot_try_use_fail", "bot_try_use_success" );
-
-	if ( isDefined( self ) )
+	for ( ;; )
 	{
-		self.claimTrigger = undefined;
-		self thread botStopMove( false );
+		// self thread BotPressAds( 0.05 );
+		wait 0.1;
 	}
+}
 
-	bomb [[bomb.onEndUse]]( myteam, self, ( result == "bot_try_use_success" ) );
-	bomb.trigger releaseClaimedTrigger();
-
-	if ( result == "bot_try_use_success" )
-		bomb [[bomb.onUse]]( self );
-
-	bomb.inUse = false;
+/*
+	Bots do random stance
+*/
+BotRandomStance()
+{
+	if ( randomInt( 100 ) < 80 )
+		self BotSetStance( "prone" );
+	else if ( randomInt( 100 ) < 60 )
+		self BotSetStance( "crouch" );
+	else
+		self BotSetStance( "stand" );
 }
 
 /*
@@ -738,9 +685,6 @@ changeToWeapon( weap )
 		return false;
 
 	self SwitchToWeapon( weap );
-
-	if ( isWeaponAltmode( weap ) )
-		self setSpawnWeapon( weap );
 
 	if ( self GetCurrentWeapon() == weap )
 		return true;
@@ -842,7 +786,7 @@ bot_rccar_think( weapon, killstreak )
 
 	self BotNotifyBotEvent( "killstreak", "call", killstreak );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 
 	if ( !self ChangeToWeapon( weapon ) )
 		return;
@@ -994,7 +938,7 @@ bot_use_supply_drop( weapon, killstreak )
 
 	self BotNotifyBotEvent( "killstreak", "call", killstreak );
 
-	self thread botStopMove( true );
+	self botStopMove( true );
 
 	if ( self ChangeToWeapon( weapon ) )
 	{
@@ -1009,7 +953,7 @@ bot_use_supply_drop( weapon, killstreak )
 			self waittill_any_timeout( 15, "bot_crate_landed", "new_goal" );
 	}
 
-	self thread botStopMove( false );
+	self botStopMove( false );
 }
 
 /*
@@ -1058,7 +1002,7 @@ bot_turret_location( weapon, killstreak )
 
 	self BotNotifyBotEvent( "killstreak", "call", killstreak );
 
-	self thread botStopMove( true );
+	self botStopMove( true );
 
 	if ( self ChangeToWeapon( weapon ) )
 	{
@@ -1070,7 +1014,7 @@ bot_turret_location( weapon, killstreak )
 		self thread changeToWeapon( self.lastNonKillstreakWeapon );
 	}
 
-	self thread botStopMove( false );
+	self botStopMove( false );
 }
 
 /*
@@ -1080,7 +1024,7 @@ bot_control_heli( weapon, killstreak )
 {
 	self BotNotifyBotEvent( "killstreak", "call", killstreak );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 
 	if ( !self ChangeToWeapon( weapon ) )
 		return;
@@ -1096,7 +1040,7 @@ bot_control_heli( weapon, killstreak )
 	self.heli endon( "heli_timeup" );
 
 	while ( isDefined( self.heli ) )
-		wait 0.25;
+		wait 0.25; // TODO do it
 }
 
 /*
@@ -1118,7 +1062,7 @@ bot_killstreak_think_loop()
 	if ( self IsRemoteControlling() )
 		return;
 
-	if ( self UseButtonPressed() )
+	if ( self UseButtonPressed() || self BotIsFrozen() )
 		return;
 
 	if ( self isDefusing() || self isPlanting() || self inLastStand() )
@@ -1160,7 +1104,7 @@ bot_killstreak_think_loop()
 			if ( !self ChangeToWeapon( weapon ) )
 				break;
 
-			self freeze_player_controls( true );
+			self BotFreezeControls( true );
 
 			wait 1;
 
@@ -1177,7 +1121,7 @@ bot_killstreak_think_loop()
 				self notify( "confirm_location", origin, yaw );
 			}
 
-			self freeze_player_controls( false );
+			self BotFreezeControls( false );
 
 			break;
 
@@ -1458,7 +1402,7 @@ bot_turret_think_loop()
 		return;
 	}
 
-	if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() )
+	if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() || self BotIsFrozen() )
 		return;
 
 	turret = undefined;
@@ -1546,8 +1490,9 @@ bot_turret_think_loop()
 
 			self BotNotifyBotEvent( "turret_hack", "start", turret );
 
+			// we will be frozen already
 			hackTime = GetDvarFloat( #"perk_disarmExplosiveTime" );
-			self PressUseButton( hackTime + 0.5 );
+			self thread BotPressUse( hackTime + 0.5 );
 			wait( hackTime + 0.5 );
 
 			self BotNotifyBotEvent( "turret_hack", "stop", turret );
@@ -1733,9 +1678,9 @@ bot_equipment_kill_think_loop()
 	{
 		facing = false;
 
-		if ( isDefined( target.name ) && target.name == "claymore_mp" )
+		if ( isDefined( target.name ) && target.name == "claymore_mp" && !target maps\mp\gametypes\_weaponobjects::isStunned() )
 		{
-			if ( VectorDot( VectorNormalize( AnglesToForward( target.angles ) ), VectorNormalize( self.origin - target.origin ) ) >= 0.342 && !target maps\mp\gametypes\_weaponobjects::isStunned() ) // cos 70 degrees
+			if ( VectorDot( VectorNormalize( AnglesToForward( target.angles ) ), VectorNormalize( self.origin - target.origin ) ) >= 0.342 ) // cos 70 degrees
 				facing = true;
 		}
 
@@ -1757,8 +1702,9 @@ bot_equipment_kill_think_loop()
 
 			self BotNotifyBotEvent( "hack_equ", "start", target );
 
+			// you get frozen already
 			hackTime = GetDvarFloat( #"perk_disarmExplosiveTime" );
-			self PressUseButton( hackTime + 0.5 );
+			self thread BotPressUse( hackTime + 0.5 );
 			wait( hackTime + 0.5 );
 
 			self BotNotifyBotEvent( "hack_equ", "stop", target );
@@ -1788,7 +1734,7 @@ bot_equipment_kill_think()
 	{
 		wait RandomIntRange( 1, 3 );
 
-		if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() )
+		if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() || self BotIsFrozen() )
 			continue;
 
 		self bot_equipment_kill_think_loop();
@@ -1814,16 +1760,17 @@ bot_watch_stuck_on_crate_loop()
 		{
 			self BotNotifyBotEvent( "crate_cap", "start", crate );
 
-			// self BotRandomStance();
+			self BotRandomStance();
 
+			// holding use freeze our controls already
 			if ( isDefined( crate.owner ) && crate.owner == self )
 			{
-				self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
+				self thread BotPressUse( level.crateOwnerUseTime / 1000 + 0.5 );
 				wait level.crateOwnerUseTime / 1000 + 0.5;
 			}
 			else
 			{
-				self PressUseButton( level.crateNonOwnerUseTime / 1000 + 0.5 );
+				self thread BotPressUse( level.crateNonOwnerUseTime / 1000 + 0.5 );
 				wait level.crateNonOwnerUseTime / 1000 + 0.5;
 			}
 
@@ -1850,9 +1797,8 @@ bot_watch_stuck_on_crate()
 		if ( IsDefined( self GetThreat() ) )
 			continue;
 
-		if ( self UseButtonPressed() )
+		if ( self UseButtonPressed() || self BotIsFrozen() )
 			continue;
-
 
 		self bot_watch_stuck_on_crate_loop();
 	}
@@ -1887,7 +1833,7 @@ bot_crate_think_loop( data )
 	if ( self IsRemoteControlling() )
 		return;
 
-	if ( self UseButtonPressed() )
+	if ( self UseButtonPressed() || self BotIsFrozen() )
 		return;
 
 	crates = GetEntArray( "care_package", "script_noteworthy" );
@@ -1944,7 +1890,7 @@ bot_crate_think_loop( data )
 
 	self BotNotifyBotEvent( "crate_cap", "go", crate );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 
 	self.bot_lock_goal = true;
 
@@ -1971,16 +1917,20 @@ bot_crate_think_loop( data )
 	self BotNotifyBotEvent( "crate_cap", "start", crate );
 
 	if ( isdefined( crate.crateType.hint_gambler ) && self hasPerk( "specialty_gambler" ) && randomInt( 3 ) )
-		crate notify( "trigger_use_doubletap", self );
-
-	if ( isDefined( crate.owner ) && crate.owner == self )
 	{
-		self PressUseButton( level.crateOwnerUseTime / 1000 + 0.5 );
+		crate notify( "trigger_use_doubletap", self );
+		wait 1;
+	}
+
+	// holding use freeze our controls already
+	if ( isDefined( crate ) && isDefined( crate.owner ) && crate.owner == self )
+	{
+		self thread BotPressUse( level.crateOwnerUseTime / 1000 + 0.5 );
 		wait( level.crateOwnerUseTime / 1000 + 0.5 );
 	}
 	else
 	{
-		self PressUseButton( level.crateNonOwnerUseTime / 1000 + 1 );
+		self thread BotPressUse( level.crateNonOwnerUseTime / 1000 + 1 );
 		wait( level.crateNonOwnerUseTime / 1000 + 1.5 );
 	}
 
@@ -2092,43 +2042,35 @@ bot_vehicle_attack( enemy )
 }
 
 /*
-	Bot will change to angles with speed
+	Does the plane combat (no hax!)
 */
-bot_lookat( angles, speed )
+do_bot_plane_combat( plane, weap )
 {
-	self notify( "bots_aim_overlap" );
-	self endon( "bots_aim_overlap" );
-	self endon( "disconnect" );
-	self endon( "death" );
-	level endon ( "game_ended" );
+	plane endon( "death" );
+	plane endon( "delete" );
+	plane endon( "leaving" );
+	self endon( "weapon_change" );
+	self endon( "missile_fire" );
 
-	myAngle = self getPlayerAngles();
+	time = 7;
+	self BotBuiltinAimOverride();
 
-	X = ( angles[0] - myAngle[0] );
-
-	while ( X > 170.0 )
-		X = X - 360.0;
-
-	while ( X < -170.0 )
-		X = X + 360.0;
-
-	X = X / speed;
-
-	Y = ( angles[1] - myAngle[1] );
-
-	while ( Y > 180.0 )
-		Y = Y - 360.0;
-
-	while ( Y < -180.0 )
-		Y = Y + 360.0;
-
-	Y = Y / speed;
-
-	for ( i = 0; i < speed; i++ )
+	while ( time > 0 && isDefined( plane ) && isAlive( plane ) && self GetCurrentWeapon() == weap && !self InLastStand() && !isDefined( self getThreat() ) )
 	{
-		newAngle = ( myAngle[0] + X, myAngle[1] + Y, 0 );
-		self setPlayerAngles( newAngle );
-		myAngle = self getPlayerAngles();
+		myeye = self GetEye();
+
+		if ( BulletTracePassed( myeye, plane.origin, false, plane ) )
+		{
+			self thread bot_lookat( plane.origin, 0.3 );
+			self BotBuiltinButtonOverride( "ads", "enable" );
+
+			if ( isDefined( self.stingerLockFinalized ) && self.stingerLockFinalized )
+				self PressAttackButton();
+		}
+		else
+			self BotBuiltinButtonOverride( "ads", "disable" );
+
+		time -= 0.05;
 		wait 0.05;
 	}
 }
@@ -2138,92 +2080,26 @@ bot_lookat( angles, speed )
 */
 bot_plane_attack( plane )
 {
-	plane endon( "death" );
-	plane endon( "delete" );
-	plane endon( "leaving" );
-
 	weap = self getLockonAmmo();
 
 	if ( !isDefined( weap ) )
 		return;
 
-	self thread botStopMove( true );
+	self botStopMove( true );
+	self.bot_attacking_plane = true;
 
-	if ( weap == "strela_mp" )
+	if ( self ChangeToWeapon( weap ) )
 	{
-		self freeze_player_controls( true );
+		self do_bot_plane_combat( plane, weap );
 
-		self SetSpawnWeapon( weap );
-
-		if ( !self GetWeaponAmmoClip( weap ) )
-		{
-			self SetWeaponAmmoClip( weap, 1 );
-			self SetWeaponAmmoStock( weap, self GetWeaponAmmoStock( weap ) - 1 );
-		}
-	}
-	else
-	{
-		if ( !self ChangeToWeapon( weap ) )
-			return;
-
-		if ( !self GetWeaponAmmoClip( weap ) )
-		{
-			self PressAttackButton();
-			self wait_endon( 10, "reload" );
-		}
-
-		self freeze_player_controls( true );
+		self notify( "bots_aim_overlap" );
+		self BotBuiltinClearAimOverride();
+		self BotBuiltinClearButtonOverride( "ads" );
 	}
 
-	wait_time = 0;
-	lock_time = 0;
-
-	while ( wait_time < 2 )
-	{
-		wait 0.05;
-
-		if ( !self GetWeaponAmmoClip( weap ) )
-			return;
-
-		if ( self getCurrentWeapon() != weap )
-			return;
-
-		if ( self InLastStand() )
-			return;
-
-		if ( !IsDefined( plane ) )
-			return;
-
-		if ( !IsAlive( plane ) )
-			return;
-
-		if ( !BulletTracePassed( self getEye(), plane.origin, false, plane ) )
-		{
-			wait_time += 0.05;
-			lock_time = 0;
-		}
-		else
-		{
-			wait_time = 0;
-			lock_time += 0.05;
-
-			self thread bot_lookat( VectorToAngles( ( ( plane.origin - self.origin ) - ( anglesToForward( self getplayerangles() ) ) ) ), 4 );
-
-			if ( lock_time >= 2 )
-			{
-				self SetWeaponAmmoClip( weap, self GetWeaponAmmoClip( weap ) - 1 );
-
-				missile = MagicBullet( weap, self getEye(), plane.origin, self );
-				missile Missile_SetTarget( plane );
-
-				level notify ( "missile_fired", self, missile, plane, true );
-				self notify( "bots_aim_overlap" );
-
-				wait 1;
-				return;
-			}
-		}
-	}
+	self botStopMove( false );
+	self.bot_attacking_plane = false;
+	self notify( "bot_force_check_switch" );
 }
 
 /*
@@ -2337,8 +2213,6 @@ bot_target_vehicle_loop()
 	if ( isDefined( target.bot_plane ) )
 	{
 		self bot_plane_attack( target );
-		self freeze_player_controls( false );
-		self thread botStopMove( false );
 	}
 	else
 	{
@@ -2363,7 +2237,7 @@ bot_target_vehicle()
 	{
 		wait( 1 );
 
-		if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() )
+		if ( isDefined( self GetThreat() ) || self IsRemoteControlling() || self UseButtonPressed() || self BotIsFrozen() )
 			continue;
 
 		self bot_target_vehicle_loop();
@@ -2440,19 +2314,23 @@ bot_use_equipment_think_loop()
 
 	lastWeap = self getCurrentWeapon();
 
-	self thread botStopMove( true );
+	self botStopMove( true );
+	wait 1;
 
 	if ( self ChangeToWeapon( weapon ) )
 	{
-		self thread fire_current_weapon();
+		if ( weapon == "satchel_charge_mp" )
+			self thread fire_c4();
+		else
+			self thread fire_current_weapon();
 
-		ret = self waittill_any_timeout( 5, "grenade_fire" );
+		self waittill_any_timeout( 5, "grenade_fire", "weapon_change" );
 		self notify( "stop_firing_weapon" );
 
 		self thread changeToWeapon( lastWeap );
 	}
 
-	self thread botStopMove( false );
+	self botStopMove( false );
 }
 
 /*
@@ -2464,7 +2342,7 @@ bot_use_equipment_think()
 	self endon( "disconnect" );
 	level endon ( "game_ended" );
 
-	if ( self.pers["bot"]["class_equipment"] == "" || self.pers["bot"]["class_equipment"] == "weapon_null_mp" || self.pers["bot"]["class_equipment"] == "satchel_charge_mp" )
+	if ( self.pers["bot"]["class_equipment"] == "" || self.pers["bot"]["class_equipment"] == "weapon_null_mp" )
 		return;
 
 	for ( ;; )
@@ -2473,6 +2351,9 @@ bot_use_equipment_think()
 
 		if ( !self HasWeapon( self.pers["bot"]["class_equipment"] ) )
 			return;
+
+		if ( self BotIsFrozen() )
+			continue;
 
 		if ( !self GetAmmoCount( self.pers["bot"]["class_equipment"] ) )
 			continue;
@@ -2582,9 +2463,10 @@ bot_revive_think_loop()
 	self BotNotifyBotEvent( "revive", "start", revivePlayer );
 
 	self SetBotGoal( self.origin, 64 );
+	self bot_wait_stop_move();
 
 	reviveTime = GetDvarInt( #"revive_time_taken" );
-	self PressUseButton( reviveTime + 1 );
+	self thread BotPressUse( reviveTime + 1 );
 	wait( reviveTime + 1.5 );
 
 	self ClearBotGoal();
@@ -2621,7 +2503,7 @@ bot_revive_think()
 		if ( self IsRemoteControlling() )
 			continue;
 
-		if ( self UseButtonPressed() )
+		if ( self UseButtonPressed() || self BotIsFrozen() )
 			continue;
 
 		self bot_revive_think_loop();
@@ -2836,6 +2718,9 @@ bot_watch_think_mw2()
 	{
 		wait randomIntRange( 1, 4 );
 
+		if ( self BotIsFrozen() )
+			continue;
+
 		if ( self isDefusing() || self isPlanting() )
 			continue;
 
@@ -2853,12 +2738,14 @@ bot_watch_think_mw2()
 }
 
 /*
-	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
 	Bots will think to switch weapons
 */
 bot_weapon_think_loop( data )
 {
 	ret = self waittill_any_timeout( randomIntRange( 2, 4 ), "bot_force_check_switch" );
+
+	if ( self BotIsFrozen() )
+		return;
 
 	if ( self isDefusing() || self isPlanting() )
 		return;
@@ -2872,9 +2759,18 @@ bot_weapon_think_loop( data )
 	curWeap = self GetCurrentWeapon();
 	threat = self getThreat();
 
-	// code handles vehicle weapon switching
-	if ( isDefined( threat ) && !isPlayer( threat ) && !isAi( threat ) )
-		return;
+	if ( self.bot_attacking_plane || ( isDefined( threat ) && !isPlayer( threat ) && !isAi( threat ) && ( !IsDefined( threat.targetname ) || threat.targetname != "rcbomb" ) ) )
+	{
+		rocketAmmo = self getRocketAmmo();
+
+		if ( isDefined( rocketAmmo ) )
+		{
+			if ( curWeap != rocketAmmo )
+				self thread ChangeToWeapon( rocketAmmo );
+
+			return;
+		}
+	}
 
 	force = ( ret == "bot_force_check_switch" );
 
@@ -2899,7 +2795,7 @@ bot_weapon_think_loop( data )
 			force = true;
 	}
 
-	weaponslist = self getweaponslist();
+	weaponslist = self getweaponslistall();
 	weap = "";
 
 	while ( weaponslist.size )
@@ -2927,7 +2823,6 @@ bot_weapon_think_loop( data )
 }
 
 /*
-	Fast swaps or reload cancels don't work cause t5 bots wait for the anim to complete
 	Bots will think to switch weapons
 */
 bot_weapon_think()
@@ -2964,6 +2859,7 @@ bot_uav_think_loop( data )
 	hasUAV = false;
 	hasSR = false;
 
+	// check for counter spyplane
 	if ( level.teamBased )
 	{
 		if ( level.activeCounterUAVs[otherTeam] && !hasCam )
@@ -3006,7 +2902,8 @@ bot_uav_think_loop( data )
 	dist = GetDvarInt( #"scr_help_dist" );
 	dist = dist * dist * 8;
 
-	if ( !data.wasFooled && level.bot_decoys.size && !hasCam )
+	// decoys
+	if ( !data.wasFooled && level.bot_decoys.size && !hasCam && !self HasScriptGoal() && !self.bot_lock_goal )
 	{
 		shouldContinue = false;
 
@@ -3054,23 +2951,28 @@ bot_uav_think_loop( data )
 		if ( player == self )
 			continue;
 
+		if ( !isDefined( player.team ) )
+			continue;
+
+		if ( player.sessionstate != "playing" )
+			continue;
+
 		if ( level.teambased && player.team == myTeam )
 			continue;
 
 		if ( !isAlive( player ) )
 			continue;
 
-		if ( player.sessionstate != "playing" )
-			continue;
+		distFromPlayer = DistanceSquared( self.origin, player.origin );
 
-		if ( DistanceSquared( self.origin, player.origin ) > dist )
+		if ( distFromPlayer > dist )
 			continue;
 
 		if ( hasCam )
 		{
-			if ( !self.cameraSpike maps\mp\gametypes\_weaponobjects::isStunned() )
+			if ( !self.cameraSpike maps\mp\gametypes\_weaponobjects::isStunned() && !self HasScriptGoal() && !self.bot_lock_goal && !player hasPerk( "specialty_nottargetedbyai" ) )
 			{
-				if ( VectorDot( VectorNormalize( AnglesToForward( self.cameraSpike.cameraHead.angles ) ), VectorNormalize( player.origin - self.cameraSpike.origin ) ) >= 0.342 && SightTracePassed( player.origin + ( 0, 0, 5 ), self.cameraSpike.origin + ( 0, 0, 5 ), false, self.cameraSpike ) && !player hasPerk( "specialty_nottargetedbyai" ) ) // cos 70 degrees
+				if ( VectorDot( VectorNormalize( AnglesToForward( self.cameraSpike.cameraHead.angles ) ), VectorNormalize( player.origin - self.cameraSpike.origin ) ) >= 0.342 && SightTracePassed( player.origin + ( 0, 0, 5 ), self.cameraSpike.origin + ( 0, 0, 5 ), false, self.cameraSpike ) ) // cos 70 degrees
 				{
 					self BotNotifyBotEvent( "cam_target", "start", player );
 
@@ -3088,23 +2990,25 @@ bot_uav_think_loop( data )
 		{
 			self BotNotifyBotEvent( "uav_target", "start", player );
 
-			/*
-			    distSq = self.pers["bots"]["skill"]["help_dist"] * self.pers["bots"]["skill"]["help_dist"];
+			distSq = GetDvarInt( #"scr_help_dist" );
+			distSq *= distSq;
 
-			    if ( distFromPlayer < distSq && bulletTracePassed( self getEye(), player getTagOrigin( "j_spineupper" ), false, player ) )
-			    {
+			if ( distFromPlayer < distSq && bulletTracePassed( self getEye(), player getTagOrigin( "j_spineupper" ), false, player ) )
+			{
 				self SetAttacker( player );
-			    }
+			}
 
-			    if ( !self HasScriptGoal() && !self.bot_lock_goal )
-			    {*/
+			if ( !self HasScriptGoal() && !self.bot_lock_goal )
+			{
+				self SetBotGoal( player.origin, 128 );
+				self thread stop_go_target_on_death( player );
 
-			self SetBotGoal( player.origin, 128 );
+				if ( self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal" )
+					self ClearBotGoal();
 
-			if ( self waittill_any_return( "goal", "bad_path", "new_goal" ) != "new_goal" )
-				self ClearBotGoal();
+				self BotNotifyBotEvent( "uav_target", "stop", player );
+			}
 
-			self BotNotifyBotEvent( "uav_target", "stop", player );
 			break;
 		}
 	}
@@ -3126,13 +3030,8 @@ bot_uav_think()
 	{
 		wait 0.75;
 
-		if ( self HasScriptGoal() )
+		if ( self IsRemoteControlling() )
 			continue;
-
-		if ( self IsRemoteControlling() || self.bot_lock_goal )
-		{
-			continue;
-		}
 
 		self bot_uav_think_loop( data );
 	}
@@ -3145,6 +3044,9 @@ bot_revenge_think()
 {
 	self endon( "death" );
 	self endon( "disconnect" );
+
+	if ( self GetBotDiffNum() <= 0 )
+		return;
 
 	if ( isDefined( self.lastKiller ) && isAlive( self.lastKiller ) )
 	{
@@ -3260,6 +3162,9 @@ bot_listen_to_steps()
 	{
 		wait 1;
 
+		if ( self GetBotDiffNum() <= 0 )
+			continue;
+
 		self bot_listen_to_steps_loop();
 	}
 }
@@ -3287,12 +3192,13 @@ bot_radiation_think_loop()
 		if ( event != "goal" )
 			return;
 
-		self SetBotGoal( self.origin, 32 );
+		self botStopMove( true );
+		self bot_wait_stop_move();
 
-		self PressUseButton( 3 );
+		self thread BotPressUse( 3 );
 		wait( 3 );
 
-		self ClearBotGoal();
+		self botStopMove( false );
 	}
 
 	wait( RandomIntRange( 5, 10 ) );
@@ -3317,7 +3223,7 @@ bot_radiation_think()
 	{
 		wait( RandomIntRange( 8, 15 ) );
 
-		if ( self HasScriptGoal() )
+		if ( self HasScriptGoal() || self BotIsFrozen() )
 			continue;
 
 		if ( self IsRemoteControlling() || self.bot_lock_goal )
@@ -3605,7 +3511,7 @@ bot_dom_cap_think_loop()
 		if ( flag.useObj.curProgress == cur )
 			break;//some enemy is near us, kill him
 
-		// self thread bot_do_random_action_for_objective( flag );
+		self thread bot_do_random_action_for_objective( flag );
 	}
 
 	self BotNotifyBotEvent( "dom", "stop", "cap", flag );
@@ -3741,7 +3647,7 @@ bot_hq_loop()
 			if ( cur == gameobj.curProgress )
 				break;//no prog made, enemy must be capping
 
-			// self thread bot_do_random_action_for_objective( gameobj.trigger );
+			self thread bot_do_random_action_for_objective( gameobj.trigger );
 		}
 
 		self ClearBotGoal();
@@ -3973,11 +3879,13 @@ bot_sab_loop()
 
 		self BotNotifyBotEvent( "sab", "start", "plant" );
 
-		// self BotRandomStance();
+		self BotRandomStance();
 		self SetBotGoal( self.origin, 64 );
+		self bot_wait_stop_move();
 
-		self bot_use_bomb_thread( site );
-		wait 1;
+		waitTime = ( site.useTime / 1000 ) + 2.5;
+		self thread BotPressUse( waitTime );
+		wait waitTime;
 
 		self ClearBotGoal();
 		self.bot_lock_goal = false;
@@ -4100,13 +4008,15 @@ bot_sab_loop()
 
 		self BotNotifyBotEvent( "sab", "start", "defuse" );
 
-		// self BotRandomStance();
+		self BotRandomStance();
 		self SetBotGoal( self.origin, 64 );
+		self bot_wait_stop_move();
 
-		self bot_use_bomb_thread( site );
-		wait 1;
+		waitTime = ( site.useTime / 1000 ) + 2.5;
+		self thread BotPressUse( waitTime );
+		wait waitTime;
+
 		self ClearBotGoal();
-
 		self.bot_lock_goal = false;
 
 		self BotNotifyBotEvent( "sab", "stop", "defuse" );
@@ -4315,11 +4225,14 @@ bot_sd_defenders_loop( data )
 
 	self BotNotifyBotEvent( "sd", "start", "defuse" );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 	self SetBotGoal( self.origin, 64 );
+	self bot_wait_stop_move();
 
-	self bot_use_bomb_thread( defuse );
-	wait 1;
+	waitTime = ( defuse.useTime / 1000 ) + 2.5;
+	self thread BotPressUse( waitTime );
+	wait waitTime;
+
 	self ClearBotGoal();
 	self.bot_lock_goal = false;
 
@@ -4541,11 +4454,13 @@ bot_sd_attackers_loop( data )
 
 	self BotNotifyBotEvent( "sd", "start", "plant", plant );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 	self SetBotGoal( self.origin, 64 );
+	self bot_wait_stop_move();
 
-	self bot_use_bomb_thread( plant );
-	wait 1;
+	waitTime = ( plant.useTime / 1000 ) + 2.5;
+	self thread BotPressUse( waitTime );
+	wait waitTime;
 
 	self ClearBotGoal();
 	self.bot_lock_goal = false;
@@ -5064,11 +4979,13 @@ bot_dem_attackers_loop()
 
 	self BotNotifyBotEvent( "dem", "start", "plant", plant );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 	self SetBotGoal( self.origin, 64 );
+	self bot_wait_stop_move();
 
-	self bot_use_bomb_thread( plant );
-	wait 1;
+	waitTime = ( plant.useTime / 1000 ) + 2.5;
+	self thread BotPressUse( waitTime );
+	wait waitTime;
 
 	self ClearBotGoal();
 
@@ -5303,11 +5220,13 @@ bot_dem_defenders_loop()
 
 	self BotNotifyBotEvent( "dem", "start", "defuse", defuse );
 
-	// self BotRandomStance();
+	self BotRandomStance();
 	self SetBotGoal( self.origin, 64 );
+	self bot_wait_stop_move();
 
-	self bot_use_bomb_thread( defuse );
-	wait 1;
+	waitTime = ( defuse.useTime / 1000 ) + 2.5;
+	self thread BotPressUse( waitTime );
+	wait waitTime;
 
 	self ClearBotGoal();
 
@@ -5407,13 +5326,15 @@ watch_for_melee_override()
 	self endon( "disconnect" );
 	self endon( "death" );
 
-	self BotBuiltinClearMeleeParams();
+	// dedi doesnt have this registered
+	if ( getDvar( "aim_automelee_enabled" ) == "" )
+		setDvar( "aim_automelee_enabled", 1 );
 
 	for ( ;; )
 	{
 		threat = self getThreat();
 
-		while ( !isDefined( threat ) || ( !isPlayer( threat ) && !isAi( threat ) ) || self IsRemoteControlling() || !self HasWeapon( "knife_mp" ) || !getDvarInt( "aim_automelee_enabled" ) )
+		while ( !isDefined( threat ) || ( !isPlayer( threat ) && !isAi( threat ) ) || self BotIsFrozen() || self IsRemoteControlling() || !self HasWeapon( "knife_mp" ) || !getDvarInt( "aim_automelee_enabled" ) )
 		{
 			wait 0.05;
 			threat = self getThreat();
@@ -5421,7 +5342,7 @@ watch_for_melee_override()
 
 		thisThreat = self getThreat();
 
-		while ( isDefined( thisThreat ) && isDefined( threat ) && thisThreat == threat )
+		while ( isDefined( thisThreat ) && isDefined( threat ) && thisThreat == threat && !self BotIsFrozen() )
 		{
 			dist = distance( self.origin, threat.origin );
 
@@ -5472,8 +5393,6 @@ watch_for_override_stuff()
 	self endon( "disconnect" );
 	self endon( "death" );
 
-	self BotBuiltinClearOverrides( true );
-
 	NEAR_DIST = 80;
 	LONG_DIST = 1000;
 	SPAM_JUMP_TIME = 5000;
@@ -5498,7 +5417,7 @@ watch_for_override_stuff()
 	{
 		threat = self getThreat();
 
-		while ( !isDefined( threat ) || !isPlayer( threat ) || self IsRemoteControlling() )
+		while ( !isDefined( threat ) || !isPlayer( threat ) || self IsRemoteControlling() || self BotIsFrozen() )
 		{
 			wait 0.05;
 			threat = self getThreat();

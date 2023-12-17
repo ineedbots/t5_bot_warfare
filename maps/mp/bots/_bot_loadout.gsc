@@ -166,20 +166,6 @@ bot_give_loadout()
 		self setOffhandSecondaryClass( self.pers["bot"]["class_tacticle"] );
 	}
 
-	self thread fixSecondarySwitch( weap );
-}
-
-/*
-	Fixes the weapon on spawn for the bot
-*/
-fixSecondarySwitch( weap )
-{
-	self endon( "death" );
-	self endon( "disconnect" );
-	self switchToWeapon( weap );
-	self setSpawnWeapon( weap );
-	wait 0.05;
-	self switchToWeapon( weap );
 	self setSpawnWeapon( weap );
 }
 
