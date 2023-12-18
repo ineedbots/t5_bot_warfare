@@ -162,6 +162,7 @@ bot_on_spawn()
 		self.bot_was_follow_script_update = undefined;
 		self.bot_attacking_plane = false;
 
+		// grenade c4 watcher
 		self thread bot_spawn();
 	}
 }
