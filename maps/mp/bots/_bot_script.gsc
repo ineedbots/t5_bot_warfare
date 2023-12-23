@@ -2346,6 +2346,7 @@ bot_use_equipment_think()
 	if ( self.pers["bot"]["class_equipment"] == "" || self.pers["bot"]["class_equipment"] == "weapon_null_mp" )
 		return;
 
+	// decoys?
 	for ( ;; )
 	{
 		wait( RandomIntRange( 1, 3 ) );

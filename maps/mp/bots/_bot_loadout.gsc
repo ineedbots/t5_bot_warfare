@@ -424,7 +424,6 @@ bot_get_random_weapon( slot, rank )
 					break;
 
 				case "camera_spike":
-				case "satchel_charge":
 					if ( self.pers["bot"]["cod_points"] >= 2500 )
 						continue;
 
@@ -943,7 +942,6 @@ bot_random_attachments( weap, atts, num )
 				case "ft":
 				case "ir":
 				case "auto":
-				case "gl":
 					continue;
 			}
 
@@ -997,7 +995,6 @@ bot_random_attachments( weap, atts, num )
 				case "ft":
 				case "ir":
 				case "auto":
-				case "gl":
 					continue;
 			}
 
