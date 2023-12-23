@@ -1,20 +1,20 @@
 init()
 {
-	level.bot_builtins["printconsole"] = ::do_printconsole;
-	level.bot_builtins["botmovementoverride"] = ::do_botmovementoverride;
-	level.bot_builtins["botclearmovementoverride"] = ::do_botclearmovementoverride;
-	level.bot_builtins["botclearbuttonoverride"] = ::do_botclearbuttonoverride;
-	level.bot_builtins["botbuttonoverride"] = ::do_botbuttonoverride;
-	level.bot_builtins["botclearoverrides"] = ::do_botclearoverrides;
-	level.bot_builtins["botmantleoverride"] = ::do_botmantleoverride;
-	level.bot_builtins["botclearmantleoverride"] = ::do_botclearmantleoverride;
-	level.bot_builtins["botclearweaponoverride"] = ::do_botclearweaponoverride;
-	level.bot_builtins["botweaponoverride"] = ::do_botweaponoverride;
-	level.bot_builtins["botclearbuttonoverrides"] = ::do_botclearbuttonoverrides;
-	level.bot_builtins["botaimoverride"] = ::do_botaimoverride;
-	level.bot_builtins["botclearaimoverride"] = ::do_botclearaimoverride;
-	level.bot_builtins["botmeleeparams"] = ::do_botmeleeparams;
-	level.bot_builtins["clearbotmeleeparams"] = ::do_clearbotmeleeparams;
+	level.bot_builtins[ "printconsole" ] = ::do_printconsole;
+	level.bot_builtins[ "botmovementoverride" ] = ::do_botmovementoverride;
+	level.bot_builtins[ "botclearmovementoverride" ] = ::do_botclearmovementoverride;
+	level.bot_builtins[ "botclearbuttonoverride" ] = ::do_botclearbuttonoverride;
+	level.bot_builtins[ "botbuttonoverride" ] = ::do_botbuttonoverride;
+	level.bot_builtins[ "botclearoverrides" ] = ::do_botclearoverrides;
+	level.bot_builtins[ "botmantleoverride" ] = ::do_botmantleoverride;
+	level.bot_builtins[ "botclearmantleoverride" ] = ::do_botclearmantleoverride;
+	level.bot_builtins[ "botclearweaponoverride" ] = ::do_botclearweaponoverride;
+	level.bot_builtins[ "botweaponoverride" ] = ::do_botweaponoverride;
+	level.bot_builtins[ "botclearbuttonoverrides" ] = ::do_botclearbuttonoverrides;
+	level.bot_builtins[ "botaimoverride" ] = ::do_botaimoverride;
+	level.bot_builtins[ "botclearaimoverride" ] = ::do_botclearaimoverride;
+	level.bot_builtins[ "botmeleeparams" ] = ::do_botmeleeparams;
+	level.bot_builtins[ "clearbotmeleeparams" ] = ::do_clearbotmeleeparams;
 }
 
 do_printconsole( s )

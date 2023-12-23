@@ -29,45 +29,45 @@ init()
 		PrintLn( "FATAL: NO BUILT-INS FOR BOTS" );
 
 	if ( getDvar( "bots_main_waitForHostTime" ) == "" )
-		setDvar( "bots_main_waitForHostTime", 10.0 ); //how long to wait to wait for the host player
+		setDvar( "bots_main_waitForHostTime", 10.0 ); // how long to wait to wait for the host player
 
 	if ( getDvar( "bots_main_kickBotsAtEnd" ) == "" )
-		setDvar( "bots_main_kickBotsAtEnd", false ); //kicks the bots at game end
+		setDvar( "bots_main_kickBotsAtEnd", false ); // kicks the bots at game end
 
 	if ( getDvar( "bots_manage_add" ) == "" )
-		setDvar( "bots_manage_add", 0 ); //amount of bots to add to the game
+		setDvar( "bots_manage_add", 0 ); // amount of bots to add to the game
 
 	if ( getDvar( "bots_manage_fill" ) == "" )
-		setDvar( "bots_manage_fill", 0 ); //amount of bots to maintain
+		setDvar( "bots_manage_fill", 0 ); // amount of bots to maintain
 
 	if ( getDvar( "bots_manage_fill_spec" ) == "" )
-		setDvar( "bots_manage_fill_spec", true ); //to count for fill if player is on spec team
+		setDvar( "bots_manage_fill_spec", true ); // to count for fill if player is on spec team
 
 	if ( getDvar( "bots_manage_fill_mode" ) == "" )
-		setDvar( "bots_manage_fill_mode", 0 ); //fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
+		setDvar( "bots_manage_fill_mode", 0 ); // fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
 
 	if ( getDvar( "bots_manage_fill_kick" ) == "" )
-		setDvar( "bots_manage_fill_kick", false ); //kick bots if too many
+		setDvar( "bots_manage_fill_kick", false ); // kick bots if too many
 
 	if ( getDvar( "bots_skill" ) == "" ) // alias for bot_difficulty
 		setDvar( "bots_skill", "" );
 
 	if ( getDvar( "bots_team" ) == "" )
-		setDvar( "bots_team", "autoassign" ); //which team for bots to join
+		setDvar( "bots_team", "autoassign" ); // which team for bots to join
 
 	if ( getDvar( "bots_team_amount" ) == "" )
-		setDvar( "bots_team_amount", 0 ); //amount of bots on axis team
+		setDvar( "bots_team_amount", 0 ); // amount of bots on axis team
 
 	if ( getDvar( "bots_team_force" ) == "" )
-		setDvar( "bots_team_force", false ); //force bots on team
+		setDvar( "bots_team_force", false ); // force bots on team
 
 	if ( getDvar( "bots_team_mode" ) == "" )
-		setDvar( "bots_team_mode", 0 ); //counts just bots when 1
+		setDvar( "bots_team_mode", 0 ); // counts just bots when 1
 
-	if ( getDvar( "bots_loadout_reasonable" ) == "" ) //filter out the bad 'guns' and perks
+	if ( getDvar( "bots_loadout_reasonable" ) == "" ) // filter out the bad 'guns' and perks
 		setDvar( "bots_loadout_reasonable", false );
 
-	if ( getDvar( "bots_loadout_allow_op" ) == "" ) //allows jug, marty and laststand
+	if ( getDvar( "bots_loadout_allow_op" ) == "" ) // allows jug, marty and laststand
 		setDvar( "bots_loadout_allow_op", true );
 
 	if ( getDvar( "bots_loadout_rank" ) == "" ) // what rank the bots should be around, -1 is around the players, 0 is all random
@@ -79,45 +79,45 @@ init()
 	if ( getDvar( "bots_loadout_prestige" ) == "" ) // what pretige the bots will be, -1 is the players, -2 is random
 		setDvar( "bots_loadout_prestige", -1 );
 
-	if ( getDvar( "bots_play_target_other" ) == "" ) //bot target non play ents (vehicles)
+	if ( getDvar( "bots_play_target_other" ) == "" ) // bot target non play ents (vehicles)
 		setDvar( "bots_play_target_other", true );
 
-	if ( getDvar( "bots_play_killstreak" ) == "" ) //bot use killstreaks
+	if ( getDvar( "bots_play_killstreak" ) == "" ) // bot use killstreaks
 		setDvar( "bots_play_killstreak", true );
 
-	if ( getDvar( "bots_play_nade" ) == "" ) //bots grenade
+	if ( getDvar( "bots_play_nade" ) == "" ) // bots grenade
 		setDvar( "bots_play_nade", true );
 
-	if ( getDvar( "bots_play_knife" ) == "" ) //bots knife
+	if ( getDvar( "bots_play_knife" ) == "" ) // bots knife
 		setDvar( "bots_play_knife", true );
 
-	if ( getDvar( "bots_play_fire" ) == "" ) //bots fire
+	if ( getDvar( "bots_play_fire" ) == "" ) // bots fire
 		setDvar( "bots_play_fire", true );
 
-	if ( getDvar( "bots_play_move" ) == "" ) //bots move
+	if ( getDvar( "bots_play_move" ) == "" ) // bots move
 		setDvar( "bots_play_move", true );
 
-	if ( getDvar( "bots_play_take_carepackages" ) == "" ) //bots take carepackages
+	if ( getDvar( "bots_play_take_carepackages" ) == "" ) // bots take carepackages
 		setDvar( "bots_play_take_carepackages", true );
 
-	if ( getDvar( "bots_play_obj" ) == "" ) //bots play the obj
+	if ( getDvar( "bots_play_obj" ) == "" ) // bots play the obj
 		setDvar( "bots_play_obj", true );
 
-	if ( getDvar( "bots_play_camp" ) == "" ) //bots camp and follow
+	if ( getDvar( "bots_play_camp" ) == "" ) // bots camp and follow
 		setDvar( "bots_play_camp", true );
 
 	if ( getDvar( "bots_play_aim" ) == "" )
 		setDvar( "bots_play_aim", true );
 
-	if ( getDvar( "bots_play_jumpdrop" ) == "" ) //bots jump and dropshot
+	if ( getDvar( "bots_play_jumpdrop" ) == "" ) // bots jump and dropshot
 		setDvar( "bots_play_jumpdrop", true );
 
 	level.bots = [];
 	level.bot_decoys = [];
 	level.bot_planes = [];
 
-	if ( !isDefined( game["botWarfare"] ) )
-		game["botWarfare"] = true;
+	if ( !isDefined( game[ "botWarfare" ] ) )
+		game[ "botWarfare" ] = true;
 
 	thread fixGamemodes();
 	thread onPlayerConnect();
@@ -164,7 +164,7 @@ handleBots()
 
 	for ( i = 0; i < bots.size; i++ )
 	{
-		kick( bots[i] getEntityNumber() );
+		kick( bots[ i ] getEntityNumber() );
 	}
 }
 
@@ -190,7 +190,7 @@ connected()
 
 	self thread maps\mp\bots\_bot_script::connected();
 
-	level.bots[level.bots.size] = self;
+	level.bots[ level.bots.size ] = self;
 	self thread onDisconnect();
 
 	level notify( "bot_connected", self );
@@ -477,23 +477,23 @@ teamBots_loop()
 
 	for ( i = 0; i < playercount; i++ )
 	{
-		player = level.players[i];
+		player = level.players[ i ];
 
-		if ( !isDefined( player.pers["team"] ) )
+		if ( !isDefined( player.pers[ "team" ] ) )
 			continue;
 
 		if ( player is_bot() )
 		{
-			if ( player.pers["team"] == "allies" )
+			if ( player.pers[ "team" ] == "allies" )
 				alliesbots++;
-			else if ( player.pers["team"] == "axis" )
+			else if ( player.pers[ "team" ] == "axis" )
 				axisbots++;
 		}
 		else
 		{
-			if ( player.pers["team"] == "allies" )
+			if ( player.pers[ "team" ] == "allies" )
 				alliesplayers++;
-			else if ( player.pers["team"] == "axis" )
+			else if ( player.pers[ "team" ] == "axis" )
 				axisplayers++;
 		}
 	}
@@ -528,23 +528,23 @@ teamBots_loop()
 
 				for ( i = 0; i < playercount; i++ )
 				{
-					player = level.players[i];
+					player = level.players[ i ];
 
-					if ( !isDefined( player.pers["team"] ) )
+					if ( !isDefined( player.pers[ "team" ] ) )
 						continue;
 
 					if ( !player is_bot() )
 						continue;
 
-					if ( player.pers["team"] == toTeam )
+					if ( player.pers[ "team" ] == toTeam )
 						continue;
 
 					if ( toTeam == "allies" )
-						player thread [[level.allies]]();
+						player thread [[ level.allies ]]();
 					else if ( toTeam == "axis" )
-						player thread [[level.axis]]();
+						player thread [[ level.axis ]]();
 					else
-						player thread [[level.spectator]]();
+						player thread [[ level.spectator ]]();
 
 					break;
 				}
@@ -557,19 +557,19 @@ teamBots_loop()
 
 		for ( i = 0; i < playercount; i++ )
 		{
-			player = level.players[i];
+			player = level.players[ i ];
 
-			if ( !isDefined( player.pers["team"] ) )
+			if ( !isDefined( player.pers[ "team" ] ) )
 				continue;
 
 			if ( !player is_bot() )
 				continue;
 
-			if ( player.pers["team"] == "axis" )
+			if ( player.pers[ "team" ] == "axis" )
 			{
 				if ( axis > teamAmount )
 				{
-					player thread [[level.allies]]();
+					player thread [[ level.allies ]]();
 					break;
 				}
 			}
@@ -577,12 +577,12 @@ teamBots_loop()
 			{
 				if ( axis < teamAmount )
 				{
-					player thread [[level.axis]]();
+					player thread [[ level.axis ]]();
 					break;
 				}
-				else if ( player.pers["team"] != "allies" )
+				else if ( player.pers[ "team" ] != "allies" )
 				{
-					player thread [[level.allies]]();
+					player thread [[ level.allies ]]();
 					break;
 				}
 			}
@@ -638,14 +638,14 @@ addBots_loop()
 
 	for ( i = 0; i < playercount; i++ )
 	{
-		player = level.players[i];
+		player = level.players[ i ];
 
 		if ( player isdemoclient() )
 			continue;
 
 		if ( player is_bot() )
 			bots++;
-		else if ( !isDefined( player.pers["team"] ) || ( player.pers["team"] != "axis" && player.pers["team"] != "allies" ) )
+		else if ( !isDefined( player.pers[ "team" ] ) || ( player.pers[ "team" ] != "axis" && player.pers[ "team" ] != "allies" ) )
 			spec++;
 		else
 			players++;
@@ -660,17 +660,17 @@ addBots_loop()
 
 		for ( i = 0; i < playercount; i++ )
 		{
-			player = level.players[i];
+			player = level.players[ i ];
 
 			if ( player is_bot() )
 				continue;
 
-			if ( !isDefined( player.pers["team"] ) )
+			if ( !isDefined( player.pers[ "team" ] ) )
 				continue;
 
-			if ( player.pers["team"] == "axis" )
+			if ( player.pers[ "team" ] == "axis" )
 				axisplayers++;
-			else if ( player.pers["team"] == "allies" )
+			else if ( player.pers[ "team" ] == "allies" )
 				alliesplayers++;
 		}
 
@@ -742,8 +742,8 @@ add_bot()
 
 	if ( isdefined( bot ) )
 	{
-		bot.pers["isBot"] = true;
-		bot.pers["isBotWarfare"] = true;
+		bot.pers[ "isBot" ] = true;
+		bot.pers[ "isBotWarfare" ] = true;
 		bot thread maps\mp\bots\_bot_script::added();
 	}
 }
@@ -850,21 +850,21 @@ watch_decoy( g )
 {
 	g.team = self.team;
 
-	level.bot_decoys[level.bot_decoys.size] = g;
+	level.bot_decoys[ level.bot_decoys.size ] = g;
 
 	g waittill( "death" );
 
 	for ( entry = 0; entry < level.bot_decoys.size; entry++ )
 	{
-		if ( level.bot_decoys[entry] == g )
+		if ( level.bot_decoys[ entry ] == g )
 		{
 			while ( entry < level.bot_decoys.size - 1 )
 			{
-				level.bot_decoys[entry] = level.bot_decoys[entry + 1];
+				level.bot_decoys[ entry ] = level.bot_decoys[ entry + 1 ];
 				entry++;
 			}
 
-			level.bot_decoys[entry] = undefined;
+			level.bot_decoys[ entry ] = undefined;
 			break;
 		}
 	}
@@ -968,7 +968,7 @@ bot_watch_planes_loop()
 
 	for ( i = 0; i < ents.size; i++ )
 	{
-		ent = ents[i];
+		ent = ents[ i ];
 
 		if ( isDefined( ent.bot_plane ) )
 			continue;
@@ -1000,21 +1000,21 @@ watch_plane( ent )
 {
 	ent.bot_plane = true;
 
-	level.bot_planes[level.bot_planes.size] = ent;
+	level.bot_planes[ level.bot_planes.size ] = ent;
 
 	ent waittill_any( "death", "delete", "leaving" );
 
 	for ( entry = 0; entry < level.bot_planes.size; entry++ )
 	{
-		if ( level.bot_planes[entry] == ent )
+		if ( level.bot_planes[ entry ] == ent )
 		{
 			while ( entry < level.bot_planes.size - 1 )
 			{
-				level.bot_planes[entry] = level.bot_planes[entry + 1];
+				level.bot_planes[ entry ] = level.bot_planes[ entry + 1 ];
 				entry++;
 			}
 
-			level.bot_planes[entry] = undefined;
+			level.bot_planes[ entry ] = undefined;
 			break;
 		}
 	}
@@ -1040,7 +1040,7 @@ fixGamemodes()
 			level.isKillBoosting = ::bot_killBoost;
 
 			for ( i = 0; i < level.bombZones.size; i++ )
-				level.bombZones[i].onUse = ::bot_onUsePlantObjectFix;
+				level.bombZones[ i ].onUse = ::bot_onUsePlantObjectFix;
 
 			break;
 		}

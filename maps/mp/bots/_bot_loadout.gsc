@@ -19,7 +19,7 @@ bot_give_loadout()
 
 	self clearPerks();
 
-	self SetPlayerRenderOptions( int( self.pers["bot"]["class_render_opts"] ) );
+	self SetPlayerRenderOptions( int( self.pers[ "bot" ][ "class_render_opts" ] ) );
 
 	if ( !isDefined( self.bot ) )
 		self.bot = [];
@@ -28,18 +28,18 @@ bot_give_loadout()
 	self.bot[ "specialty2" ] = "specialty_null";
 	self.bot[ "specialty3" ] = "specialty_null";
 
-	if ( self.pers["bot"]["class_perk1"] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk1" ] != "" && GetDvarInt( #"scr_game_perks" ) )
 	{
-		self.bot[ "specialty1" ] = self.pers["bot"]["class_perk1"];
+		self.bot[ "specialty1" ] = self.pers[ "bot" ][ "class_perk1" ];
 
-		id = bot_perk_from_reference_full( self.pers["bot"]["class_perk1"] );
-		tokens = strtok( id["reference"], "|" );
+		id = bot_perk_from_reference_full( self.pers[ "bot" ][ "class_perk1" ] );
+		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
-			self setPerk( tokens[i] );
+			self setPerk( tokens[ i ] );
 	}
 
-	switch ( self.pers["bot"]["class_perk1"] )
+	switch ( self.pers[ "bot" ][ "class_perk1" ] )
 	{
 		case "perk_ghost":
 		case "perk_ghost_pro":
@@ -74,26 +74,26 @@ bot_give_loadout()
 
 	self maps\mp\gametypes\_class::initStaticWeaponsTime();
 
-	if ( self.pers["bot"]["class_perk2"] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk2" ] != "" && GetDvarInt( #"scr_game_perks" ) )
 	{
-		self.bot[ "specialty2" ] = self.pers["bot"]["class_perk2"];
+		self.bot[ "specialty2" ] = self.pers[ "bot" ][ "class_perk2" ];
 
-		id = bot_perk_from_reference_full( self.pers["bot"]["class_perk2"] );
-		tokens = strtok( id["reference"], "|" );
+		id = bot_perk_from_reference_full( self.pers[ "bot" ][ "class_perk2" ] );
+		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
-			self setPerk( tokens[i] );
+			self setPerk( tokens[ i ] );
 	}
 
-	if ( self.pers["bot"]["class_perk3"] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk3" ] != "" && GetDvarInt( #"scr_game_perks" ) )
 	{
-		self.bot[ "specialty3" ] = self.pers["bot"]["class_perk3"];
+		self.bot[ "specialty3" ] = self.pers[ "bot" ][ "class_perk3" ];
 
-		id = bot_perk_from_reference_full( self.pers["bot"]["class_perk3"] );
-		tokens = strtok( id["reference"], "|" );
+		id = bot_perk_from_reference_full( self.pers[ "bot" ][ "class_perk3" ] );
+		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
-			self setPerk( tokens[i] );
+			self setPerk( tokens[ i ] );
 	}
 
 
@@ -102,68 +102,68 @@ bot_give_loadout()
 	if ( getDvarInt( "bots_play_knife" ) )
 		self GiveWeapon( "knife_mp" );
 
-	weap = self.pers["bot"]["class_primary"];
+	weap = self.pers[ "bot" ][ "class_primary" ];
 
 	if ( weap == "" )
 		weap = "ak47_mp";
 
-	primaryTokens = strtok( self.pers["bot"]["class_primary"], "_" );
-	self.pers["primaryWeapon"] = primaryTokens[0];
+	primaryTokens = strtok( self.pers[ "bot" ][ "class_primary" ], "_" );
+	self.pers[ "primaryWeapon" ] = primaryTokens[ 0 ];
 
-	weap = self.pers["bot"]["class_primary"];
+	weap = self.pers[ "bot" ][ "class_primary" ];
 
 	if ( GetDvarInt( #"scr_disable_attachments" ) )
-		weap = self.pers["primaryWeapon"] + "_mp";
+		weap = self.pers[ "primaryWeapon" ] + "_mp";
 
-	self GiveWeapon( weap, 0, int( self.pers["bot"]["class_primary_opts"] ) );
+	self GiveWeapon( weap, 0, int( self.pers[ "bot" ][ "class_primary_opts" ] ) );
 
 	if ( self hasPerk( "specialty_extraammo" ) )
 		self giveMaxAmmo( weap );
 
-	if ( self.pers["bot"]["class_secondary"] != "" )
+	if ( self.pers[ "bot" ][ "class_secondary" ] != "" )
 	{
-		self GiveWeapon( self.pers["bot"]["class_secondary"], 0, int( self.pers["bot"]["class_secondary_opts"] ) );
+		self GiveWeapon( self.pers[ "bot" ][ "class_secondary" ], 0, int( self.pers[ "bot" ][ "class_secondary_opts" ] ) );
 
 		if ( self hasPerk( "specialty_extraammo" ) )
-			self giveMaxAmmo( self.pers["bot"]["class_secondary"] );
+			self giveMaxAmmo( self.pers[ "bot" ][ "class_secondary" ] );
 	}
 
 	self SetActionSlot( 3, "altMode" );
 	self SetActionSlot( 4, "" );
 
-	if ( self.pers["bot"]["class_equipment"] != "" && self.pers["bot"]["class_equipment"] != "weapon_null_mp" && !GetDvarInt( #"scr_disable_equipment" ) )
+	if ( self.pers[ "bot" ][ "class_equipment" ] != "" && self.pers[ "bot" ][ "class_equipment" ] != "weapon_null_mp" && !GetDvarInt( #"scr_disable_equipment" ) )
 	{
-		self GiveWeapon( self.pers["bot"]["class_equipment"] );
+		self GiveWeapon( self.pers[ "bot" ][ "class_equipment" ] );
 
-		self maps\mp\gametypes\_class::setWeaponAmmoOverall( self.pers["bot"]["class_equipment"], 1 );
+		self maps\mp\gametypes\_class::setWeaponAmmoOverall( self.pers[ "bot" ][ "class_equipment" ], 1 );
 
-		self SetActionSlot( 1, "weapon", self.pers["bot"]["class_equipment"] );
+		self SetActionSlot( 1, "weapon", self.pers[ "bot" ][ "class_equipment" ] );
 	}
 
-	if ( self.pers["bot"]["class_lethal"] != "" )
+	if ( self.pers[ "bot" ][ "class_lethal" ] != "" )
 	{
-		self GiveWeapon( self.pers["bot"]["class_lethal"] );
+		self GiveWeapon( self.pers[ "bot" ][ "class_lethal" ] );
 
 		if ( self hasPerk( "specialty_twogrenades" ) )
-			self SetWeaponAmmoClip( self.pers["bot"]["class_lethal"], 2 );
+			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 2 );
 		else
-			self SetWeaponAmmoClip( self.pers["bot"]["class_lethal"], 1 );
+			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 1 );
 
-		self SwitchToOffhand( self.pers["bot"]["class_lethal"] );
+		self SwitchToOffhand( self.pers[ "bot" ][ "class_lethal" ] );
 	}
 
-	if ( self.pers["bot"]["class_tacticle"] != "" )
+	if ( self.pers[ "bot" ][ "class_tacticle" ] != "" )
 	{
-		self giveWeapon( self.pers["bot"]["class_tacticle"] );
+		self giveWeapon( self.pers[ "bot" ][ "class_tacticle" ] );
 
-		if ( self.pers["bot"]["class_tacticle"] == "willy_pete_mp" )
-			self SetWeaponAmmoClip( self.pers["bot"]["class_tacticle"], 1 );
+		if ( self.pers[ "bot" ][ "class_tacticle" ] == "willy_pete_mp" )
+			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 1 );
 		else if ( self hasPerk( "specialty_twogrenades" ) )
-			self SetWeaponAmmoClip( self.pers["bot"]["class_tacticle"], 3 );
+			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 3 );
 		else
-			self SetWeaponAmmoClip( self.pers["bot"]["class_tacticle"], 2 );
+			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 2 );
 
-		self setOffhandSecondaryClass( self.pers["bot"]["class_tacticle"] );
+		self setOffhandSecondaryClass( self.pers[ "bot" ][ "class_tacticle" ] );
 	}
 
 	self setSpawnWeapon( weap );
@@ -181,7 +181,7 @@ bot_get_prestige()
 	{
 		for ( i = 0; i < level.players.size; i++ )
 		{
-			player = level.players[i];
+			player = level.players[ i ];
 
 			if ( !isDefined( player.team ) )
 				continue;
@@ -202,7 +202,7 @@ bot_get_prestige()
 		p = p_dvar;
 	}
 
-	self.pers["bot"]["prestige"] = p;
+	self.pers[ "bot" ][ "prestige" ] = p;
 }
 
 /*
@@ -214,13 +214,13 @@ bot_rank()
 
 	wait 0.05;
 
-	self.pers["rankxp"] = self.pers["bot"]["rankxp"];
-	rankId = self maps\mp\gametypes\_rank::getRankForXp( self.pers["bot"]["rankxp"] );
-	prestige = self.pers["bot"]["prestige"];
+	self.pers[ "rankxp" ] = self.pers[ "bot" ][ "rankxp" ];
+	rankId = self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] );
+	prestige = self.pers[ "bot" ][ "prestige" ];
 
-	self.pers["rank"] = rankId;
-	self.pers["prestige"] = prestige;
-	self.pers["plevel"] = prestige;
+	self.pers[ "rank" ] = rankId;
+	self.pers[ "prestige" ] = prestige;
+	self.pers[ "plevel" ] = prestige;
 	self setRank( rankId, prestige );
 
 	self maps\mp\gametypes\_rank::syncxpstat();
@@ -228,7 +228,7 @@ bot_rank()
 	if ( !level.gameEnded )
 		level waittill( "game_ended" );
 
-	self.pers["bot"]["rankxp"] = self.pers["rankxp"];
+	self.pers[ "bot" ][ "rankxp" ] = self.pers[ "rankxp" ];
 }
 
 /*
@@ -236,24 +236,24 @@ bot_rank()
 */
 bot_set_class()
 {
-	self.pers["bot"]["class_render_opts"] = 0;
+	self.pers[ "bot" ][ "class_render_opts" ] = 0;
 
-	self.pers["bot"]["class_primary"] = "";
-	self.pers["bot"]["class_primary_opts"] = 0;
-	self.pers["bot"]["class_secondary"] = "";
-	self.pers["bot"]["class_secondary_opts"] = 0;
+	self.pers[ "bot" ][ "class_primary" ] = "";
+	self.pers[ "bot" ][ "class_primary_opts" ] = 0;
+	self.pers[ "bot" ][ "class_secondary" ] = "";
+	self.pers[ "bot" ][ "class_secondary_opts" ] = 0;
 
-	self.pers["bot"]["class_lethal"] = "";
-	self.pers["bot"]["class_tacticle"] = "";
-	self.pers["bot"]["class_equipment"] = "";
+	self.pers[ "bot" ][ "class_lethal" ] = "";
+	self.pers[ "bot" ][ "class_tacticle" ] = "";
+	self.pers[ "bot" ][ "class_equipment" ] = "";
 
-	self.pers["bot"]["class_perk1"] = "";
-	self.pers["bot"]["class_perk2"] = "";
-	self.pers["bot"]["class_perk3"] = "";
+	self.pers[ "bot" ][ "class_perk1" ] = "";
+	self.pers[ "bot" ][ "class_perk2" ] = "";
+	self.pers[ "bot" ][ "class_perk3" ] = "";
 
-	self.pers["bot"][ "cod_points" ] = self.pers["bot"][ "cod_points_org" ];//refund prev payments for class
+	self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points_org" ]; // refund prev payments for class
 
-	rank = self maps\mp\gametypes\_rank::getRankForXp( self.pers["bot"]["rankxp"] );
+	rank = self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] );
 
 	if ( !level.onlineGame )
 	{
@@ -294,14 +294,14 @@ bot_set_class()
 			}
 		}
 
-		self.pers["bot"]["class_primary"] = level.classWeapons["axis"][_class][0];
-		self.pers["bot"]["class_secondary"] = level.classSidearm["axis"][_class];
-		self.pers["bot"]["class_perk1"] = level.default_perkIcon[_class][ 0 ];
-		self.pers["bot"]["class_perk2"] = level.default_perkIcon[_class][ 1 ];
-		self.pers["bot"]["class_perk3"] = level.default_perkIcon[_class][ 2 ];
-		self.pers["bot"]["class_equipment"] = level.default_equipment[ _class ][ "type" ];
-		self.pers["bot"]["class_lethal"] = level.classGrenades[_class]["primary"]["type"];
-		self.pers["bot"]["class_tacticle"] = level.classGrenades[_class]["secondary"]["type"];
+		self.pers[ "bot" ][ "class_primary" ] = level.classWeapons[ "axis" ][ _class ][ 0 ];
+		self.pers[ "bot" ][ "class_secondary" ] = level.classSidearm[ "axis" ][ _class ];
+		self.pers[ "bot" ][ "class_perk1" ] = level.default_perkIcon[ _class ][ 0 ];
+		self.pers[ "bot" ][ "class_perk2" ] = level.default_perkIcon[ _class ][ 1 ];
+		self.pers[ "bot" ][ "class_perk3" ] = level.default_perkIcon[ _class ][ 2 ];
+		self.pers[ "bot" ][ "class_equipment" ] = level.default_equipment[ _class ][ "type" ];
+		self.pers[ "bot" ][ "class_lethal" ] = level.classGrenades[ _class ][ "primary" ][ "type" ];
+		self.pers[ "bot" ][ "class_tacticle" ] = level.classGrenades[ _class ][ "secondary" ][ "type" ];
 	}
 	else
 	{
@@ -330,7 +330,7 @@ bot_set_class()
 		else
 			emblem = 0;
 
-		if ( isSubStr( self.pers["bot"]["class_primary"], "_elbit_" ) || isSubStr( self.pers["bot"]["class_primary"], "_reflex_" ) )
+		if ( isSubStr( self.pers[ "bot" ][ "class_primary" ], "_elbit_" ) || isSubStr( self.pers[ "bot" ][ "class_primary" ], "_reflex_" ) )
 		{
 			if ( rank >= 24 )
 				reticle = self bot_random_reticle();
@@ -348,18 +348,18 @@ bot_set_class()
 			reticle = 0;
 		}
 
-		self.pers["bot"]["class_primary_opts"] = self calcWeaponOptions( camo, lens, reticle, tag, emblem );
+		self.pers[ "bot" ][ "class_primary_opts" ] = self calcWeaponOptions( camo, lens, reticle, tag, emblem );
 
 		if ( rank >= 30 )
 			face = self bot_random_face();
 		else
 			face = 0;
 
-		self.pers["bot"]["class_render_opts"] = self calcPlayerOptions( face, 0 );
+		self.pers[ "bot" ][ "class_render_opts" ] = self calcPlayerOptions( face, 0 );
 	}
 
-	if ( !GetDvarInt( "bots_loadout_allow_op" ) && isSubStr( self.pers["bot"]["class_perk3"], "perk_second_chance" ) )
-		self.pers["bot"]["class_perk3"] = "";
+	if ( !GetDvarInt( "bots_loadout_allow_op" ) && isSubStr( self.pers[ "bot" ][ "class_perk3" ], "perk_second_chance" ) )
+		self.pers[ "bot" ][ "class_perk3" ] = "";
 }
 
 /*
@@ -378,7 +378,7 @@ bot_get_random_weapon( slot, rank )
 
 		for ( i = 0; i < keys.size; i++ )
 		{
-			key = keys[i];
+			key = keys[ i ];
 			id = level.tbl_weaponIDs[ key ];
 
 			if ( id[ "reference" ] == "weapon_null" )
@@ -400,7 +400,7 @@ bot_get_random_weapon( slot, rank )
 	reason = GetDvarInt( "bots_loadout_reasonable" );
 	diff = self GetBotDiffNum();
 
-	if ( slot == "equipment" && self.pers["bot"]["cod_points"] < 2000 )
+	if ( slot == "equipment" && self.pers[ "bot" ][ "cod_points" ] < 2000 )
 		return;
 
 	for ( ;; )
@@ -418,13 +418,13 @@ bot_get_random_weapon( slot, rank )
 			switch ( id[ "reference" ] )
 			{
 				case "willy_pete":
-					if ( self.pers["bot"]["cod_points"] >= 1500 )
+					if ( self.pers[ "bot" ][ "cod_points" ] >= 1500 )
 						continue;
 
 					break;
 
 				case "camera_spike":
-					if ( self.pers["bot"]["cod_points"] >= 2500 )
+					if ( self.pers[ "bot" ][ "cod_points" ] >= 2500 )
 						continue;
 
 					break;
@@ -482,14 +482,14 @@ bot_get_random_weapon( slot, rank )
 
 		cost = bot_weapon_cost( id );
 
-		if ( cost > 0 && self.pers["bot"]["cod_points"] < cost )
+		if ( cost > 0 && self.pers[ "bot" ][ "cod_points" ] < cost )
 			continue;
 
-		self.pers["bot"]["cod_points"] = self.pers["bot"]["cod_points"] - cost;
+		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
 
 		maxAttachs = 1;
 
-		if ( isSubStr( self.pers["bot"]["class_perk2"], "perk_professional" ) && slot == "primary" )
+		if ( isSubStr( self.pers[ "bot" ][ "class_perk2" ], "perk_professional" ) && slot == "primary" )
 			maxAttachs = 2;
 
 		if ( RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
@@ -503,23 +503,23 @@ bot_get_random_weapon( slot, rank )
 		switch ( slot )
 		{
 			case "equipment":
-				self.pers["bot"]["class_equipment"] = weap;
+				self.pers[ "bot" ][ "class_equipment" ] = weap;
 				break;
 
 			case "primary":
-				self.pers["bot"]["class_primary"] = weap;
+				self.pers[ "bot" ][ "class_primary" ] = weap;
 				break;
 
 			case "secondary":
-				self.pers["bot"]["class_secondary"] = weap;
+				self.pers[ "bot" ][ "class_secondary" ] = weap;
 				break;
 
 			case "primarygrenade":
-				self.pers["bot"]["class_lethal"] = weap;
+				self.pers[ "bot" ][ "class_lethal" ] = weap;
 				break;
 
 			case "specialgrenade":
-				self.pers["bot"]["class_tacticle"] = weap;
+				self.pers[ "bot" ][ "class_tacticle" ] = weap;
 				break;
 		}
 
@@ -536,7 +536,7 @@ bot_get_random_perk( slot, rank )
 
 	for ( ;; )
 	{
-		id = PickRandom( level.allowedPerks[0] );
+		id = PickRandom( level.allowedPerks[ 0 ] );
 
 		if ( !isDefined( id ) )
 			return;
@@ -554,7 +554,7 @@ bot_get_random_perk( slot, rank )
 
 		cost = Int( id[ "cost" ] );
 
-		if ( cost > 0 && cost > self.pers["bot"][ "cod_points" ] )
+		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
 			continue;
 
 		if ( reason )
@@ -563,18 +563,18 @@ bot_get_random_perk( slot, rank )
 				continue;
 		}
 
-		self.pers["bot"][ "cod_points" ] = self.pers["bot"][ "cod_points" ] - cost;
-		self.pers["bot"]["class_perk" + slot] = id[ "reference_full" ];
+		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
+		self.pers[ "bot" ][ "class_perk" + slot ] = id[ "reference_full" ];
 		break;
 	}
 
-	id = bot_perk_from_reference_full( self.pers["bot"]["class_perk" + slot] + "_pro" );
+	id = bot_perk_from_reference_full( self.pers[ "bot" ][ "class_perk" + slot ] + "_pro" );
 	cost = Int( id[ "cost" ] );
 
-	if ( Int( cost ) <= self.pers["bot"][ "cod_points" ] && RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
+	if ( Int( cost ) <= self.pers[ "bot" ][ "cod_points" ] && RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
 	{
-		self.pers["bot"][ "cod_points" ] = self.pers["bot"][ "cod_points" ] - cost;
-		self.pers["bot"]["class_perk" + slot] = id[ "reference_full" ];
+		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
+		self.pers[ "bot" ][ "class_perk" + slot ] = id[ "reference_full" ];
 	}
 }
 
@@ -592,58 +592,58 @@ bot_random_face()
 
 		if ( face >= 17 )
 		{
-			if ( face >= 21 ) //pres faces
+			if ( face >= 21 ) // pres faces
 			{
-				if ( self.pers["bot"][ "cod_points" ] < 500 )
+				if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
 					continue;
 
-				self.pers["bot"][ "cod_points" ] -= 500;
+				self.pers[ "bot" ][ "cod_points" ] -= 500;
 
 				return face;
 			}
 
 			if ( face == 17 )
 			{
-				if ( self.pers["bot"][ "cod_points" ] < 1500 )
+				if ( self.pers[ "bot" ][ "cod_points" ] < 1500 )
 					continue;
 
-				self.pers["bot"][ "cod_points" ] -= 1500;
+				self.pers[ "bot" ][ "cod_points" ] -= 1500;
 
 				return face;
 			}
 
 			if ( face == 18 )
 			{
-				if ( self.pers["bot"][ "cod_points" ] < 3500 )
+				if ( self.pers[ "bot" ][ "cod_points" ] < 3500 )
 					continue;
 
-				self.pers["bot"][ "cod_points" ] -= 3500;
+				self.pers[ "bot" ][ "cod_points" ] -= 3500;
 
 				return face;
 			}
 
 			if ( face == 19 )
 			{
-				if ( self.pers["bot"][ "cod_points" ] < 5500 )
+				if ( self.pers[ "bot" ][ "cod_points" ] < 5500 )
 					continue;
 
-				self.pers["bot"][ "cod_points" ] -= 5500;
+				self.pers[ "bot" ][ "cod_points" ] -= 5500;
 
 				return face;
 			}
 
-			if ( self.pers["bot"][ "cod_points" ] < 7500 )
+			if ( self.pers[ "bot" ][ "cod_points" ] < 7500 )
 				continue;
 
-			self.pers["bot"][ "cod_points" ] -= 7500;
+			self.pers[ "bot" ][ "cod_points" ] -= 7500;
 
 			return face;
 		}
 
-		if ( self.pers["bot"][ "cod_points" ] < 500 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 500;
+		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
 		return face;
 	}
@@ -661,10 +661,10 @@ bot_random_lens()
 		if ( lens == 0 )
 			return lens;
 
-		if ( self.pers["bot"][ "cod_points" ] < 500 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 500;
+		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
 		return lens;
 	}
@@ -682,10 +682,10 @@ bot_random_reticle()
 		if ( ret == 0 )
 			return ret;
 
-		if ( self.pers["bot"][ "cod_points" ] < 500 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 500;
+		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
 		return ret;
 	}
@@ -703,10 +703,10 @@ bot_random_tag()
 		if ( tag == 0 )
 			return tag;
 
-		if ( self.pers["bot"][ "cod_points" ] < 1000 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 1000 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 1000;
+		self.pers[ "bot" ][ "cod_points" ] -= 1000;
 
 		return tag;
 	}
@@ -724,10 +724,10 @@ bot_random_emblem()
 		if ( emblem == 0 )
 			return emblem;
 
-		if ( self.pers["bot"][ "cod_points" ] < 1000 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 1000 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 1000;
+		self.pers[ "bot" ][ "cod_points" ] -= 1000;
 
 		return emblem;
 	}
@@ -745,20 +745,20 @@ bot_random_camo()
 		if ( camo == 0 )
 			return camo;
 
-		if ( camo == 15 ) //gold
+		if ( camo == 15 ) // gold
 		{
-			if ( self.pers["bot"][ "cod_points" ] < 50000 )
+			if ( self.pers[ "bot" ][ "cod_points" ] < 50000 )
 				continue;
 
-			self.pers["bot"][ "cod_points" ] -= 50000;
+			self.pers[ "bot" ][ "cod_points" ] -= 50000;
 
 			return camo;
 		}
 
-		if ( self.pers["bot"][ "cod_points" ] < 250 )
+		if ( self.pers[ "bot" ][ "cod_points" ] < 250 )
 			continue;
 
-		self.pers["bot"][ "cod_points" ] -= 250;
+		self.pers[ "bot" ][ "cod_points" ] -= 250;
 
 		return camo;
 	}
@@ -781,13 +781,13 @@ bot_weapon_cost( id )
 
 		for ( i = 0; i < level.bot_weapon_ids[ slot ].size; i++ )
 		{
-			if ( id["reference"] == level.bot_weapon_ids[ slot ][i]["reference"] )
+			if ( id[ "reference" ] == level.bot_weapon_ids[ slot ][ i ][ "reference" ] )
 				continue;
 
-			if ( id["group"] != level.bot_weapon_ids[ slot ][i]["group"] )
+			if ( id[ "group" ] != level.bot_weapon_ids[ slot ][ i ][ "group" ] )
 				continue;
 
-			cost += int( level.bot_weapon_ids[ slot ][i]["cost"] );
+			cost += int( level.bot_weapon_ids[ slot ][ i ][ "cost" ] );
 		}
 	}
 
@@ -889,20 +889,20 @@ bot_validate_weapon( weap )
 
 	if ( tokens.size < 3 )
 	{
-		if ( tokens[1] == "dw" )
-			weapon = tokens[0] + "dw";
+		if ( tokens[ 1 ] == "dw" )
+			weapon = tokens[ 0 ] + "dw";
 
 		return weapon;
 	}
 
-	if ( tokens[2] == "ir" || tokens[2] == "reflex" || tokens[2] == "acog" || tokens[2] == "elbit" || tokens[2] == "vzoom" || tokens[2] == "lps" )
-		return tokens[0] + "_" + tokens[2] + "_" + tokens[1];
+	if ( tokens[ 2 ] == "ir" || tokens[ 2 ] == "reflex" || tokens[ 2 ] == "acog" || tokens[ 2 ] == "elbit" || tokens[ 2 ] == "vzoom" || tokens[ 2 ] == "lps" )
+		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
 
-	if ( tokens[1] == "silencer" )
-		return tokens[0] + "_" + tokens[2] + "_" + tokens[1];
+	if ( tokens[ 1 ] == "silencer" )
+		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
 
-	if ( tokens[2] == "grip" && !( tokens[1] == "ir" || tokens[1] == "reflex" || tokens[1] == "acog" || tokens[1] == "elbit" || tokens[1] == "vzoom" || tokens[1] == "lps" ) )
-		return tokens[0] + "_" + tokens[2] + "_" + tokens[1];
+	if ( tokens[ 2 ] == "grip" && !( tokens[ 1 ] == "ir" || tokens[ 1 ] == "reflex" || tokens[ 1 ] == "acog" || tokens[ 1 ] == "elbit" || tokens[ 1 ] == "vzoom" || tokens[ 1 ] == "lps" ) )
+		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
 
 	return weapon;
 }
@@ -914,7 +914,7 @@ bot_random_attachments( weap, atts, num )
 {
 	weapon = weap;
 	attachments = StrTok( atts, " " );
-	attachments[attachments.size] = "";
+	attachments[ attachments.size ] = "";
 
 	reason = GetDvarInt( "bots_loadout_reasonable" );
 
@@ -958,10 +958,10 @@ bot_random_attachments( weap, atts, num )
 
 		cost = bot_attachment_cost( attachment );
 
-		if ( cost > 0 && cost > self.pers["bot"]["cod_points"] )
+		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
 			continue;
 
-		self.pers["bot"]["cod_points"] -= cost;
+		self.pers[ "bot" ][ "cod_points" ] -= cost;
 
 		weapon = weapon + "_" + attachment;
 
@@ -1020,10 +1020,10 @@ bot_random_attachments( weap, atts, num )
 
 		cost = bot_attachment_cost( _attachment );
 
-		if ( cost > 0 && cost > self.pers["bot"]["cod_points"] )
+		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
 			continue;
 
-		self.pers["bot"]["cod_points"] -= cost;
+		self.pers[ "bot" ][ "cod_points" ] -= cost;
 		weapon = weapon + "_" + _attachment;
 		return weapon;
 	}
@@ -1039,7 +1039,7 @@ bot_perk_from_reference_full( reference_full )
 	// start from the beginning of the array since our perk is most likely near the start
 	for ( i = keys.size - 1; i >= 0; i-- )
 	{
-		key = keys[i];
+		key = keys[ i ];
 
 		if ( level.tbl_PerkData[ key ][ "reference_full" ] == reference_full )
 		{
@@ -1057,7 +1057,7 @@ bot_get_cod_points()
 {
 	if ( !level.onlineGame )
 	{
-		self.pers["bot"][ "cod_points" ] = 999999;
+		self.pers[ "bot" ][ "cod_points" ] = 999999;
 		return;
 	}
 
@@ -1070,15 +1070,15 @@ bot_get_cod_points()
 
 		for ( i = 0; i < players.size; i++ )
 		{
-			if ( players[i] is_bot() )
+			if ( players[ i ] is_bot() )
 			{
 				continue;
 			}
 
-			if ( !isDefined( players[i].pers["currencyspent"] ) || !isDefined( players[i].pers["codpoints"] ) )
+			if ( !isDefined( players[ i ].pers[ "currencyspent" ] ) || !isDefined( players[ i ].pers[ "codpoints" ] ) )
 				continue;
 
-			total_points[ total_points.size ] = players[i].pers["currencyspent"] + players[i].pers["codpoints"];
+			total_points[ total_points.size ] = players[ i ].pers[ "currencyspent" ] + players[ i ].pers[ "codpoints" ];
 		}
 
 		if ( !total_points.size )
@@ -1087,15 +1087,15 @@ bot_get_cod_points()
 		}
 
 		point_average = array_average( total_points );
-		self.pers["bot"][ "cod_points" ] = Int( point_average * RandomFloatRange( 0.6, 0.8 ) );
+		self.pers[ "bot" ][ "cod_points" ] = Int( point_average * RandomFloatRange( 0.6, 0.8 ) );
 	}
 	else if ( cp_dvar == 0 )
 	{
-		self.pers["bot"][ "cod_points" ] = Round( random_normal_distribution( 50000, 15000, 0, 100000 ) );
+		self.pers[ "bot" ][ "cod_points" ] = Round( random_normal_distribution( 50000, 15000, 0, 100000 ) );
 	}
 	else
 	{
-		self.pers["bot"][ "cod_points" ] = Round( random_normal_distribution( cp_dvar, 1500, 0, 100000 ) );
+		self.pers[ "bot" ][ "cod_points" ] = Round( random_normal_distribution( cp_dvar, 1500, 0, 100000 ) );
 	}
 }
 
@@ -1117,19 +1117,19 @@ bot_get_rank()
 
 		for ( i = 0; i < players.size; i++ )
 		{
-			if ( players[i] == self )
+			if ( players[ i ] == self )
 				continue;
 
-			if ( !IsDefined( players[i].pers[ "rank" ] ) )
+			if ( !IsDefined( players[ i ].pers[ "rank" ] ) )
 				continue;
 
-			if ( players[i] is_bot() )
+			if ( players[ i ] is_bot() )
 			{
-				bot_ranks[ bot_ranks.size ] = players[i].pers[ "rank" ];
+				bot_ranks[ bot_ranks.size ] = players[ i ].pers[ "rank" ];
 			}
-			else if ( !players[i] isdemoclient() )
+			else if ( !players[ i ] isdemoclient() )
 			{
-				human_ranks[ human_ranks.size ] = players[i].pers[ "rank" ];
+				human_ranks[ human_ranks.size ] = players[ i ].pers[ "rank" ];
 			}
 		}
 
@@ -1163,7 +1163,7 @@ bot_get_rank()
 		rank = Round( random_normal_distribution( rank_dvar, 5, 0, level.maxRank ) );
 	}
 
-	self.pers["bot"]["rankxp"] = maps\mp\gametypes\_rank::getRankInfoMinXP( rank );
+	self.pers[ "bot" ][ "rankxp" ] = maps\mp\gametypes\_rank::getRankInfoMinXP( rank );
 }
 
 /*
@@ -1177,7 +1177,7 @@ bot_setKillstreaks()
 	allowed_killstreaks[ 1 ] = "killstreak_supply_drop";
 	allowed_killstreaks[ 2 ] = "killstreak_helicopter_comlink";
 
-	if ( self maps\mp\gametypes\_rank::getRankForXp( self.pers["bot"]["rankxp"] ) >= 9 || !level.onlineGame )
+	if ( self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] ) >= 9 || !level.onlineGame )
 	{
 		allowed_killstreaks[ 3 ] = "killstreak_auto_turret_drop";
 		allowed_killstreaks[ 4 ] = "killstreak_tow_turret_drop";
@@ -1195,7 +1195,7 @@ bot_setKillstreaks()
 
 	used_levels = [];
 
-	self.pers["bot"]["killstreaks"] = [];
+	self.pers[ "bot" ][ "killstreaks" ] = [];
 
 	reason = GetDvarInt( "bots_loadout_reasonable" );
 
@@ -1218,7 +1218,7 @@ bot_setKillstreaks()
 
 		cost = bot_get_killstreak_cost( killstreak );
 
-		if ( cost > 0 && self.pers["bot"]["cod_points"] < cost )
+		if ( cost > 0 && self.pers[ "bot" ][ "cod_points" ] < cost )
 		{
 			i--;
 			continue;
@@ -1238,9 +1238,9 @@ bot_setKillstreaks()
 			}
 		}
 
-		self.pers["bot"]["cod_points"] = self.pers["bot"]["cod_points"] - cost;
+		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
 		used_levels[ used_levels.size ] = ks_level;
-		self.pers["bot"]["killstreaks"][i] = killstreak;
+		self.pers[ "bot" ][ "killstreaks" ][ i ] = killstreak;
 	}
 }
 
@@ -1249,7 +1249,7 @@ bot_setKillstreaks()
 */
 bot_get_killstreak_cost( ks )
 {
-	//use table?? trey never included cost attribute tho
+	// use table?? trey never included cost attribute tho
 	switch ( ks )
 	{
 		case "killstreak_auto_turret_drop":
@@ -1299,9 +1299,9 @@ bot_get_killstreak_cost( ks )
 bot_giveKillstreaks()
 {
 	self.killstreak = [];
-	self.killstreak[0] = self.pers["bot"]["killstreaks"][0];
-	self.killstreak[1] = self.pers["bot"]["killstreaks"][1];
-	self.killstreak[2] = self.pers["bot"]["killstreaks"][2];
+	self.killstreak[ 0 ] = self.pers[ "bot" ][ "killstreaks" ][ 0 ];
+	self.killstreak[ 1 ] = self.pers[ "bot" ][ "killstreaks" ][ 1 ];
+	self.killstreak[ 2 ] = self.pers[ "bot" ][ "killstreaks" ][ 2 ];
 }
 
 /*

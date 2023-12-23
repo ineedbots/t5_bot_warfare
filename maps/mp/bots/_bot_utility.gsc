@@ -168,9 +168,9 @@ BotBuiltinClearAimOverride()
 */
 BotBuiltinBotMeleeParams( yaw, dist )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins["botmeleeparams"] ) )
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmeleeparams" ] ) )
 	{
-		self [[ level.bot_builtins["botmeleeparams" ]]]( yaw, dist );
+		self [[ level.bot_builtins[ "botmeleeparams" ] ]]( yaw, dist );
 	}
 }
 
@@ -178,9 +178,9 @@ BotBuiltinBotMeleeParams( yaw, dist )
 */
 BotBuiltinClearMeleeParams()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins["clearbotmeleeparams"] ) )
+	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "clearbotmeleeparams" ] ) )
 	{
-		self [[ level.bot_builtins["clearbotmeleeparams" ]]]();
+		self [[ level.bot_builtins[ "clearbotmeleeparams" ] ]]();
 	}
 }
 
@@ -194,12 +194,12 @@ getBotArray()
 
 	for ( i = 0; i < playercount; i++ )
 	{
-		player = level.players[i];
+		player = level.players[ i ];
 
 		if ( !player is_bot() )
 			continue;
 
-		result[result.size] = player;
+		result[ result.size ] = player;
 	}
 
 	return result;
@@ -243,7 +243,7 @@ PickRandom( arr )
 	if ( !arr.size )
 		return undefined;
 
-	return arr[randomInt( arr.size )];
+	return arr[ randomInt( arr.size ) ];
 }
 
 /*
@@ -395,15 +395,15 @@ bot_lookat( pos, time, vel, doAimPredict )
 	myAngle = self getPlayerAngles();
 	angles = VectorToAngles( ( pos - myEye ) - anglesToForward( myAngle ) );
 
-	X = AngleClamp180( angles[0] - myAngle[0] );
+	X = AngleClamp180( angles[ 0 ] - myAngle[ 0 ] );
 	X = X / steps;
 
-	Y = AngleClamp180( angles[1] - myAngle[1] );
+	Y = AngleClamp180( angles[ 1 ] - myAngle[ 1 ] );
 	Y = Y / steps;
 
 	for ( i = 0; i < steps; i++ )
 	{
-		myAngle = ( AngleClamp180( myAngle[0] + X ), AngleClamp180( myAngle[1] + Y ), 0 );
+		myAngle = ( AngleClamp180( myAngle[ 0 ] + X ), AngleClamp180( myAngle[ 1 ] + Y ), 0 );
 		self setPlayerAngles( myAngle );
 		wait 0.05;
 	}
@@ -418,20 +418,20 @@ getweaponslistall()
 
 	for ( i = 0; i < weaps.size; i++ )
 	{
-		weap = weaps[i];
+		weap = weaps[ i ];
 		toks = strTok( weap, "_" );
 
 		if ( isSubStr( weap, "_gl_" ) )
 		{
-			weaps[weaps.size] = "gl_" + toks[0] + "_mp";
+			weaps[ weaps.size ] = "gl_" + toks[ 0 ] + "_mp";
 		}
 		else if ( isSubStr( weap, "_ft_" ) )
 		{
-			weaps[weaps.size] = "ft_" + toks[0] + "_mp";
+			weaps[ weaps.size ] = "ft_" + toks[ 0 ] + "_mp";
 		}
 		else if ( isSubStr( weap, "_mk_" ) )
 		{
-			weaps[weaps.size] = "mk_" + toks[0] + "_mp";
+			weaps[ weaps.size ] = "mk_" + toks[ 0 ] + "_mp";
 		}
 	}
 
@@ -447,7 +447,7 @@ getValidTube()
 
 	for ( i = 0; i < weaps.size; i++ )
 	{
-		weap = weaps[i];
+		weap = weaps[ i ];
 
 		if ( !self getAmmoCount( weap ) )
 			continue;
@@ -513,7 +513,7 @@ getBotToKick()
 {
 	bots = getBotArray();
 
-	if ( !isDefined( bots ) || !isDefined( bots.size ) || bots.size <= 0 || !isDefined( bots[0] ) )
+	if ( !isDefined( bots ) || !isDefined( bots.size ) || bots.size <= 0 || !isDefined( bots[ 0 ] ) )
 		return undefined;
 
 	tokick = undefined;
@@ -524,7 +524,7 @@ getBotToKick()
 	// count teams
 	for ( i = 0; i < bots.size; i++ )
 	{
-		bot = bots[i];
+		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
 			continue;
@@ -558,7 +558,7 @@ getBotToKick()
 	// get the bot on this team with lowest skill
 	for ( i = 0; i < bots.size; i++ )
 	{
-		bot = bots[i];
+		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
 			continue;
@@ -575,7 +575,7 @@ getBotToKick()
 	// just kick lowest skill
 	for ( i = 0; i < bots.size; i++ )
 	{
-		bot = bots[i];
+		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
 			continue;
@@ -870,7 +870,7 @@ getConeDot( to, from, dir )
 bot_onUsePlantObjectFix( player )
 {
 	// planted the bomb
-	if ( !self maps\mp\gametypes\_gameobjects::isFriendlyTeam( player.pers["team"] ) )
+	if ( !self maps\mp\gametypes\_gameobjects::isFriendlyTeam( player.pers[ "team" ] ) )
 	{
 		level thread bot_bombPlanted( self, player );
 		player logString( "bomb planted: " + self.label );
@@ -878,23 +878,23 @@ bot_onUsePlantObjectFix( player )
 		// disable all bomb zones except this one
 		for ( index = 0; index < level.bombZones.size; index++ )
 		{
-			if ( level.bombZones[index] == self )
+			if ( level.bombZones[ index ] == self )
 				continue;
 
-			level.bombZones[index] maps\mp\gametypes\_gameobjects::disableObject();
+			level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableObject();
 		}
 
-		thread playSoundOnPlayers( "mus_sd_planted" + "_" + level.teamPostfix[player.pers["team"]] );
+		thread playSoundOnPlayers( "mus_sd_planted" + "_" + level.teamPostfix[ player.pers[ "team" ] ] );
 // removed plant audio until finalization of assest TODO : new plant sounds when assests are online
 //		player playSound( "mpl_sd_bomb_plant" );
 		player notify ( "bomb_planted" );
 
 		level thread maps\mp\_popups::DisplayTeamMessageToAll( &"MP_EXPLOSIVES_PLANTED_BY", player );
 
-		if ( isdefined( player.pers["plants"] ) )
+		if ( isdefined( player.pers[ "plants" ] ) )
 		{
-			player.pers["plants"]++;
-			player.plants = player.pers["plants"];
+			player.pers[ "plants" ]++;
+			player.plants = player.pers[ "plants" ];
 		}
 
 		player maps\mp\_medals::saboteur();
@@ -903,7 +903,7 @@ bot_onUsePlantObjectFix( player )
 		maps\mp\gametypes\_globallogic_audio::leaderDialog( "bomb_planted" );
 
 		maps\mp\gametypes\_globallogic_score::givePlayerScore( "plant", player );
-		//player thread [[level.onXPEvent]]( "plant" );
+		// player thread [[ level.onXPEvent ]]( "plant" );
 	}
 }
 
@@ -915,13 +915,13 @@ bot_bombPlanted( destroyedObj, player )
 	maps\mp\gametypes\_globallogic_utils::pauseTimer();
 	level.bombPlanted = true;
 
-	destroyedObj.visuals[0] thread maps\mp\gametypes\_globallogic_utils::playTickingSound( "mpl_sab_ui_suitcasebomb_timer" );
-	//Play suspense music
+	destroyedObj.visuals[ 0 ] thread maps\mp\gametypes\_globallogic_utils::playTickingSound( "mpl_sab_ui_suitcasebomb_timer" );
+	// Play suspense music
 	level thread maps\mp\gametypes\sd::bombPlantedMusicDelay();
 
-	//thread maps\mp\gametypes\_globallogic_audio::actionMusicSet();
+	// thread maps\mp\gametypes\_globallogic_audio::actionMusicSet();
 
-	level.tickingObject = destroyedObj.visuals[0];
+	level.tickingObject = destroyedObj.visuals[ 0 ];
 
 	level.timeLimitOverride = true;
 	setGameEndTime( int( gettime() + ( level.bombTimer * 1000 ) ) );
@@ -932,25 +932,25 @@ bot_bombPlanted( destroyedObj, player )
 		level.sdBomb maps\mp\gametypes\_gameobjects::allowCarry( "none" );
 		level.sdBomb maps\mp\gametypes\_gameobjects::setVisibleTeam( "none" );
 		level.sdBomb maps\mp\gametypes\_gameobjects::setDropped();
-		level.sdBombModel = level.sdBomb.visuals[0];
+		level.sdBombModel = level.sdBomb.visuals[ 0 ];
 	}
 	else
 	{
 
 		for ( index = 0; index < level.players.size; index++ )
 		{
-			if ( isDefined( level.players[index].carryIcon ) )
-				level.players[index].carryIcon destroyElem();
+			if ( isDefined( level.players[ index ].carryIcon ) )
+				level.players[ index ].carryIcon destroyElem();
 		}
 
 		trace = bulletTrace( player.origin + ( 0, 0, 20 ), player.origin - ( 0, 0, 2000 ), false, player );
 
 		tempAngle = randomfloat( 360 );
 		forward = ( cos( tempAngle ), sin( tempAngle ), 0 );
-		forward = vectornormalize( forward - vector_scale( trace["normal"], vectordot( forward, trace["normal"] ) ) );
+		forward = vectornormalize( forward - vector_scale( trace[ "normal" ], vectordot( forward, trace[ "normal" ] ) ) );
 		dropAngles = vectortoangles( forward );
 
-		level.sdBombModel = spawn( "script_model", trace["position"] );
+		level.sdBombModel = spawn( "script_model", trace[ "position" ] );
 		level.sdBombModel.angles = dropAngles;
 		level.sdBombModel setModel( "prop_suitcase_bomb" );
 	}
@@ -969,7 +969,7 @@ bot_bombPlanted( destroyedObj, player )
 	trigger = destroyedObj.bombDefuseTrig;
 	trigger.origin = level.sdBombModel.origin;
 	visuals = [];
-	defuseObject = maps\mp\gametypes\_gameobjects::createUseObject( game["defenders"], trigger, visuals, ( 0, 0, 32 ) );
+	defuseObject = maps\mp\gametypes\_gameobjects::createUseObject( game[ "defenders" ], trigger, visuals, ( 0, 0, 32 ) );
 	defuseObject maps\mp\gametypes\_gameobjects::allowUse( "friendly" );
 	defuseObject maps\mp\gametypes\_gameobjects::setUseTime( level.defuseTime );
 	defuseObject maps\mp\gametypes\_gameobjects::setUseText( &"MP_DEFUSING_EXPLOSIVE" );
@@ -985,14 +985,14 @@ bot_bombPlanted( destroyedObj, player )
 	defuseObject.onUse = maps\mp\gametypes\sd::onUseDefuseObject;
 	defuseObject.useWeapon = "briefcase_bomb_defuse_mp";
 
-	level.defuseObject = defuseObject;//every cod...
+	level.defuseObject = defuseObject; // every cod...
 
 	player.isBombCarrier = false;
 
 	maps\mp\gametypes\sd::BombTimerWait();
 	setMatchFlag( "bomb_timer", 0 );
 
-	destroyedObj.visuals[0] maps\mp\gametypes\_globallogic_utils::stopTickingSound();
+	destroyedObj.visuals[ 0 ] maps\mp\gametypes\_globallogic_utils::stopTickingSound();
 
 	if ( level.gameEnded || level.bombDefused )
 		return;
@@ -1006,26 +1006,26 @@ bot_bombPlanted( destroyedObj, player )
 
 	if ( isdefined( player ) )
 	{
-		destroyedObj.visuals[0] radiusDamage( explosionOrigin, 512, 200, 20, player, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
+		destroyedObj.visuals[ 0 ] radiusDamage( explosionOrigin, 512, 200, 20, player, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
 		level thread maps\mp\_popups::DisplayTeamMessageToAll( &"MP_EXPLOSIVES_BLOWUP_BY", player );
 		player maps\mp\_medals::bomber();
 		player maps\mp\gametypes\_persistence::statAddWithGameType( "DESTRUCTIONS", 1 );
 	}
 	else
-		destroyedObj.visuals[0] radiusDamage( explosionOrigin, 512, 200, 20, undefined, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
+		destroyedObj.visuals[ 0 ] radiusDamage( explosionOrigin, 512, 200, 20, undefined, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
 
 	rot = randomfloat( 360 );
-	explosionEffect = spawnFx( level._effect["bombexplosion"], explosionOrigin + ( 0, 0, 50 ), ( 0, 0, 1 ), ( cos( rot ), sin( rot ), 0 ) );
+	explosionEffect = spawnFx( level._effect[ "bombexplosion" ], explosionOrigin + ( 0, 0, 50 ), ( 0, 0, 1 ), ( cos( rot ), sin( rot ), 0 ) );
 	triggerFx( explosionEffect );
 
 	thread playSoundinSpace( "mpl_sd_exp_suitcase_bomb_main", explosionOrigin );
-	//thread maps\mp\gametypes\_globallogic_audio::set_music_on_team( "SILENT", "both" );
+	// thread maps\mp\gametypes\_globallogic_audio::set_music_on_team( "SILENT", "both" );
 
 	if ( isDefined( destroyedObj.exploderIndex ) )
 		exploder( destroyedObj.exploderIndex );
 
 	for ( index = 0; index < level.bombZones.size; index++ )
-		level.bombZones[index] maps\mp\gametypes\_gameobjects::disableObject();
+		level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableObject();
 
 	defuseObject maps\mp\gametypes\_gameobjects::disableObject();
 
@@ -1033,5 +1033,5 @@ bot_bombPlanted( destroyedObj, player )
 
 	wait 3;
 
-	maps\mp\gametypes\sd::sd_endGame( game["attackers"], game["strings"]["target_destroyed"] );
+	maps\mp\gametypes\sd::sd_endGame( game[ "attackers" ], game[ "strings" ][ "target_destroyed" ] );
 }
