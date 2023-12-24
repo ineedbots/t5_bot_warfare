@@ -22,7 +22,9 @@ bot_give_loadout()
 	self SetPlayerRenderOptions( int( self.pers[ "bot" ][ "class_render_opts" ] ) );
 
 	if ( !isDefined( self.bot ) )
+	{
 		self.bot = [];
+	}
 
 	self.bot[ "specialty1" ] = "specialty_null";
 	self.bot[ "specialty2" ] = "specialty_null";
@@ -36,7 +38,9 @@ bot_give_loadout()
 		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
+		{
 			self setPerk( tokens[ i ] );
+		}
 	}
 
 	switch ( self.pers[ "bot" ][ "class_perk1" ] )
@@ -82,7 +86,9 @@ bot_give_loadout()
 		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
+		{
 			self setPerk( tokens[ i ] );
+		}
 	}
 
 	if ( self.pers[ "bot" ][ "class_perk3" ] != "" && GetDvarInt( #"scr_game_perks" ) )
@@ -93,19 +99,25 @@ bot_give_loadout()
 		tokens = strtok( id[ "reference" ], "|" );
 
 		for ( i = 0; i < tokens.size; i++ )
+		{
 			self setPerk( tokens[ i ] );
+		}
 	}
 
 
 	self takeAllWeapons();
 
 	if ( getDvarInt( "bots_play_knife" ) )
+	{
 		self GiveWeapon( "knife_mp" );
+	}
 
 	weap = self.pers[ "bot" ][ "class_primary" ];
 
 	if ( weap == "" )
+	{
 		weap = "ak47_mp";
+	}
 
 	primaryTokens = strtok( self.pers[ "bot" ][ "class_primary" ], "_" );
 	self.pers[ "primaryWeapon" ] = primaryTokens[ 0 ];
@@ -113,19 +125,25 @@ bot_give_loadout()
 	weap = self.pers[ "bot" ][ "class_primary" ];
 
 	if ( GetDvarInt( #"scr_disable_attachments" ) )
+	{
 		weap = self.pers[ "primaryWeapon" ] + "_mp";
+	}
 
 	self GiveWeapon( weap, 0, int( self.pers[ "bot" ][ "class_primary_opts" ] ) );
 
 	if ( self hasPerk( "specialty_extraammo" ) )
+	{
 		self giveMaxAmmo( weap );
+	}
 
 	if ( self.pers[ "bot" ][ "class_secondary" ] != "" )
 	{
 		self GiveWeapon( self.pers[ "bot" ][ "class_secondary" ], 0, int( self.pers[ "bot" ][ "class_secondary_opts" ] ) );
 
 		if ( self hasPerk( "specialty_extraammo" ) )
+		{
 			self giveMaxAmmo( self.pers[ "bot" ][ "class_secondary" ] );
+		}
 	}
 
 	self SetActionSlot( 3, "altMode" );
@@ -145,9 +163,13 @@ bot_give_loadout()
 		self GiveWeapon( self.pers[ "bot" ][ "class_lethal" ] );
 
 		if ( self hasPerk( "specialty_twogrenades" ) )
+		{
 			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 2 );
+		}
 		else
+		{
 			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 1 );
+		}
 
 		self SwitchToOffhand( self.pers[ "bot" ][ "class_lethal" ] );
 	}
@@ -157,11 +179,17 @@ bot_give_loadout()
 		self giveWeapon( self.pers[ "bot" ][ "class_tacticle" ] );
 
 		if ( self.pers[ "bot" ][ "class_tacticle" ] == "willy_pete_mp" )
+		{
 			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 1 );
+		}
 		else if ( self hasPerk( "specialty_twogrenades" ) )
+		{
 			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 3 );
+		}
 		else
+		{
 			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 2 );
+		}
 
 		self setOffhandSecondaryClass( self.pers[ "bot" ][ "class_tacticle" ] );
 	}
@@ -184,10 +212,14 @@ bot_get_prestige()
 			player = level.players[ i ];
 
 			if ( !isDefined( player.team ) )
+			{
 				continue;
+			}
 
 			if ( player is_bot() )
+			{
 				continue;
+			}
 
 			p = player maps\mp\gametypes\_persistence::statGet( "plevel" );
 			break;
@@ -226,7 +258,9 @@ bot_rank()
 	self maps\mp\gametypes\_rank::syncxpstat();
 
 	if ( !level.gameEnded )
+	{
 		level waittill( "game_ended" );
+	}
 
 	self.pers[ "bot" ][ "rankxp" ] = self.pers[ "rankxp" ];
 }
@@ -282,13 +316,17 @@ bot_set_class()
 
 				case 3:
 					if ( rank >= 1 )
+					{
 						_class = "CLASS_LMG";
+					}
 
 					break;
 
 				case 4:
 					if ( rank >= 2 )
+					{
 						_class = "CLASS_SNIPER";
+					}
 
 					break;
 			}
@@ -316,31 +354,51 @@ bot_set_class()
 		self bot_get_random_weapon( "equipment", rank );
 
 		if ( rank >= 21 )
+		{
 			camo = self bot_random_camo();
+		}
 		else
+		{
 			camo = 0;
+		}
 
 		if ( rank >= 18 )
+		{
 			tag = self bot_random_tag();
+		}
 		else
+		{
 			tag = 0;
+		}
 
 		if ( rank >= 15 )
+		{
 			emblem = self bot_random_emblem();
+		}
 		else
+		{
 			emblem = 0;
+		}
 
 		if ( isSubStr( self.pers[ "bot" ][ "class_primary" ], "_elbit_" ) || isSubStr( self.pers[ "bot" ][ "class_primary" ], "_reflex_" ) )
 		{
 			if ( rank >= 24 )
+			{
 				reticle = self bot_random_reticle();
+			}
 			else
+			{
 				reticle = 0;
+			}
 
 			if ( rank >= 27 )
+			{
 				lens = self bot_random_lens();
+			}
 			else
+			{
 				lens = 0;
+			}
 		}
 		else
 		{
@@ -351,15 +409,21 @@ bot_set_class()
 		self.pers[ "bot" ][ "class_primary_opts" ] = self calcWeaponOptions( camo, lens, reticle, tag, emblem );
 
 		if ( rank >= 30 )
+		{
 			face = self bot_random_face();
+		}
 		else
+		{
 			face = 0;
+		}
 
 		self.pers[ "bot" ][ "class_render_opts" ] = self calcPlayerOptions( face, 0 );
 	}
 
 	if ( !GetDvarInt( "bots_loadout_allow_op" ) && isSubStr( self.pers[ "bot" ][ "class_perk3" ], "perk_second_chance" ) )
+	{
 		self.pers[ "bot" ][ "class_perk3" ] = "";
+	}
 }
 
 /*
@@ -368,7 +432,9 @@ bot_set_class()
 bot_get_random_weapon( slot, rank )
 {
 	if ( !isDefined( level.bot_weapon_ids ) )
+	{
 		level.bot_weapon_ids = [];
+	}
 
 	if ( !IsDefined( level.bot_weapon_ids[ slot ] ) )
 	{
@@ -382,13 +448,19 @@ bot_get_random_weapon( slot, rank )
 			id = level.tbl_weaponIDs[ key ];
 
 			if ( id[ "reference" ] == "weapon_null" )
+			{
 				continue;
+			}
 
 			if ( isSubStr( id[ "reference" ], "dw" ) )
+			{
 				continue;
+			}
 
 			if ( id[ "cost" ] == "-1" )
+			{
 				continue;
+			}
 
 			if ( id[ "slot" ] == slot )
 			{
@@ -401,17 +473,23 @@ bot_get_random_weapon( slot, rank )
 	diff = self GetBotDiffNum();
 
 	if ( slot == "equipment" && self.pers[ "bot" ][ "cod_points" ] < 2000 )
+	{
 		return;
+	}
 
 	for ( ;; )
 	{
 		id = PickRandom( level.bot_weapon_ids[ slot ] );
 
 		if ( !isDefined( id ) )
+		{
 			return;
+		}
 
 		if ( !bot_weapon_unlocked( id, rank ) )
+		{
 			continue;
+		}
 
 		if ( reason )
 		{
@@ -419,13 +497,17 @@ bot_get_random_weapon( slot, rank )
 			{
 				case "willy_pete":
 					if ( self.pers[ "bot" ][ "cod_points" ] >= 1500 )
+					{
 						continue;
+					}
 
 					break;
 
 				case "camera_spike":
 					if ( self.pers[ "bot" ][ "cod_points" ] >= 2500 )
+					{
 						continue;
+					}
 
 					break;
 
@@ -475,27 +557,39 @@ bot_get_random_weapon( slot, rank )
 		}
 
 		if ( id[ "reference" ] == "camera_spike" && self IsSplitScreen() )
+		{
 			continue;
+		}
 
 		if ( id[ "reference" ] == level.tacticalInsertionWeapon && level.disable_tacinsert )
+		{
 			continue;
+		}
 
 		cost = bot_weapon_cost( id );
 
 		if ( cost > 0 && self.pers[ "bot" ][ "cod_points" ] < cost )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
 
 		maxAttachs = 1;
 
 		if ( isSubStr( self.pers[ "bot" ][ "class_perk2" ], "perk_professional" ) && slot == "primary" )
+		{
 			maxAttachs = 2;
+		}
 
 		if ( RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
+		{
 			weap = bot_random_attachments( id[ "reference" ], id[ "attachment" ], maxAttachs );
+		}
 		else
+		{
 			weap = id[ "reference" ];
+		}
 
 		weap = bot_validate_weapon( weap );
 		weap = weap + "_mp";
@@ -539,28 +633,40 @@ bot_get_random_perk( slot, rank )
 		id = PickRandom( level.allowedPerks[ 0 ] );
 
 		if ( !isDefined( id ) )
+		{
 			return;
+		}
 
 		id = level.tbl_PerkData[ id ];
 
 		if ( id[ "reference" ] == "specialty_null" )
+		{
 			continue;
+		}
 
 		if ( id[ "slot" ] != "specialty" + slot )
+		{
 			continue;
+		}
 
 		if ( isSubStr( id[ "reference_full" ], "_pro" ) && id[ "reference_full" ] != "perk_professional" )
+		{
 			continue;
+		}
 
 		cost = Int( id[ "cost" ] );
 
 		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
+		{
 			continue;
+		}
 
 		if ( reason )
 		{
 			if ( id[ "reference_full" ] == "perk_scout" )
+			{
 				continue;
+			}
 		}
 
 		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
@@ -588,14 +694,18 @@ bot_random_face()
 		face = randomint( 25 );
 
 		if ( face == 0 )
+		{
 			return face;
+		}
 
 		if ( face >= 17 )
 		{
 			if ( face >= 21 ) // pres faces
 			{
 				if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
+				{
 					continue;
+				}
 
 				self.pers[ "bot" ][ "cod_points" ] -= 500;
 
@@ -605,7 +715,9 @@ bot_random_face()
 			if ( face == 17 )
 			{
 				if ( self.pers[ "bot" ][ "cod_points" ] < 1500 )
+				{
 					continue;
+				}
 
 				self.pers[ "bot" ][ "cod_points" ] -= 1500;
 
@@ -615,7 +727,9 @@ bot_random_face()
 			if ( face == 18 )
 			{
 				if ( self.pers[ "bot" ][ "cod_points" ] < 3500 )
+				{
 					continue;
+				}
 
 				self.pers[ "bot" ][ "cod_points" ] -= 3500;
 
@@ -625,7 +739,9 @@ bot_random_face()
 			if ( face == 19 )
 			{
 				if ( self.pers[ "bot" ][ "cod_points" ] < 5500 )
+				{
 					continue;
+				}
 
 				self.pers[ "bot" ][ "cod_points" ] -= 5500;
 
@@ -633,7 +749,9 @@ bot_random_face()
 			}
 
 			if ( self.pers[ "bot" ][ "cod_points" ] < 7500 )
+			{
 				continue;
+			}
 
 			self.pers[ "bot" ][ "cod_points" ] -= 7500;
 
@@ -641,7 +759,9 @@ bot_random_face()
 		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
@@ -659,10 +779,14 @@ bot_random_lens()
 		lens = randomint( 6 );
 
 		if ( lens == 0 )
+		{
 			return lens;
+		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
@@ -680,10 +804,14 @@ bot_random_reticle()
 		ret = randomint( 40 );
 
 		if ( ret == 0 )
+		{
 			return ret;
+		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 500 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 500;
 
@@ -701,10 +829,14 @@ bot_random_tag()
 		tag = randomInt( 2 );
 
 		if ( tag == 0 )
+		{
 			return tag;
+		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 1000 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 1000;
 
@@ -722,10 +854,14 @@ bot_random_emblem()
 		emblem = randomInt( 2 );
 
 		if ( emblem == 0 )
+		{
 			return emblem;
+		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 1000 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 1000;
 
@@ -743,12 +879,16 @@ bot_random_camo()
 		camo = randomInt( 16 );
 
 		if ( camo == 0 )
+		{
 			return camo;
+		}
 
 		if ( camo == 15 ) // gold
 		{
 			if ( self.pers[ "bot" ][ "cod_points" ] < 50000 )
+			{
 				continue;
+			}
 
 			self.pers[ "bot" ][ "cod_points" ] -= 50000;
 
@@ -756,7 +896,9 @@ bot_random_camo()
 		}
 
 		if ( self.pers[ "bot" ][ "cod_points" ] < 250 )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= 250;
 
@@ -777,15 +919,21 @@ bot_weapon_cost( id )
 		slot = "primary";
 
 		if ( id[ "group" ] == "weapon_pistol" )
+		{
 			slot = "secondary";
+		}
 
 		for ( i = 0; i < level.bot_weapon_ids[ slot ].size; i++ )
 		{
 			if ( id[ "reference" ] == level.bot_weapon_ids[ slot ][ i ][ "reference" ] )
+			{
 				continue;
+			}
 
 			if ( id[ "group" ] != level.bot_weapon_ids[ slot ][ i ][ "group" ] )
+			{
 				continue;
+			}
 
 			cost += int( level.bot_weapon_ids[ slot ][ i ][ "cost" ] );
 		}
@@ -829,7 +977,9 @@ bot_weapon_unlocked( id, rank )
 	unlock = Int( id[ "unlock_level" ] );
 
 	if ( unlock <= 3 )
+	{
 		return true;
+	}
 
 	return ( rank >= unlock );
 }
@@ -885,24 +1035,34 @@ bot_validate_weapon( weap )
 	tokens = strtok( weap, "_" );
 
 	if ( tokens.size <= 1 )
+	{
 		return weapon;
+	}
 
 	if ( tokens.size < 3 )
 	{
 		if ( tokens[ 1 ] == "dw" )
+		{
 			weapon = tokens[ 0 ] + "dw";
+		}
 
 		return weapon;
 	}
 
 	if ( tokens[ 2 ] == "ir" || tokens[ 2 ] == "reflex" || tokens[ 2 ] == "acog" || tokens[ 2 ] == "elbit" || tokens[ 2 ] == "vzoom" || tokens[ 2 ] == "lps" )
+	{
 		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
+	}
 
 	if ( tokens[ 1 ] == "silencer" )
+	{
 		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
+	}
 
 	if ( tokens[ 2 ] == "grip" && !( tokens[ 1 ] == "ir" || tokens[ 1 ] == "reflex" || tokens[ 1 ] == "acog" || tokens[ 1 ] == "elbit" || tokens[ 1 ] == "vzoom" || tokens[ 1 ] == "lps" ) )
+	{
 		return tokens[ 0 ] + "_" + tokens[ 2 ] + "_" + tokens[ 1 ];
+	}
 
 	return weapon;
 }
@@ -929,7 +1089,9 @@ bot_random_attachments( weap, atts, num )
 		attachments = array_remove( attachments, attachment );
 
 		if ( attachment == "" )
+		{
 			return weapon;
+		}
 
 		if ( reason )
 		{
@@ -959,14 +1121,18 @@ bot_random_attachments( weap, atts, num )
 		cost = bot_attachment_cost( attachment );
 
 		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= cost;
 
 		weapon = weapon + "_" + attachment;
 
 		if ( attachment == "dw" || attachment == "gl" || attachment == "ft" || attachment == "mk" || num == 1 )
+		{
 			return weapon;
+		}
 
 		break;
 	}
@@ -982,7 +1148,9 @@ bot_random_attachments( weap, atts, num )
 		attachments = array_remove( attachments, _attachment );
 
 		if ( _attachment == "" )
+		{
 			return weapon;
+		}
 
 		if ( reason )
 		{
@@ -1010,18 +1178,26 @@ bot_random_attachments( weap, atts, num )
 		}
 
 		if ( _attachment == "dw" || _attachment == "gl" || _attachment == "ft" || _attachment == "mk" )
+		{
 			continue;
+		}
 
 		if ( ( attachment == "ir" || attachment == "reflex" || attachment == "acog" || attachment == "elbit" || attachment == "vzoom" || attachment == "lps" ) && ( _attachment == "ir" || _attachment == "reflex" || _attachment == "acog" || _attachment == "elbit" || _attachment == "vzoom" || _attachment == "lps" ) )
+		{
 			continue;
+		}
 
 		if ( ( attachment == "dualclip" || attachment == "extclip" || attachment == "rf" ) && ( _attachment == "dualclip" || _attachment == "extclip" || _attachment == "rf" ) )
+		{
 			continue;
+		}
 
 		cost = bot_attachment_cost( _attachment );
 
 		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
+		{
 			continue;
+		}
 
 		self.pers[ "bot" ][ "cod_points" ] -= cost;
 		weapon = weapon + "_" + _attachment;
@@ -1076,7 +1252,9 @@ bot_get_cod_points()
 			}
 
 			if ( !isDefined( players[ i ].pers[ "currencyspent" ] ) || !isDefined( players[ i ].pers[ "codpoints" ] ) )
+			{
 				continue;
+			}
 
 			total_points[ total_points.size ] = players[ i ].pers[ "currencyspent" ] + players[ i ].pers[ "codpoints" ];
 		}
@@ -1118,10 +1296,14 @@ bot_get_rank()
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( players[ i ] == self )
+			{
 				continue;
+			}
 
 			if ( !IsDefined( players[ i ].pers[ "rank" ] ) )
+			{
 				continue;
+			}
 
 			if ( players[ i ] is_bot() )
 			{
@@ -1204,7 +1386,9 @@ bot_setKillstreaks()
 		killstreak = PickRandom( allowed_killstreaks );
 
 		if ( !isDefined( killstreak ) )
+		{
 			break;
+		}
 
 		allowed_killstreaks = array_remove( allowed_killstreaks, killstreak );
 

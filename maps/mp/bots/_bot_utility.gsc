@@ -17,12 +17,18 @@ wait_for_builtins()
 	for ( i = 0; i < 20; i++ )
 	{
 		if ( isDefined( level.bot_builtins ) )
+		{
 			return true;
+		}
 
 		if ( i < 18 )
+		{
 			waittillframeend;
+		}
 		else
+		{
 			wait 0.05;
+		}
 	}
 
 	return false;
@@ -197,7 +203,9 @@ getBotArray()
 		player = level.players[ i ];
 
 		if ( !player is_bot() )
+		{
 			continue;
+		}
 
 		result[ result.size ] = player;
 	}
@@ -227,12 +235,18 @@ Round( x )
 	if ( abs( x ) - abs( y ) > 0.5 )
 	{
 		if ( x < 0 )
+		{
 			return y - 1;
+		}
 		else
+		{
 			return y + 1;
+		}
 	}
 	else
+	{
 		return y;
+	}
 }
 
 /*
@@ -241,7 +255,9 @@ Round( x )
 PickRandom( arr )
 {
 	if ( !arr.size )
+	{
 		return undefined;
+	}
 
 	return arr[ randomInt( arr.size ) ];
 }
@@ -346,7 +362,9 @@ GetBotDiffNum()
 isWeaponAltmode( weap )
 {
 	if ( isStrStart( weap, "gl_" ) || isStrStart( weap, "ft_" ) || isStrStart( weap, "mk_" ) )
+	{
 		return true;
+	}
 
 	return false;
 }
@@ -364,24 +382,36 @@ bot_lookat( pos, time, vel, doAimPredict )
 	level endon ( "game_ended" );
 
 	if ( level.gameEnded || level.inPrematchPeriod || self BotIsFrozen() || !getDvarInt( "bots_play_aim" ) )
+	{
 		return;
+	}
 
 	if ( !isDefined( pos ) )
+	{
 		return;
+	}
 
 	if ( !isDefined( doAimPredict ) )
+	{
 		doAimPredict = false;
+	}
 
 	if ( !isDefined( time ) )
+	{
 		time = 0.05;
+	}
 
 	if ( !isDefined( vel ) )
+	{
 		vel = ( 0, 0, 0 );
+	}
 
 	steps = int( time * 20 );
 
 	if ( steps < 1 )
+	{
 		steps = 1;
+	}
 
 	myEye = self GetEye(); // get our eye pos
 
@@ -450,10 +480,14 @@ getValidTube()
 		weap = weaps[ i ];
 
 		if ( !self getAmmoCount( weap ) )
+		{
 			continue;
+		}
 
 		if ( ( isSubStr( weap, "gl_" ) && !isSubStr( weap, "_gl_" ) ) || weap == "china_lake_mp" )
+		{
 			return weap;
+		}
 	}
 
 	return undefined;
@@ -464,29 +498,37 @@ getValidTube()
 */
 waittill_any_timeout( timeOut, string1, string2, string3, string4, string5 )
 {
-	if ( ( !isdefined( string1 ) || string1 != "death" ) &&
-	    ( !isdefined( string2 ) || string2 != "death" ) &&
-	    ( !isdefined( string3 ) || string3 != "death" ) &&
-	    ( !isdefined( string4 ) || string4 != "death" ) &&
-	    ( !isdefined( string5 ) || string5 != "death" ) )
+	if ( ( !isdefined( string1 ) || string1 != "death" ) && ( !isdefined( string2 ) || string2 != "death" ) && ( !isdefined( string3 ) || string3 != "death" ) && ( !isdefined( string4 ) || string4 != "death" ) && ( !isdefined( string5 ) || string5 != "death" ) )
+	{
 		self endon( "death" );
+	}
 
 	ent = spawnstruct();
 
 	if ( isdefined( string1 ) )
+	{
 		self thread waittill_string( string1, ent );
+	}
 
 	if ( isdefined( string2 ) )
+	{
 		self thread waittill_string( string2, ent );
+	}
 
 	if ( isdefined( string3 ) )
+	{
 		self thread waittill_string( string3, ent );
+	}
 
 	if ( isdefined( string4 ) )
+	{
 		self thread waittill_string( string4, ent );
+	}
 
 	if ( isdefined( string5 ) )
+	{
 		self thread waittill_string( string5, ent );
+	}
 
 	ent thread _timeout( timeOut );
 
@@ -514,7 +556,9 @@ getBotToKick()
 	bots = getBotArray();
 
 	if ( !isDefined( bots ) || !isDefined( bots.size ) || bots.size <= 0 || !isDefined( bots[ 0 ] ) )
+	{
 		return undefined;
+	}
 
 	tokick = undefined;
 	axis = 0;
@@ -527,14 +571,22 @@ getBotToKick()
 		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		{
 			continue;
+		}
 
 		if ( bot.team == "allies" )
+		{
 			allies++;
+		}
 		else if ( bot.team == "axis" )
+		{
 			axis++;
+		}
 		else // choose bots that are not on a team first
+		{
 			return bot;
+		}
 	}
 
 	// search for a bot on the other team
@@ -548,7 +600,9 @@ getBotToKick()
 		team = "allies";
 
 		if ( axis > allies )
+		{
 			team = "axis";
+		}
 	}
 	else
 	{
@@ -561,16 +615,22 @@ getBotToKick()
 		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		{
 			continue;
+		}
 
 		if ( bot.team != team )
+		{
 			continue;
+		}
 
 		tokick = bot;
 	}
 
 	if ( isDefined( tokick ) )
+	{
 		return tokick;
+	}
 
 	// just kick lowest skill
 	for ( i = 0; i < bots.size; i++ )
@@ -578,7 +638,9 @@ getBotToKick()
 		bot = bots[ i ];
 
 		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		{
 			continue;
+		}
 
 		tokick = bot;
 	}
@@ -594,36 +656,48 @@ bot_wait_for_host()
 	host = undefined;
 
 	while ( !isDefined( level ) || !isDefined( level.players ) )
+	{
 		wait 0.05;
+	}
 
 	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
 		host = GetHostPlayer();
 
 		if ( isDefined( host ) )
+		{
 			break;
+		}
 
 		wait 0.05;
 	}
 
 	if ( !isDefined( host ) )
+	{
 		return;
+	}
 
 	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
 		if ( IsDefined( host.pers[ "team" ] ) )
+		{
 			break;
+		}
 
 		wait 0.05;
 	}
 
 	if ( !IsDefined( host.pers[ "team" ] ) )
+	{
 		return;
+	}
 
 	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
 		if ( host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis" )
+		{
 			break;
+		}
 
 		wait 0.05;
 	}
@@ -701,7 +775,9 @@ botStopMove2( what )
 	self endon( "botStopMove" );
 
 	if ( !what )
+	{
 		return;
+	}
 
 	og = self.origin;
 
@@ -879,7 +955,9 @@ bot_onUsePlantObjectFix( player )
 		for ( index = 0; index < level.bombZones.size; index++ )
 		{
 			if ( level.bombZones[ index ] == self )
+			{
 				continue;
+			}
 
 			level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableObject();
 		}
@@ -940,7 +1018,9 @@ bot_bombPlanted( destroyedObj, player )
 		for ( index = 0; index < level.players.size; index++ )
 		{
 			if ( isDefined( level.players[ index ].carryIcon ) )
+			{
 				level.players[ index ].carryIcon destroyElem();
+			}
 		}
 
 		trace = bulletTrace( player.origin + ( 0, 0, 20 ), player.origin - ( 0, 0, 2000 ), false, player );
@@ -995,7 +1075,9 @@ bot_bombPlanted( destroyedObj, player )
 	destroyedObj.visuals[ 0 ] maps\mp\gametypes\_globallogic_utils::stopTickingSound();
 
 	if ( level.gameEnded || level.bombDefused )
+	{
 		return;
+	}
 
 	level.bombExploded = true;
 
@@ -1012,7 +1094,9 @@ bot_bombPlanted( destroyedObj, player )
 		player maps\mp\gametypes\_persistence::statAddWithGameType( "DESTRUCTIONS", 1 );
 	}
 	else
+	{
 		destroyedObj.visuals[ 0 ] radiusDamage( explosionOrigin, 512, 200, 20, undefined, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
+	}
 
 	rot = randomfloat( 360 );
 	explosionEffect = spawnFx( level._effect[ "bombexplosion" ], explosionOrigin + ( 0, 0, 50 ), ( 0, 0, 1 ), ( cos( rot ), sin( rot ), 0 ) );
@@ -1022,10 +1106,14 @@ bot_bombPlanted( destroyedObj, player )
 	// thread maps\mp\gametypes\_globallogic_audio::set_music_on_team( "SILENT", "both" );
 
 	if ( isDefined( destroyedObj.exploderIndex ) )
+	{
 		exploder( destroyedObj.exploderIndex );
+	}
 
 	for ( index = 0; index < level.bombZones.size; index++ )
+	{
 		level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableObject();
+	}
 
 	defuseObject maps\mp\gametypes\_gameobjects::disableObject();
 
