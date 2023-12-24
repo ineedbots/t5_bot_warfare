@@ -17,11 +17,11 @@ bot_give_loadout()
 {
 	self bot_giveKillstreaks();
 
-	self clearPerks();
+	self clearperks();
 
-	self SetPlayerRenderOptions( int( self.pers[ "bot" ][ "class_render_opts" ] ) );
+	self setplayerrenderoptions( int( self.pers[ "bot" ][ "class_render_opts" ] ) );
 
-	if ( !isDefined( self.bot ) )
+	if ( !isdefined( self.bot ) )
 	{
 		self.bot = [];
 	}
@@ -30,7 +30,7 @@ bot_give_loadout()
 	self.bot[ "specialty2" ] = "specialty_null";
 	self.bot[ "specialty3" ] = "specialty_null";
 
-	if ( self.pers[ "bot" ][ "class_perk1" ] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk1" ] != "" && getdvarint( #"scr_game_perks" ) )
 	{
 		self.bot[ "specialty1" ] = self.pers[ "bot" ][ "class_perk1" ];
 
@@ -39,7 +39,7 @@ bot_give_loadout()
 
 		for ( i = 0; i < tokens.size; i++ )
 		{
-			self setPerk( tokens[ i ] );
+			self setperk( tokens[ i ] );
 		}
 	}
 
@@ -78,7 +78,7 @@ bot_give_loadout()
 
 	self maps\mp\gametypes\_class::initstaticweaponstime();
 
-	if ( self.pers[ "bot" ][ "class_perk2" ] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk2" ] != "" && getdvarint( #"scr_game_perks" ) )
 	{
 		self.bot[ "specialty2" ] = self.pers[ "bot" ][ "class_perk2" ];
 
@@ -87,11 +87,11 @@ bot_give_loadout()
 
 		for ( i = 0; i < tokens.size; i++ )
 		{
-			self setPerk( tokens[ i ] );
+			self setperk( tokens[ i ] );
 		}
 	}
 
-	if ( self.pers[ "bot" ][ "class_perk3" ] != "" && GetDvarInt( #"scr_game_perks" ) )
+	if ( self.pers[ "bot" ][ "class_perk3" ] != "" && getdvarint( #"scr_game_perks" ) )
 	{
 		self.bot[ "specialty3" ] = self.pers[ "bot" ][ "class_perk3" ];
 
@@ -100,16 +100,16 @@ bot_give_loadout()
 
 		for ( i = 0; i < tokens.size; i++ )
 		{
-			self setPerk( tokens[ i ] );
+			self setperk( tokens[ i ] );
 		}
 	}
 
 
-	self takeAllWeapons();
+	self takeallweapons();
 
-	if ( getDvarInt( "bots_play_knife" ) )
+	if ( getdvarint( "bots_play_knife" ) )
 	{
-		self GiveWeapon( "knife_mp" );
+		self giveweapon( "knife_mp" );
 	}
 
 	weap = self.pers[ "bot" ][ "class_primary" ];
@@ -124,77 +124,77 @@ bot_give_loadout()
 
 	weap = self.pers[ "bot" ][ "class_primary" ];
 
-	if ( GetDvarInt( #"scr_disable_attachments" ) )
+	if ( getdvarint( #"scr_disable_attachments" ) )
 	{
 		weap = self.pers[ "primaryWeapon" ] + "_mp";
 	}
 
-	self GiveWeapon( weap, 0, int( self.pers[ "bot" ][ "class_primary_opts" ] ) );
+	self giveweapon( weap, 0, int( self.pers[ "bot" ][ "class_primary_opts" ] ) );
 
-	if ( self hasPerk( "specialty_extraammo" ) )
+	if ( self hasperk( "specialty_extraammo" ) )
 	{
-		self giveMaxAmmo( weap );
+		self givemaxammo( weap );
 	}
 
 	if ( self.pers[ "bot" ][ "class_secondary" ] != "" )
 	{
-		self GiveWeapon( self.pers[ "bot" ][ "class_secondary" ], 0, int( self.pers[ "bot" ][ "class_secondary_opts" ] ) );
+		self giveweapon( self.pers[ "bot" ][ "class_secondary" ], 0, int( self.pers[ "bot" ][ "class_secondary_opts" ] ) );
 
-		if ( self hasPerk( "specialty_extraammo" ) )
+		if ( self hasperk( "specialty_extraammo" ) )
 		{
-			self giveMaxAmmo( self.pers[ "bot" ][ "class_secondary" ] );
+			self givemaxammo( self.pers[ "bot" ][ "class_secondary" ] );
 		}
 	}
 
-	self SetActionSlot( 3, "altMode" );
-	self SetActionSlot( 4, "" );
+	self setactionslot( 3, "altMode" );
+	self setactionslot( 4, "" );
 
-	if ( self.pers[ "bot" ][ "class_equipment" ] != "" && self.pers[ "bot" ][ "class_equipment" ] != "weapon_null_mp" && !GetDvarInt( #"scr_disable_equipment" ) )
+	if ( self.pers[ "bot" ][ "class_equipment" ] != "" && self.pers[ "bot" ][ "class_equipment" ] != "weapon_null_mp" && !getdvarint( #"scr_disable_equipment" ) )
 	{
-		self GiveWeapon( self.pers[ "bot" ][ "class_equipment" ] );
+		self giveweapon( self.pers[ "bot" ][ "class_equipment" ] );
 
 		self maps\mp\gametypes\_class::setweaponammooverall( self.pers[ "bot" ][ "class_equipment" ], 1 );
 
-		self SetActionSlot( 1, "weapon", self.pers[ "bot" ][ "class_equipment" ] );
+		self setactionslot( 1, "weapon", self.pers[ "bot" ][ "class_equipment" ] );
 	}
 
 	if ( self.pers[ "bot" ][ "class_lethal" ] != "" )
 	{
-		self GiveWeapon( self.pers[ "bot" ][ "class_lethal" ] );
+		self giveweapon( self.pers[ "bot" ][ "class_lethal" ] );
 
-		if ( self hasPerk( "specialty_twogrenades" ) )
+		if ( self hasperk( "specialty_twogrenades" ) )
 		{
-			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 2 );
+			self setweaponammoclip( self.pers[ "bot" ][ "class_lethal" ], 2 );
 		}
 		else
 		{
-			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_lethal" ], 1 );
+			self setweaponammoclip( self.pers[ "bot" ][ "class_lethal" ], 1 );
 		}
 
-		self SwitchToOffhand( self.pers[ "bot" ][ "class_lethal" ] );
+		self switchtooffhand( self.pers[ "bot" ][ "class_lethal" ] );
 	}
 
 	if ( self.pers[ "bot" ][ "class_tacticle" ] != "" )
 	{
-		self giveWeapon( self.pers[ "bot" ][ "class_tacticle" ] );
+		self giveweapon( self.pers[ "bot" ][ "class_tacticle" ] );
 
 		if ( self.pers[ "bot" ][ "class_tacticle" ] == "willy_pete_mp" )
 		{
-			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 1 );
+			self setweaponammoclip( self.pers[ "bot" ][ "class_tacticle" ], 1 );
 		}
-		else if ( self hasPerk( "specialty_twogrenades" ) )
+		else if ( self hasperk( "specialty_twogrenades" ) )
 		{
-			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 3 );
+			self setweaponammoclip( self.pers[ "bot" ][ "class_tacticle" ], 3 );
 		}
 		else
 		{
-			self SetWeaponAmmoClip( self.pers[ "bot" ][ "class_tacticle" ], 2 );
+			self setweaponammoclip( self.pers[ "bot" ][ "class_tacticle" ], 2 );
 		}
 
-		self setOffhandSecondaryClass( self.pers[ "bot" ][ "class_tacticle" ] );
+		self setoffhandsecondaryclass( self.pers[ "bot" ][ "class_tacticle" ] );
 	}
 
-	self setSpawnWeapon( weap );
+	self setspawnweapon( weap );
 }
 
 /*
@@ -202,7 +202,7 @@ bot_give_loadout()
 */
 bot_get_prestige()
 {
-	p_dvar = getDvarInt( "bots_loadout_prestige" );
+	p_dvar = getdvarint( "bots_loadout_prestige" );
 	p = 0;
 
 	if ( p_dvar == -1 )
@@ -211,7 +211,7 @@ bot_get_prestige()
 		{
 			player = level.players[ i ];
 
-			if ( !isDefined( player.team ) )
+			if ( !isdefined( player.team ) )
 			{
 				continue;
 			}
@@ -227,7 +227,7 @@ bot_get_prestige()
 	}
 	else if ( p_dvar == -2 )
 	{
-		p = randomInt( 17 );
+		p = randomint( 17 );
 	}
 	else
 	{
@@ -253,11 +253,11 @@ bot_rank()
 	self.pers[ "rank" ] = rankId;
 	self.pers[ "prestige" ] = prestige;
 	self.pers[ "plevel" ] = prestige;
-	self setRank( rankId, prestige );
+	self setrank( rankId, prestige );
 
 	self maps\mp\gametypes\_rank::syncxpstat();
 
-	if ( !level.gameEnded )
+	if ( !level.gameended )
 	{
 		level waittill( "game_ended" );
 	}
@@ -289,18 +289,18 @@ bot_set_class()
 
 	rank = self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] );
 
-	if ( !level.onlineGame )
+	if ( !level.onlinegame )
 	{
-		rank = level.maxRank;
+		rank = level.maxrank;
 	}
 
-	if ( rank < 3 || ( randomint( 100 ) < 3 && !GetDvarInt( "bots_loadout_reasonable" ) ) )
+	if ( rank < 3 || ( randomint( 100 ) < 3 && !getdvarint( "bots_loadout_reasonable" ) ) )
 	{
 		_class = "";
 
 		while ( _class == "" )
 		{
-			switch ( randomInt( 5 ) )
+			switch ( randomint( 5 ) )
 			{
 				case 0:
 					_class = "CLASS_ASSAULT";
@@ -332,14 +332,14 @@ bot_set_class()
 			}
 		}
 
-		self.pers[ "bot" ][ "class_primary" ] = level.classWeapons[ "axis" ][ _class ][ 0 ];
-		self.pers[ "bot" ][ "class_secondary" ] = level.classSidearm[ "axis" ][ _class ];
-		self.pers[ "bot" ][ "class_perk1" ] = level.default_perkIcon[ _class ][ 0 ];
-		self.pers[ "bot" ][ "class_perk2" ] = level.default_perkIcon[ _class ][ 1 ];
-		self.pers[ "bot" ][ "class_perk3" ] = level.default_perkIcon[ _class ][ 2 ];
+		self.pers[ "bot" ][ "class_primary" ] = level.classweapons[ "axis" ][ _class ][ 0 ];
+		self.pers[ "bot" ][ "class_secondary" ] = level.classsidearm[ "axis" ][ _class ];
+		self.pers[ "bot" ][ "class_perk1" ] = level.default_perkicon[ _class ][ 0 ];
+		self.pers[ "bot" ][ "class_perk2" ] = level.default_perkicon[ _class ][ 1 ];
+		self.pers[ "bot" ][ "class_perk3" ] = level.default_perkicon[ _class ][ 2 ];
 		self.pers[ "bot" ][ "class_equipment" ] = level.default_equipment[ _class ][ "type" ];
-		self.pers[ "bot" ][ "class_lethal" ] = level.classGrenades[ _class ][ "primary" ][ "type" ];
-		self.pers[ "bot" ][ "class_tacticle" ] = level.classGrenades[ _class ][ "secondary" ][ "type" ];
+		self.pers[ "bot" ][ "class_lethal" ] = level.classgrenades[ _class ][ "primary" ][ "type" ];
+		self.pers[ "bot" ][ "class_tacticle" ] = level.classgrenades[ _class ][ "secondary" ][ "type" ];
 	}
 	else
 	{
@@ -380,7 +380,7 @@ bot_set_class()
 			emblem = 0;
 		}
 
-		if ( isSubStr( self.pers[ "bot" ][ "class_primary" ], "_elbit_" ) || isSubStr( self.pers[ "bot" ][ "class_primary" ], "_reflex_" ) )
+		if ( issubstr( self.pers[ "bot" ][ "class_primary" ], "_elbit_" ) || issubstr( self.pers[ "bot" ][ "class_primary" ], "_reflex_" ) )
 		{
 			if ( rank >= 24 )
 			{
@@ -406,7 +406,7 @@ bot_set_class()
 			reticle = 0;
 		}
 
-		self.pers[ "bot" ][ "class_primary_opts" ] = self calcWeaponOptions( camo, lens, reticle, tag, emblem );
+		self.pers[ "bot" ][ "class_primary_opts" ] = self calcweaponoptions( camo, lens, reticle, tag, emblem );
 
 		if ( rank >= 30 )
 		{
@@ -417,10 +417,10 @@ bot_set_class()
 			face = 0;
 		}
 
-		self.pers[ "bot" ][ "class_render_opts" ] = self calcPlayerOptions( face, 0 );
+		self.pers[ "bot" ][ "class_render_opts" ] = self calcplayeroptions( face, 0 );
 	}
 
-	if ( !GetDvarInt( "bots_loadout_allow_op" ) && isSubStr( self.pers[ "bot" ][ "class_perk3" ], "perk_second_chance" ) )
+	if ( !getdvarint( "bots_loadout_allow_op" ) && issubstr( self.pers[ "bot" ][ "class_perk3" ], "perk_second_chance" ) )
 	{
 		self.pers[ "bot" ][ "class_perk3" ] = "";
 	}
@@ -431,28 +431,28 @@ bot_set_class()
 */
 bot_get_random_weapon( slot, rank )
 {
-	if ( !isDefined( level.bot_weapon_ids ) )
+	if ( !isdefined( level.bot_weapon_ids ) )
 	{
 		level.bot_weapon_ids = [];
 	}
 
-	if ( !IsDefined( level.bot_weapon_ids[ slot ] ) )
+	if ( !isdefined( level.bot_weapon_ids[ slot ] ) )
 	{
 		level.bot_weapon_ids[ slot ] = [];
 
-		keys = GetArrayKeys( level.tbl_weaponIDs );
+		keys = getarraykeys( level.tbl_weaponids );
 
 		for ( i = 0; i < keys.size; i++ )
 		{
 			key = keys[ i ];
-			id = level.tbl_weaponIDs[ key ];
+			id = level.tbl_weaponids[ key ];
 
 			if ( id[ "reference" ] == "weapon_null" )
 			{
 				continue;
 			}
 
-			if ( isSubStr( id[ "reference" ], "dw" ) )
+			if ( issubstr( id[ "reference" ], "dw" ) )
 			{
 				continue;
 			}
@@ -469,7 +469,7 @@ bot_get_random_weapon( slot, rank )
 		}
 	}
 
-	reason = GetDvarInt( "bots_loadout_reasonable" );
+	reason = getdvarint( "bots_loadout_reasonable" );
 	diff = self GetBotDiffNum();
 
 	if ( slot == "equipment" && self.pers[ "bot" ][ "cod_points" ] < 2000 )
@@ -481,7 +481,7 @@ bot_get_random_weapon( slot, rank )
 	{
 		id = PickRandom( level.bot_weapon_ids[ slot ] );
 
-		if ( !isDefined( id ) )
+		if ( !isdefined( id ) )
 		{
 			return;
 		}
@@ -531,37 +531,37 @@ bot_get_random_weapon( slot, rank )
 			}
 		}
 
-		if ( id[ "reference" ] == "hatchet" && RandomInt( 100 ) > 20 )
+		if ( id[ "reference" ] == "hatchet" && randomint( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "willy_pete" && RandomInt( 100 ) > 20 )
+		if ( id[ "reference" ] == "willy_pete" && randomint( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "nightingale" && RandomInt( 100 ) > 20 )
+		if ( id[ "reference" ] == "nightingale" && randomint( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "claymore" && diff <= 0 && RandomInt( 100 ) > 20 )
+		if ( id[ "reference" ] == "claymore" && diff <= 0 && randomint( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "scrambler" && diff <= 0 && RandomInt( 100 ) > 20 )
+		if ( id[ "reference" ] == "scrambler" && diff <= 0 && randomint( 100 ) > 20 )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == "camera_spike" && self IsSplitScreen() )
+		if ( id[ "reference" ] == "camera_spike" && self issplitscreen() )
 		{
 			continue;
 		}
 
-		if ( id[ "reference" ] == level.tacticalInsertionWeapon && level.disable_tacinsert )
+		if ( id[ "reference" ] == level.tacticalinsertionweapon && level.disable_tacinsert )
 		{
 			continue;
 		}
@@ -577,12 +577,12 @@ bot_get_random_weapon( slot, rank )
 
 		maxAttachs = 1;
 
-		if ( isSubStr( self.pers[ "bot" ][ "class_perk2" ], "perk_professional" ) && slot == "primary" )
+		if ( issubstr( self.pers[ "bot" ][ "class_perk2" ], "perk_professional" ) && slot == "primary" )
 		{
 			maxAttachs = 2;
 		}
 
-		if ( RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
+		if ( randomfloatrange( 0, 1 ) < ( ( rank / level.maxrank ) + 0.1 ) )
 		{
 			weap = bot_random_attachments( id[ "reference" ], id[ "attachment" ], maxAttachs );
 		}
@@ -626,18 +626,18 @@ bot_get_random_weapon( slot, rank )
 */
 bot_get_random_perk( slot, rank )
 {
-	reason = GetDvarInt( "bots_loadout_reasonable" );
+	reason = getdvarint( "bots_loadout_reasonable" );
 
 	for ( ;; )
 	{
-		id = PickRandom( level.allowedPerks[ 0 ] );
+		id = PickRandom( level.allowedperks[ 0 ] );
 
-		if ( !isDefined( id ) )
+		if ( !isdefined( id ) )
 		{
 			return;
 		}
 
-		id = level.tbl_PerkData[ id ];
+		id = level.tbl_perkdata[ id ];
 
 		if ( id[ "reference" ] == "specialty_null" )
 		{
@@ -649,12 +649,12 @@ bot_get_random_perk( slot, rank )
 			continue;
 		}
 
-		if ( isSubStr( id[ "reference_full" ], "_pro" ) && id[ "reference_full" ] != "perk_professional" )
+		if ( issubstr( id[ "reference_full" ], "_pro" ) && id[ "reference_full" ] != "perk_professional" )
 		{
 			continue;
 		}
 
-		cost = Int( id[ "cost" ] );
+		cost = int( id[ "cost" ] );
 
 		if ( cost > 0 && cost > self.pers[ "bot" ][ "cod_points" ] )
 		{
@@ -675,9 +675,9 @@ bot_get_random_perk( slot, rank )
 	}
 
 	id = bot_perk_from_reference_full( self.pers[ "bot" ][ "class_perk" + slot ] + "_pro" );
-	cost = Int( id[ "cost" ] );
+	cost = int( id[ "cost" ] );
 
-	if ( Int( cost ) <= self.pers[ "bot" ][ "cod_points" ] && RandomFloatRange( 0, 1 ) < ( ( rank / level.maxRank ) + 0.1 ) )
+	if ( int( cost ) <= self.pers[ "bot" ][ "cod_points" ] && randomfloatrange( 0, 1 ) < ( ( rank / level.maxrank ) + 0.1 ) )
 	{
 		self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points" ] - cost;
 		self.pers[ "bot" ][ "class_perk" + slot ] = id[ "reference_full" ];
@@ -826,7 +826,7 @@ bot_random_tag()
 {
 	for ( ;; )
 	{
-		tag = randomInt( 2 );
+		tag = randomint( 2 );
 
 		if ( tag == 0 )
 		{
@@ -851,7 +851,7 @@ bot_random_emblem()
 {
 	for ( ;; )
 	{
-		emblem = randomInt( 2 );
+		emblem = randomint( 2 );
 
 		if ( emblem == 0 )
 		{
@@ -876,7 +876,7 @@ bot_random_camo()
 {
 	for ( ;; )
 	{
-		camo = randomInt( 16 );
+		camo = randomint( 16 );
 
 		if ( camo == 0 )
 		{
@@ -974,7 +974,7 @@ bot_weapon_unlocked( id, rank )
 		}
 	}
 
-	unlock = Int( id[ "unlock_level" ] );
+	unlock = int( id[ "unlock_level" ] );
 
 	if ( unlock <= 3 )
 	{
@@ -1073,10 +1073,10 @@ bot_validate_weapon( weap )
 bot_random_attachments( weap, atts, num )
 {
 	weapon = weap;
-	attachments = StrTok( atts, " " );
+	attachments = strtok( atts, " " );
 	attachments[ attachments.size ] = "";
 
-	reason = GetDvarInt( "bots_loadout_reasonable" );
+	reason = getdvarint( "bots_loadout_reasonable" );
 
 	for ( ;; )
 	{
@@ -1210,16 +1210,16 @@ bot_random_attachments( weap, atts, num )
 */
 bot_perk_from_reference_full( reference_full )
 {
-	keys = GetArrayKeys( level.tbl_PerkData );
+	keys = getarraykeys( level.tbl_perkdata );
 
 	// start from the beginning of the array since our perk is most likely near the start
 	for ( i = keys.size - 1; i >= 0; i-- )
 	{
 		key = keys[ i ];
 
-		if ( level.tbl_PerkData[ key ][ "reference_full" ] == reference_full )
+		if ( level.tbl_perkdata[ key ][ "reference_full" ] == reference_full )
 		{
-			return level.tbl_PerkData[ key ];
+			return level.tbl_perkdata[ key ];
 		}
 	}
 
@@ -1231,13 +1231,13 @@ bot_perk_from_reference_full( reference_full )
 */
 bot_get_cod_points()
 {
-	if ( !level.onlineGame )
+	if ( !level.onlinegame )
 	{
 		self.pers[ "bot" ][ "cod_points" ] = 999999;
 		return;
 	}
 
-	cp_dvar = getDvarInt( "bots_loadout_codpoints" );
+	cp_dvar = getdvarint( "bots_loadout_codpoints" );
 
 	if ( cp_dvar == -1 )
 	{
@@ -1251,7 +1251,7 @@ bot_get_cod_points()
 				continue;
 			}
 
-			if ( !isDefined( players[ i ].pers[ "currencyspent" ] ) || !isDefined( players[ i ].pers[ "codpoints" ] ) )
+			if ( !isdefined( players[ i ].pers[ "currencyspent" ] ) || !isdefined( players[ i ].pers[ "codpoints" ] ) )
 			{
 				continue;
 			}
@@ -1265,7 +1265,7 @@ bot_get_cod_points()
 		}
 
 		point_average = array_average( total_points );
-		self.pers[ "bot" ][ "cod_points" ] = Int( point_average * RandomFloatRange( 0.6, 0.8 ) );
+		self.pers[ "bot" ][ "cod_points" ] = int( point_average * randomfloatrange( 0.6, 0.8 ) );
 	}
 	else if ( cp_dvar == 0 )
 	{
@@ -1283,7 +1283,7 @@ bot_get_cod_points()
 bot_get_rank()
 {
 	rank = 1;
-	rank_dvar = getDvarInt( "bots_loadout_rank" );
+	rank_dvar = getdvarint( "bots_loadout_rank" );
 
 	if ( rank_dvar == -1 )
 	{
@@ -1300,7 +1300,7 @@ bot_get_rank()
 				continue;
 			}
 
-			if ( !IsDefined( players[ i ].pers[ "rank" ] ) )
+			if ( !isdefined( players[ i ].pers[ "rank" ] ) )
 			{
 				continue;
 			}
@@ -1317,7 +1317,7 @@ bot_get_rank()
 
 		if ( !human_ranks.size )
 		{
-			human_ranks[ human_ranks.size ] = Round( random_normal_distribution( 35, 20, 0, level.maxRank ) );
+			human_ranks[ human_ranks.size ] = Round( random_normal_distribution( 35, 20, 0, level.maxrank ) );
 		}
 
 		human_avg = array_average( human_ranks );
@@ -1325,7 +1325,7 @@ bot_get_rank()
 		while ( bot_ranks.size + human_ranks.size < 5 )
 		{
 			// add some random ranks for better random number distribution
-			rank = human_avg + RandomIntRange( -10, 10 );
+			rank = human_avg + randomintrange( -10, 10 );
 			human_ranks[ human_ranks.size ] = rank;
 		}
 
@@ -1334,15 +1334,15 @@ bot_get_rank()
 		avg = array_average( ranks );
 		s = array_std_deviation( ranks, avg );
 
-		rank = Round( random_normal_distribution( avg, s, 0, level.maxRank ) );
+		rank = Round( random_normal_distribution( avg, s, 0, level.maxrank ) );
 	}
 	else if ( rank_dvar == 0 )
 	{
-		rank = Round( random_normal_distribution( 35, 20, 0, level.maxRank ) );
+		rank = Round( random_normal_distribution( 35, 20, 0, level.maxrank ) );
 	}
 	else
 	{
-		rank = Round( random_normal_distribution( rank_dvar, 5, 0, level.maxRank ) );
+		rank = Round( random_normal_distribution( rank_dvar, 5, 0, level.maxrank ) );
 	}
 
 	self.pers[ "bot" ][ "rankxp" ] = maps\mp\gametypes\_rank::getrankinfominxp( rank );
@@ -1359,7 +1359,7 @@ bot_setKillstreaks()
 	allowed_killstreaks[ 1 ] = "killstreak_supply_drop";
 	allowed_killstreaks[ 2 ] = "killstreak_helicopter_comlink";
 
-	if ( self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] ) >= 9 || !level.onlineGame )
+	if ( self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] ) >= 9 || !level.onlinegame )
 	{
 		allowed_killstreaks[ 3 ] = "killstreak_auto_turret_drop";
 		allowed_killstreaks[ 4 ] = "killstreak_tow_turret_drop";
@@ -1379,13 +1379,13 @@ bot_setKillstreaks()
 
 	self.pers[ "bot" ][ "killstreaks" ] = [];
 
-	reason = GetDvarInt( "bots_loadout_reasonable" );
+	reason = getdvarint( "bots_loadout_reasonable" );
 
 	for ( i = 0; i < 3; i++ )
 	{
 		killstreak = PickRandom( allowed_killstreaks );
 
-		if ( !isDefined( killstreak ) )
+		if ( !isdefined( killstreak ) )
 		{
 			break;
 		}

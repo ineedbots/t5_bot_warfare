@@ -19,75 +19,75 @@ init()
 
 do_printconsole( s )
 {
-	PrintLn( s );
+	println( s );
 }
 
 do_botmovementoverride( a, b )
 {
-	self botMovementOverride( a, b );
+	self botmovementoverride( a, b );
 }
 
 do_botclearmovementoverride()
 {
-	self botClearMovementOverride();
+	self botclearmovementoverride();
 }
 
 do_botclearbuttonoverride( a )
 {
-	self botClearButtonOverride( a );
+	self botclearbuttonoverride( a );
 }
 
 do_botbuttonoverride( a, b )
 {
-	self botButtonOverride( a, b );
+	self botbuttonoverride( a, b );
 }
 
 do_botclearoverrides( a )
 {
-	self botClearOverrides( a );
+	self botclearoverrides( a );
 }
 
 do_botmantleoverride()
 {
-	self botMantleOverride();
+	self botmantleoverride();
 }
 
 do_botclearmantleoverride()
 {
-	self botClearMantleOverride();
+	self botclearmantleoverride();
 }
 
 do_botclearweaponoverride()
 {
-	self botClearWeaponOverride();
+	self botclearweaponoverride();
 }
 
 do_botweaponoverride( a )
 {
-	self botWeaponOverride( a );
+	self botweaponoverride( a );
 }
 
 do_botclearbuttonoverrides()
 {
-	self botClearButtonOverrides();
+	self botclearbuttonoverrides();
 }
 
 do_botaimoverride()
 {
-	self botAimOverride();
+	self botaimoverride();
 }
 
 do_botclearaimoverride()
 {
-	self botClearAimOverride();
+	self botclearaimoverride();
 }
 
 do_botmeleeparams( yaw, dist )
 {
-	// self botMeleeParams( yaw, dist );
+	// self botmeleeparams( yaw, dist );
 }
 
 do_clearbotmeleeparams()
 {
-	// self botClearMeleeParams();
+	// self botclearmeleeparams();
 }

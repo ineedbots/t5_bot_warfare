@@ -16,7 +16,7 @@ wait_for_builtins()
 {
 	for ( i = 0; i < 20; i++ )
 	{
-		if ( isDefined( level.bot_builtins ) )
+		if ( isdefined( level.bot_builtins ) )
 		{
 			return true;
 		}
@@ -39,13 +39,13 @@ wait_for_builtins()
 */
 BotBuiltinPrintConsole( s )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "printconsole" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "printconsole" ] ) )
 	{
 		[[ level.bot_builtins[ "printconsole" ] ]]( s );
 	}
 	else
 	{
-		PrintLn( s );
+		println( s );
 	}
 }
 
@@ -53,7 +53,7 @@ BotBuiltinPrintConsole( s )
 */
 BotBuiltinMovementOverride( a, b )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmovementoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmovementoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botmovementoverride" ] ]]( a, b );
 	}
@@ -63,7 +63,7 @@ BotBuiltinMovementOverride( a, b )
 */
 BotBuiltinClearMovementOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearmovementoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearmovementoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearmovementoverride" ] ]]();
 	}
@@ -73,7 +73,7 @@ BotBuiltinClearMovementOverride()
 */
 BotBuiltinClearButtonOverride( a )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearbuttonoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearbuttonoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearbuttonoverride" ] ]]( a );
 	}
@@ -83,7 +83,7 @@ BotBuiltinClearButtonOverride( a )
 */
 BotBuiltinButtonOverride( a, b )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botbuttonoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botbuttonoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botbuttonoverride" ] ]]( a, b );
 	}
@@ -93,7 +93,7 @@ BotBuiltinButtonOverride( a, b )
 */
 BotBuiltinClearOverrides( a )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearoverrides" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearoverrides" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearoverrides" ] ]]( a );
 	}
@@ -103,7 +103,7 @@ BotBuiltinClearOverrides( a )
 */
 BotBuiltinMantleOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmantleoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmantleoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botmantleoverride" ] ]]();
 	}
@@ -113,7 +113,7 @@ BotBuiltinMantleOverride()
 */
 BotBuiltinClearMantleOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearmantleoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearmantleoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearmantleoverride" ] ]]();
 	}
@@ -123,7 +123,7 @@ BotBuiltinClearMantleOverride()
 */
 BotBuiltinClearWeaponOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearweaponoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearweaponoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearweaponoverride" ] ]]();
 	}
@@ -133,7 +133,7 @@ BotBuiltinClearWeaponOverride()
 */
 BotBuiltinWeaponOverride( a )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botweaponoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botweaponoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botweaponoverride" ] ]]( a );
 	}
@@ -143,7 +143,7 @@ BotBuiltinWeaponOverride( a )
 */
 BotBuiltinClearButtonOverrides()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearbuttonoverrides" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearbuttonoverrides" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearbuttonoverrides" ] ]]();
 	}
@@ -153,7 +153,7 @@ BotBuiltinClearButtonOverrides()
 */
 BotBuiltinAimOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botaimoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botaimoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botaimoverride" ] ]]();
 	}
@@ -163,7 +163,7 @@ BotBuiltinAimOverride()
 */
 BotBuiltinClearAimOverride()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botclearaimoverride" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearaimoverride" ] ) )
 	{
 		self [[ level.bot_builtins[ "botclearaimoverride" ] ]]();
 	}
@@ -174,7 +174,7 @@ BotBuiltinClearAimOverride()
 */
 BotBuiltinBotMeleeParams( yaw, dist )
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "botmeleeparams" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmeleeparams" ] ) )
 	{
 		self [[ level.bot_builtins[ "botmeleeparams" ] ]]( yaw, dist );
 	}
@@ -184,7 +184,7 @@ BotBuiltinBotMeleeParams( yaw, dist )
 */
 BotBuiltinClearMeleeParams()
 {
-	if ( isDefined( level.bot_builtins ) && isDefined( level.bot_builtins[ "clearbotmeleeparams" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "clearbotmeleeparams" ] ) )
 	{
 		self [[ level.bot_builtins[ "clearbotmeleeparams" ] ]]();
 	}
@@ -259,7 +259,7 @@ PickRandom( arr )
 		return undefined;
 	}
 
-	return arr[ randomInt( arr.size ) ];
+	return arr[ randomint( arr.size ) ];
 }
 
 /*
@@ -267,7 +267,7 @@ PickRandom( arr )
 */
 isDefusing()
 {
-	return ( isDefined( self.isDefusing ) && self.isDefusing );
+	return ( isdefined( self.isdefusing ) && self.isdefusing );
 }
 
 /*
@@ -275,7 +275,7 @@ isDefusing()
 */
 isPlanting()
 {
-	return ( isDefined( self.isPlanting ) && self.isPlanting );
+	return ( isdefined( self.isplanting ) && self.isplanting );
 }
 
 /*
@@ -283,7 +283,7 @@ isPlanting()
 */
 inLastStand()
 {
-	return ( isDefined( self.laststand ) && self.laststand );
+	return ( isdefined( self.laststand ) && self.laststand );
 }
 
 /*
@@ -291,7 +291,7 @@ inLastStand()
 */
 isFlagCarrier()
 {
-	return ( isDefined( self.isFlagCarrier ) && self.isFlagCarrier );
+	return ( isdefined( self.isflagcarrier ) && self.isflagcarrier );
 }
 
 /*
@@ -299,7 +299,7 @@ isFlagCarrier()
 */
 isInUse()
 {
-	return ( isDefined( self.inUse ) && self.inUse );
+	return ( isdefined( self.inuse ) && self.inuse );
 }
 
 /*
@@ -307,7 +307,7 @@ isInUse()
 */
 isBombCarrier()
 {
-	return ( isDefined( self.isBombCarrier ) && self.isBombCarrier );
+	return ( isdefined( self.isbombcarrier ) && self.isbombcarrier );
 }
 
 /*
@@ -333,7 +333,7 @@ GetBotDiffNum()
 {
 	num = 0;
 
-	switch ( getDvar( "bot_difficulty" ) )
+	switch ( getdvar( "bot_difficulty" ) )
 	{
 		case "fu":
 			num = 3;
@@ -361,7 +361,7 @@ GetBotDiffNum()
 */
 isWeaponAltmode( weap )
 {
-	if ( isStrStart( weap, "gl_" ) || isStrStart( weap, "ft_" ) || isStrStart( weap, "mk_" ) )
+	if ( isstrstart( weap, "gl_" ) || isstrstart( weap, "ft_" ) || isstrstart( weap, "mk_" ) )
 	{
 		return true;
 	}
@@ -381,27 +381,27 @@ bot_lookat( pos, time, vel, doAimPredict )
 	self endon( "spawned_player" );
 	level endon ( "game_ended" );
 
-	if ( level.gameEnded || level.inPrematchPeriod || self BotIsFrozen() || !getDvarInt( "bots_play_aim" ) )
+	if ( level.gameended || level.inprematchperiod || self BotIsFrozen() || !getdvarint( "bots_play_aim" ) )
 	{
 		return;
 	}
 
-	if ( !isDefined( pos ) )
+	if ( !isdefined( pos ) )
 	{
 		return;
 	}
 
-	if ( !isDefined( doAimPredict ) )
+	if ( !isdefined( doAimPredict ) )
 	{
 		doAimPredict = false;
 	}
 
-	if ( !isDefined( time ) )
+	if ( !isdefined( time ) )
 	{
 		time = 0.05;
 	}
 
-	if ( !isDefined( vel ) )
+	if ( !isdefined( vel ) )
 	{
 		vel = ( 0, 0, 0 );
 	}
@@ -413,28 +413,28 @@ bot_lookat( pos, time, vel, doAimPredict )
 		steps = 1;
 	}
 
-	myEye = self GetEye(); // get our eye pos
+	myEye = self geteye(); // get our eye pos
 
 	if ( doAimPredict )
 	{
-		myEye += ( self getVelocity() * 0.05 ) * ( steps - 1 ); // account for our velocity
+		myEye += ( self getvelocity() * 0.05 ) * ( steps - 1 ); // account for our velocity
 
 		pos += ( vel * 0.05 ) * ( steps - 1 ); // add the velocity vector
 	}
 
-	myAngle = self getPlayerAngles();
-	angles = VectorToAngles( ( pos - myEye ) - anglesToForward( myAngle ) );
+	myAngle = self getplayerangles();
+	angles = vectortoangles( ( pos - myEye ) - anglestoforward( myAngle ) );
 
-	X = AngleClamp180( angles[ 0 ] - myAngle[ 0 ] );
+	X = angleclamp180( angles[ 0 ] - myAngle[ 0 ] );
 	X = X / steps;
 
-	Y = AngleClamp180( angles[ 1 ] - myAngle[ 1 ] );
+	Y = angleclamp180( angles[ 1 ] - myAngle[ 1 ] );
 	Y = Y / steps;
 
 	for ( i = 0; i < steps; i++ )
 	{
-		myAngle = ( AngleClamp180( myAngle[ 0 ] + X ), AngleClamp180( myAngle[ 1 ] + Y ), 0 );
-		self setPlayerAngles( myAngle );
+		myAngle = ( angleclamp180( myAngle[ 0 ] + X ), angleclamp180( myAngle[ 1 ] + Y ), 0 );
+		self setplayerangles( myAngle );
 		wait 0.05;
 	}
 }
@@ -449,17 +449,17 @@ getweaponslistall()
 	for ( i = 0; i < weaps.size; i++ )
 	{
 		weap = weaps[ i ];
-		toks = strTok( weap, "_" );
+		toks = strtok( weap, "_" );
 
-		if ( isSubStr( weap, "_gl_" ) )
+		if ( issubstr( weap, "_gl_" ) )
 		{
 			weaps[ weaps.size ] = "gl_" + toks[ 0 ] + "_mp";
 		}
-		else if ( isSubStr( weap, "_ft_" ) )
+		else if ( issubstr( weap, "_ft_" ) )
 		{
 			weaps[ weaps.size ] = "ft_" + toks[ 0 ] + "_mp";
 		}
-		else if ( isSubStr( weap, "_mk_" ) )
+		else if ( issubstr( weap, "_mk_" ) )
 		{
 			weaps[ weaps.size ] = "mk_" + toks[ 0 ] + "_mp";
 		}
@@ -479,12 +479,12 @@ getValidTube()
 	{
 		weap = weaps[ i ];
 
-		if ( !self getAmmoCount( weap ) )
+		if ( !self getammocount( weap ) )
 		{
 			continue;
 		}
 
-		if ( ( isSubStr( weap, "gl_" ) && !isSubStr( weap, "_gl_" ) ) || weap == "china_lake_mp" )
+		if ( ( issubstr( weap, "gl_" ) && !issubstr( weap, "_gl_" ) ) || weap == "china_lake_mp" )
 		{
 			return weap;
 		}
@@ -555,7 +555,7 @@ getBotToKick()
 {
 	bots = getBotArray();
 
-	if ( !isDefined( bots ) || !isDefined( bots.size ) || bots.size <= 0 || !isDefined( bots[ 0 ] ) )
+	if ( !isdefined( bots ) || !isdefined( bots.size ) || bots.size <= 0 || !isdefined( bots[ 0 ] ) )
 	{
 		return undefined;
 	}
@@ -563,14 +563,14 @@ getBotToKick()
 	tokick = undefined;
 	axis = 0;
 	allies = 0;
-	team = getDvar( "bots_team" );
+	team = getdvar( "bots_team" );
 
 	// count teams
 	for ( i = 0; i < bots.size; i++ )
 	{
 		bot = bots[ i ];
 
-		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		if ( !isdefined( bot ) || !isdefined( bot.team ) )
 		{
 			continue;
 		}
@@ -614,7 +614,7 @@ getBotToKick()
 	{
 		bot = bots[ i ];
 
-		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		if ( !isdefined( bot ) || !isdefined( bot.team ) )
 		{
 			continue;
 		}
@@ -627,7 +627,7 @@ getBotToKick()
 		tokick = bot;
 	}
 
-	if ( isDefined( tokick ) )
+	if ( isdefined( tokick ) )
 	{
 		return tokick;
 	}
@@ -637,7 +637,7 @@ getBotToKick()
 	{
 		bot = bots[ i ];
 
-		if ( !isDefined( bot ) || !isDefined( bot.team ) )
+		if ( !isdefined( bot ) || !isdefined( bot.team ) )
 		{
 			continue;
 		}
@@ -655,16 +655,16 @@ bot_wait_for_host()
 {
 	host = undefined;
 
-	while ( !isDefined( level ) || !isDefined( level.players ) )
+	while ( !isdefined( level ) || !isdefined( level.players ) )
 	{
 		wait 0.05;
 	}
 
-	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
+	for ( i = getdvarfloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
-		host = GetHostPlayer();
+		host = gethostplayer();
 
-		if ( isDefined( host ) )
+		if ( isdefined( host ) )
 		{
 			break;
 		}
@@ -672,14 +672,14 @@ bot_wait_for_host()
 		wait 0.05;
 	}
 
-	if ( !isDefined( host ) )
+	if ( !isdefined( host ) )
 	{
 		return;
 	}
 
-	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
+	for ( i = getdvarfloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
-		if ( IsDefined( host.pers[ "team" ] ) )
+		if ( isdefined( host.pers[ "team" ] ) )
 		{
 			break;
 		}
@@ -687,12 +687,12 @@ bot_wait_for_host()
 		wait 0.05;
 	}
 
-	if ( !IsDefined( host.pers[ "team" ] ) )
+	if ( !isdefined( host.pers[ "team" ] ) )
 	{
 		return;
 	}
 
-	for ( i = getDvarFloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
+	for ( i = getdvarfloat( "bots_main_waitForHostTime" ); i > 0; i -= 0.05 )
 	{
 		if ( host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis" )
 		{
@@ -708,7 +708,7 @@ bot_wait_for_host()
 */
 SetBotGoal( where, dist )
 {
-	self SetScriptGoal( where, dist );
+	self setscriptgoal( where, dist );
 	waittillframeend;
 	self notify( "new_goal" );
 }
@@ -718,7 +718,7 @@ SetBotGoal( where, dist )
 */
 ClearBotGoal()
 {
-	self ClearScriptGoal();
+	self clearscriptgoal();
 	waittillframeend;
 	self notify( "new_goal" );
 }
@@ -728,7 +728,7 @@ ClearBotGoal()
 */
 BotPressUse( time )
 {
-	self PressUseButton( time );
+	self pressusebutton( time );
 }
 
 /*
@@ -750,7 +750,7 @@ BotIsFrozen()
 /*
 	Bot stops moving
 */
-BotStopMove( what )
+botStopMove( what )
 {
 	self thread botStopMove2( what );
 }
@@ -783,8 +783,8 @@ botStopMove2( what )
 
 	for ( ;; )
 	{
-		self setVelocity( ( 0, 0, 0 ) );
-		self setOrigin( og );
+		self setvelocity( ( 0, 0, 0 ) );
+		self setorigin( og );
 		wait 0.05;
 	}
 }
@@ -935,8 +935,8 @@ doExtraCheck()
 */
 getConeDot( to, from, dir )
 {
-	dirToTarget = VectorNormalize( to - from );
-	forward = AnglesToForward( dir );
+	dirToTarget = vectornormalize( to - from );
+	forward = anglestoforward( dir );
 	return vectordot( dirToTarget, forward );
 }
 
@@ -949,22 +949,22 @@ bot_onUsePlantObjectFix( player )
 	if ( !self maps\mp\gametypes\_gameobjects::isfriendlyteam( player.pers[ "team" ] ) )
 	{
 		level thread bot_bombPlanted( self, player );
-		player logString( "bomb planted: " + self.label );
+		player logstring( "bomb planted: " + self.label );
 
 		// disable all bomb zones except this one
-		for ( index = 0; index < level.bombZones.size; index++ )
+		for ( index = 0; index < level.bombzones.size; index++ )
 		{
-			if ( level.bombZones[ index ] == self )
+			if ( level.bombzones[ index ] == self )
 			{
 				continue;
 			}
 
-			level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableobject();
+			level.bombzones[ index ] maps\mp\gametypes\_gameobjects::disableobject();
 		}
 
-		thread playSoundOnPlayers( "mus_sd_planted" + "_" + level.teamPostfix[ player.pers[ "team" ] ] );
+		thread playsoundonplayers( "mus_sd_planted" + "_" + level.teampostfix[ player.pers[ "team" ] ] );
 // removed plant audio until finalization of assest TODO : new plant sounds when assests are online
-//		player playSound( "mpl_sd_bomb_plant" );
+//		player playsound( "mpl_sd_bomb_plant" );
 		player notify ( "bomb_planted" );
 
 		level thread maps\mp\_popups::displayteammessagetoall( &"MP_EXPLOSIVES_PLANTED_BY", player );
@@ -981,7 +981,7 @@ bot_onUsePlantObjectFix( player )
 		maps\mp\gametypes\_globallogic_audio::leaderdialog( "bomb_planted" );
 
 		maps\mp\gametypes\_globallogic_score::giveplayerscore( "plant", player );
-		// player thread [[ level.onXPEvent ]]( "plant" );
+		// player thread [[ level.onxpevent ]]( "plant" );
 	}
 }
 
@@ -991,48 +991,48 @@ bot_onUsePlantObjectFix( player )
 bot_bombPlanted( destroyedObj, player )
 {
 	maps\mp\gametypes\_globallogic_utils::pausetimer();
-	level.bombPlanted = true;
+	level.bombplanted = true;
 
 	destroyedObj.visuals[ 0 ] thread maps\mp\gametypes\_globallogic_utils::playtickingsound( "mpl_sab_ui_suitcasebomb_timer" );
 	// Play suspense music
-	level thread maps\mp\gametypes\sd::bombplantedmusicselay();
+	level thread maps\mp\gametypes\sd::bombplantedmusicdelay();
 
 	// thread maps\mp\gametypes\_globallogic_audio::actionmusicset();
 
-	level.tickingObject = destroyedObj.visuals[ 0 ];
+	level.tickingobject = destroyedObj.visuals[ 0 ];
 
-	level.timeLimitOverride = true;
-	setGameEndTime( int( gettime() + ( level.bombTimer * 1000 ) ) );
-	setMatchFlag( "bomb_timer", 1 );
+	level.timelimitoverride = true;
+	setgameendtime( int( gettime() + ( level.bombtimer * 1000 ) ) );
+	setmatchflag( "bomb_timer", 1 );
 
-	if ( !level.multiBomb )
+	if ( !level.multibomb )
 	{
-		level.sdBomb maps\mp\gametypes\_gameobjects::allowcarry( "none" );
-		level.sdBomb maps\mp\gametypes\_gameobjects::setvisibleteam( "none" );
-		level.sdBomb maps\mp\gametypes\_gameobjects::setdropped();
-		level.sdBombModel = level.sdBomb.visuals[ 0 ];
+		level.sdbomb maps\mp\gametypes\_gameobjects::allowcarry( "none" );
+		level.sdbomb maps\mp\gametypes\_gameobjects::setvisibleteam( "none" );
+		level.sdbomb maps\mp\gametypes\_gameobjects::setdropped();
+		level.sdbombmodel = level.sdbomb.visuals[ 0 ];
 	}
 	else
 	{
 
 		for ( index = 0; index < level.players.size; index++ )
 		{
-			if ( isDefined( level.players[ index ].carryIcon ) )
+			if ( isdefined( level.players[ index ].carryicon ) )
 			{
-				level.players[ index ].carryIcon destroyelem();
+				level.players[ index ].carryicon destroyelem();
 			}
 		}
 
-		trace = bulletTrace( player.origin + ( 0, 0, 20 ), player.origin - ( 0, 0, 2000 ), false, player );
+		trace = bullettrace( player.origin + ( 0, 0, 20 ), player.origin - ( 0, 0, 2000 ), false, player );
 
 		tempAngle = randomfloat( 360 );
 		forward = ( cos( tempAngle ), sin( tempAngle ), 0 );
 		forward = vectornormalize( forward - vector_scale( trace[ "normal" ], vectordot( forward, trace[ "normal" ] ) ) );
 		dropAngles = vectortoangles( forward );
 
-		level.sdBombModel = spawn( "script_model", trace[ "position" ] );
-		level.sdBombModel.angles = dropAngles;
-		level.sdBombModel setModel( "prop_suitcase_bomb" );
+		level.sdbombmodel = spawn( "script_model", trace[ "position" ] );
+		level.sdbombmodel.angles = dropAngles;
+		level.sdbombmodel setmodel( "prop_suitcase_bomb" );
 	}
 
 	destroyedObj maps\mp\gametypes\_gameobjects::allowuse( "none" );
@@ -1046,12 +1046,12 @@ bot_bombPlanted( destroyedObj, player )
 	label = destroyedObj maps\mp\gametypes\_gameobjects::getlabel();
 
 	// create a new object to defuse with.
-	trigger = destroyedObj.bombDefuseTrig;
-	trigger.origin = level.sdBombModel.origin;
+	trigger = destroyedObj.bombdefusetrig;
+	trigger.origin = level.sdbombmodel.origin;
 	visuals = [];
 	defuseObject = maps\mp\gametypes\_gameobjects::createuseobject( game[ "defenders" ], trigger, visuals, ( 0, 0, 32 ) );
 	defuseObject maps\mp\gametypes\_gameobjects::allowuse( "friendly" );
-	defuseObject maps\mp\gametypes\_gameobjects::setusetime( level.defuseTime );
+	defuseObject maps\mp\gametypes\_gameobjects::setusetime( level.defusetime );
 	defuseObject maps\mp\gametypes\_gameobjects::setusetext( &"MP_DEFUSING_EXPLOSIVE" );
 	defuseObject maps\mp\gametypes\_gameobjects::setusehinttext( &"PLATFORM_HOLD_TO_DEFUSE_EXPLOSIVES" );
 	defuseObject maps\mp\gametypes\_gameobjects::setvisibleteam( "any" );
@@ -1060,59 +1060,59 @@ bot_bombPlanted( destroyedObj, player )
 	defuseObject maps\mp\gametypes\_gameobjects::set3dicon( "friendly", "waypoint_defuse" + label );
 	defuseObject maps\mp\gametypes\_gameobjects::set3dicon( "enemy", "waypoint_defend" + label );
 	defuseObject.label = label;
-	defuseObject.onBeginUse = maps\mp\gametypes\sd::onbeginuse;
-	defuseObject.onEndUse = maps\mp\gametypes\sd::onenduse;
-	defuseObject.onUse = maps\mp\gametypes\sd::onusedefuseobject;
-	defuseObject.useWeapon = "briefcase_bomb_defuse_mp";
+	defuseObject.onbeginuse = maps\mp\gametypes\sd::onbeginuse;
+	defuseObject.onenduse = maps\mp\gametypes\sd::onenduse;
+	defuseObject.onuse = maps\mp\gametypes\sd::onusedefuseobject;
+	defuseObject.useweapon = "briefcase_bomb_defuse_mp";
 
-	level.defuseObject = defuseObject; // every cod...
+	level.defuseobject = defuseObject; // every cod...
 
-	player.isBombCarrier = false;
+	player.isbombcarrier = false;
 
 	maps\mp\gametypes\sd::bombtimerwait();
-	setMatchFlag( "bomb_timer", 0 );
+	setmatchflag( "bomb_timer", 0 );
 
 	destroyedObj.visuals[ 0 ] maps\mp\gametypes\_globallogic_utils::stoptickingsound();
 
-	if ( level.gameEnded || level.bombDefused )
+	if ( level.gameended || level.bombdefused )
 	{
 		return;
 	}
 
-	level.bombExploded = true;
+	level.bombexploded = true;
 
 
 
-	explosionOrigin = level.sdBombModel.origin + ( 0, 0, 12 );
-	level.sdBombModel hide();
+	explosionOrigin = level.sdbombmodel.origin + ( 0, 0, 12 );
+	level.sdbombmodel hide();
 
 	if ( isdefined( player ) )
 	{
-		destroyedObj.visuals[ 0 ] radiusDamage( explosionOrigin, 512, 200, 20, player, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
+		destroyedObj.visuals[ 0 ] radiusdamage( explosionOrigin, 512, 200, 20, player, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
 		level thread maps\mp\_popups::displayteammessagetoall( &"MP_EXPLOSIVES_BLOWUP_BY", player );
 		player maps\mp\_medals::bomber();
 		player maps\mp\gametypes\_persistence::stataddwithgametype( "DESTRUCTIONS", 1 );
 	}
 	else
 	{
-		destroyedObj.visuals[ 0 ] radiusDamage( explosionOrigin, 512, 200, 20, undefined, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
+		destroyedObj.visuals[ 0 ] radiusdamage( explosionOrigin, 512, 200, 20, undefined, "MOD_EXPLOSIVE", "briefcase_bomb_mp" );
 	}
 
 	rot = randomfloat( 360 );
-	explosionEffect = spawnFx( level._effect[ "bombexplosion" ], explosionOrigin + ( 0, 0, 50 ), ( 0, 0, 1 ), ( cos( rot ), sin( rot ), 0 ) );
-	triggerFx( explosionEffect );
+	explosionEffect = spawnfx( level._effect[ "bombexplosion" ], explosionOrigin + ( 0, 0, 50 ), ( 0, 0, 1 ), ( cos( rot ), sin( rot ), 0 ) );
+	triggerfx( explosionEffect );
 
-	thread playSoundinSpace( "mpl_sd_exp_suitcase_bomb_main", explosionOrigin );
+	thread playsoundinspace( "mpl_sd_exp_suitcase_bomb_main", explosionOrigin );
 	// thread maps\mp\gametypes\_globallogic_audio::set_music_on_team( "SILENT", "both" );
 
-	if ( isDefined( destroyedObj.exploderIndex ) )
+	if ( isdefined( destroyedObj.exploderindex ) )
 	{
-		exploder( destroyedObj.exploderIndex );
+		exploder( destroyedObj.exploderindex );
 	}
 
-	for ( index = 0; index < level.bombZones.size; index++ )
+	for ( index = 0; index < level.bombzones.size; index++ )
 	{
-		level.bombZones[ index ] maps\mp\gametypes\_gameobjects::disableobject();
+		level.bombzones[ index ] maps\mp\gametypes\_gameobjects::disableobject();
 	}
 
 	defuseObject maps\mp\gametypes\_gameobjects::disableobject();

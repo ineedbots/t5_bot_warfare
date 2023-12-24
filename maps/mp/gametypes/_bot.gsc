@@ -15,170 +15,170 @@
 */
 init()
 {
-	level.bw_VERSION = "1.1.1";
+	level.bw_version = "1.1.1";
 
 	level.bot_offline = false;
 
-	if ( getDvar( "bots_main" ) == "" )
+	if ( getdvar( "bots_main" ) == "" )
 	{
-		setDvar( "bots_main", true );
+		setdvar( "bots_main", true );
 	}
 
-	if ( !getDvarInt( "bots_main" ) )
+	if ( !getdvarint( "bots_main" ) )
 	{
 		return;
 	}
 
 	if ( !wait_for_builtins() )
 	{
-		PrintLn( "FATAL: NO BUILT-INS FOR BOTS" );
+		println( "FATAL: NO BUILT-INS FOR BOTS" );
 	}
 
-	if ( getDvar( "bots_main_waitForHostTime" ) == "" )
+	if ( getdvar( "bots_main_waitForHostTime" ) == "" )
 	{
-		setDvar( "bots_main_waitForHostTime", 10.0 ); // how long to wait to wait for the host player
+		setdvar( "bots_main_waitForHostTime", 10.0 ); // how long to wait to wait for the host player
 	}
 
-	if ( getDvar( "bots_main_kickBotsAtEnd" ) == "" )
+	if ( getdvar( "bots_main_kickBotsAtEnd" ) == "" )
 	{
-		setDvar( "bots_main_kickBotsAtEnd", false ); // kicks the bots at game end
+		setdvar( "bots_main_kickBotsAtEnd", false ); // kicks the bots at game end
 	}
 
-	if ( getDvar( "bots_manage_add" ) == "" )
+	if ( getdvar( "bots_manage_add" ) == "" )
 	{
-		setDvar( "bots_manage_add", 0 ); // amount of bots to add to the game
+		setdvar( "bots_manage_add", 0 ); // amount of bots to add to the game
 	}
 
-	if ( getDvar( "bots_manage_fill" ) == "" )
+	if ( getdvar( "bots_manage_fill" ) == "" )
 	{
-		setDvar( "bots_manage_fill", 0 ); // amount of bots to maintain
+		setdvar( "bots_manage_fill", 0 ); // amount of bots to maintain
 	}
 
-	if ( getDvar( "bots_manage_fill_spec" ) == "" )
+	if ( getdvar( "bots_manage_fill_spec" ) == "" )
 	{
-		setDvar( "bots_manage_fill_spec", true ); // to count for fill if player is on spec team
+		setdvar( "bots_manage_fill_spec", true ); // to count for fill if player is on spec team
 	}
 
-	if ( getDvar( "bots_manage_fill_mode" ) == "" )
+	if ( getdvar( "bots_manage_fill_mode" ) == "" )
 	{
-		setDvar( "bots_manage_fill_mode", 0 ); // fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
+		setdvar( "bots_manage_fill_mode", 0 ); // fill mode, 0 adds everyone, 1 just bots, 2 maintains at maps, 3 is 2 with 1
 	}
 
-	if ( getDvar( "bots_manage_fill_kick" ) == "" )
+	if ( getdvar( "bots_manage_fill_kick" ) == "" )
 	{
-		setDvar( "bots_manage_fill_kick", false ); // kick bots if too many
+		setdvar( "bots_manage_fill_kick", false ); // kick bots if too many
 	}
 
-	if ( getDvar( "bots_skill" ) == "" ) // alias for bot_difficulty
+	if ( getdvar( "bots_skill" ) == "" ) // alias for bot_difficulty
 	{
-		setDvar( "bots_skill", "" );
+		setdvar( "bots_skill", "" );
 	}
 
-	if ( getDvar( "bots_team" ) == "" )
+	if ( getdvar( "bots_team" ) == "" )
 	{
-		setDvar( "bots_team", "autoassign" ); // which team for bots to join
+		setdvar( "bots_team", "autoassign" ); // which team for bots to join
 	}
 
-	if ( getDvar( "bots_team_amount" ) == "" )
+	if ( getdvar( "bots_team_amount" ) == "" )
 	{
-		setDvar( "bots_team_amount", 0 ); // amount of bots on axis team
+		setdvar( "bots_team_amount", 0 ); // amount of bots on axis team
 	}
 
-	if ( getDvar( "bots_team_force" ) == "" )
+	if ( getdvar( "bots_team_force" ) == "" )
 	{
-		setDvar( "bots_team_force", false ); // force bots on team
+		setdvar( "bots_team_force", false ); // force bots on team
 	}
 
-	if ( getDvar( "bots_team_mode" ) == "" )
+	if ( getdvar( "bots_team_mode" ) == "" )
 	{
-		setDvar( "bots_team_mode", 0 ); // counts just bots when 1
+		setdvar( "bots_team_mode", 0 ); // counts just bots when 1
 	}
 
-	if ( getDvar( "bots_loadout_reasonable" ) == "" ) // filter out the bad 'guns' and perks
+	if ( getdvar( "bots_loadout_reasonable" ) == "" ) // filter out the bad 'guns' and perks
 	{
-		setDvar( "bots_loadout_reasonable", false );
+		setdvar( "bots_loadout_reasonable", false );
 	}
 
-	if ( getDvar( "bots_loadout_allow_op" ) == "" ) // allows jug, marty and laststand
+	if ( getdvar( "bots_loadout_allow_op" ) == "" ) // allows jug, marty and laststand
 	{
-		setDvar( "bots_loadout_allow_op", true );
+		setdvar( "bots_loadout_allow_op", true );
 	}
 
-	if ( getDvar( "bots_loadout_rank" ) == "" ) // what rank the bots should be around, -1 is around the players, 0 is all random
+	if ( getdvar( "bots_loadout_rank" ) == "" ) // what rank the bots should be around, -1 is around the players, 0 is all random
 	{
-		setDvar( "bots_loadout_rank", -1 );
+		setdvar( "bots_loadout_rank", -1 );
 	}
 
-	if ( getDvar( "bots_loadout_codpoints" ) == "" ) // how much cod points a bot should have, -1 is around the players, 0 is all random
+	if ( getdvar( "bots_loadout_codpoints" ) == "" ) // how much cod points a bot should have, -1 is around the players, 0 is all random
 	{
-		setDvar( "bots_loadout_codpoints", -1 );
+		setdvar( "bots_loadout_codpoints", -1 );
 	}
 
-	if ( getDvar( "bots_loadout_prestige" ) == "" ) // what pretige the bots will be, -1 is the players, -2 is random
+	if ( getdvar( "bots_loadout_prestige" ) == "" ) // what pretige the bots will be, -1 is the players, -2 is random
 	{
-		setDvar( "bots_loadout_prestige", -1 );
+		setdvar( "bots_loadout_prestige", -1 );
 	}
 
-	if ( getDvar( "bots_play_target_other" ) == "" ) // bot target non play ents (vehicles)
+	if ( getdvar( "bots_play_target_other" ) == "" ) // bot target non play ents (vehicles)
 	{
-		setDvar( "bots_play_target_other", true );
+		setdvar( "bots_play_target_other", true );
 	}
 
-	if ( getDvar( "bots_play_killstreak" ) == "" ) // bot use killstreaks
+	if ( getdvar( "bots_play_killstreak" ) == "" ) // bot use killstreaks
 	{
-		setDvar( "bots_play_killstreak", true );
+		setdvar( "bots_play_killstreak", true );
 	}
 
-	if ( getDvar( "bots_play_nade" ) == "" ) // bots grenade
+	if ( getdvar( "bots_play_nade" ) == "" ) // bots grenade
 	{
-		setDvar( "bots_play_nade", true );
+		setdvar( "bots_play_nade", true );
 	}
 
-	if ( getDvar( "bots_play_knife" ) == "" ) // bots knife
+	if ( getdvar( "bots_play_knife" ) == "" ) // bots knife
 	{
-		setDvar( "bots_play_knife", true );
+		setdvar( "bots_play_knife", true );
 	}
 
-	if ( getDvar( "bots_play_fire" ) == "" ) // bots fire
+	if ( getdvar( "bots_play_fire" ) == "" ) // bots fire
 	{
-		setDvar( "bots_play_fire", true );
+		setdvar( "bots_play_fire", true );
 	}
 
-	if ( getDvar( "bots_play_move" ) == "" ) // bots move
+	if ( getdvar( "bots_play_move" ) == "" ) // bots move
 	{
-		setDvar( "bots_play_move", true );
+		setdvar( "bots_play_move", true );
 	}
 
-	if ( getDvar( "bots_play_take_carepackages" ) == "" ) // bots take carepackages
+	if ( getdvar( "bots_play_take_carepackages" ) == "" ) // bots take carepackages
 	{
-		setDvar( "bots_play_take_carepackages", true );
+		setdvar( "bots_play_take_carepackages", true );
 	}
 
-	if ( getDvar( "bots_play_obj" ) == "" ) // bots play the obj
+	if ( getdvar( "bots_play_obj" ) == "" ) // bots play the obj
 	{
-		setDvar( "bots_play_obj", true );
+		setdvar( "bots_play_obj", true );
 	}
 
-	if ( getDvar( "bots_play_camp" ) == "" ) // bots camp and follow
+	if ( getdvar( "bots_play_camp" ) == "" ) // bots camp and follow
 	{
-		setDvar( "bots_play_camp", true );
+		setdvar( "bots_play_camp", true );
 	}
 
-	if ( getDvar( "bots_play_aim" ) == "" )
+	if ( getdvar( "bots_play_aim" ) == "" )
 	{
-		setDvar( "bots_play_aim", true );
+		setdvar( "bots_play_aim", true );
 	}
 
-	if ( getDvar( "bots_play_jumpdrop" ) == "" ) // bots jump and dropshot
+	if ( getdvar( "bots_play_jumpdrop" ) == "" ) // bots jump and dropshot
 	{
-		setDvar( "bots_play_jumpdrop", true );
+		setdvar( "bots_play_jumpdrop", true );
 	}
 
 	level.bots = [];
 	level.bot_decoys = [];
 	level.bot_planes = [];
 
-	if ( !isDefined( game[ "botWarfare" ] ) )
+	if ( !isdefined( game[ "botWarfare" ] ) )
 	{
 		game[ "botWarfare" ] = true;
 	}
@@ -221,9 +221,9 @@ handleBots()
 		wait 0.05;
 	}
 
-	setDvar( "bots_manage_add", getBotArray().size );
+	setdvar( "bots_manage_add", getBotArray().size );
 
-	if ( !getDvarInt( "bots_main_kickBotsAtEnd" ) )
+	if ( !getdvarint( "bots_main_kickBotsAtEnd" ) )
 	{
 		return;
 	}
@@ -232,7 +232,7 @@ handleBots()
 
 	for ( i = 0; i < bots.size; i++ )
 	{
-		kick( bots[ i ] getEntityNumber() );
+		kick( bots[ i ] getentitynumber() );
 	}
 }
 
@@ -279,43 +279,43 @@ watchBotDebugEvent()
 	{
 		self waittill( "bot_event", msg, str, b, c, d, e, f, g );
 
-		if ( GetDvarInt( "bots_main_debug" ) >= 2 )
+		if ( getdvarint( "bots_main_debug" ) >= 2 )
 		{
 			big_str = "Bot Warfare debug: " + self.name + ": " + msg + ": " + str;
 
-			if ( isDefined( b ) && isString( b ) )
+			if ( isdefined( b ) && isstring( b ) )
 			{
 				big_str += ": " + b;
 			}
 
-			if ( isDefined( c ) && isString( c ) )
+			if ( isdefined( c ) && isstring( c ) )
 			{
 				big_str += ": " + c;
 			}
 
-			if ( isDefined( d ) && isString( d ) )
+			if ( isdefined( d ) && isstring( d ) )
 			{
 				big_str += ": " + d;
 			}
 
-			if ( isDefined( e ) && isString( e ) )
+			if ( isdefined( e ) && isstring( e ) )
 			{
 				big_str += ": " + e;
 			}
 
-			if ( isDefined( f ) && isString( f ) )
+			if ( isdefined( f ) && isstring( f ) )
 			{
 				big_str += ": " + f;
 			}
 
-			if ( isDefined( g ) && isString( g ) )
+			if ( isdefined( g ) && isstring( g ) )
 			{
 				big_str += ": " + g;
 			}
 
 			BotBuiltinPrintConsole( big_str );
 		}
-		else if ( msg == "debug" && GetDvarInt( "bots_main_debug" ) )
+		else if ( msg == "debug" && getdvarint( "bots_main_debug" ) )
 		{
 			BotBuiltinPrintConsole( "Bot Warfare debug: " + self.name + ": " + str );
 		}
@@ -333,13 +333,13 @@ diffBots()
 
 		// we dont use 'bots_skill' so that we can still use the .menu dvar
 
-		if ( getDvar( "bots_skill" ) != "" )
+		if ( getdvar( "bots_skill" ) != "" )
 		{
-			SetDvar( "bot_difficulty", getDvar( "bots_skill" ) );
-			setDvar( "bots_skill", "" );
+			setdvar( "bot_difficulty", getdvar( "bots_skill" ) );
+			setdvar( "bots_skill", "" );
 		}
 
-		bot_set_difficulty( GetDvar( #"bot_difficulty" ) );
+		bot_set_difficulty( getdvar( #"bot_difficulty" ) );
 	}
 }
 
@@ -348,63 +348,63 @@ diffBots()
 */
 doNonDediBots()
 {
-	if ( !GetDvarInt( #"xblive_basictraining" ) )
+	if ( !getdvarint( #"xblive_basictraining" ) )
 	{
 		return;
 	}
 
-	if ( isDefined( game[ "bots_spawned" ] ) )
+	if ( isdefined( game[ "bots_spawned" ] ) )
 	{
 		return;
 	}
 
 	game[ "bots_spawned" ] = true;
 
-	if ( getDvar( "bot_enemies_extra" ) == "" )
+	if ( getdvar( "bot_enemies_extra" ) == "" )
 	{
-		setDvar( "bot_enemies_extra", 0 );
+		setdvar( "bot_enemies_extra", 0 );
 	}
 
-	if ( getDvar( "bot_friends_extra" ) == "" )
+	if ( getdvar( "bot_friends_extra" ) == "" )
 	{
-		setDvar( "bot_friends_extra", 0 );
+		setdvar( "bot_friends_extra", 0 );
 	}
 
-	bot_friends = GetDvarInt( #"bot_friends" );
-	bot_enemies = GetDvarInt( #"bot_enemies" );
+	bot_friends = getdvarint( #"bot_friends" );
+	bot_enemies = getdvarint( #"bot_enemies" );
 
-	bot_enemies += GetDvarInt( "bot_enemies_extra" );
-	bot_friends += GetDvarInt( "bot_friends_extra" );
+	bot_enemies += getdvarint( "bot_enemies_extra" );
+	bot_friends += getdvarint( "bot_friends_extra" );
 
 	bot_wait_for_host();
-	host = GetHostPlayer();
+	host = gethostplayer();
 
 	team = "allies";
 
-	if ( isDefined( host ) && isDefined( host.pers[ "team" ] ) && ( host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis" ) )
+	if ( isdefined( host ) && isdefined( host.pers[ "team" ] ) && ( host.pers[ "team" ] == "allies" || host.pers[ "team" ] == "axis" ) )
 	{
 		team = host.pers[ "team" ];
 	}
 
-	setDvar( "bots_manage_add", bot_enemies + bot_friends - 1 );
-	setDvar( "bots_manage_fill", bot_enemies + bot_friends );
-	setDvar( "bots_manage_fill_mode", 0 );
-	setDvar( "bots_manage_fill_kick", true );
-	setDvar( "bots_manage_fill_spec", false );
+	setdvar( "bots_manage_add", bot_enemies + bot_friends - 1 );
+	setdvar( "bots_manage_fill", bot_enemies + bot_friends );
+	setdvar( "bots_manage_fill_mode", 0 );
+	setdvar( "bots_manage_fill_kick", true );
+	setdvar( "bots_manage_fill_spec", false );
 
-	setDvar( "bots_team", "custom" );
+	setdvar( "bots_team", "custom" );
 
 	if ( team == "axis" )
 	{
-		setDvar( "bots_team_amount", bot_friends );
+		setdvar( "bots_team_amount", bot_friends );
 	}
 	else
 	{
-		setDvar( "bots_team_amount", bot_enemies );
+		setdvar( "bots_team_amount", bot_enemies );
 	}
 
-	setDvar( "bots_team_force", true );
-	setDvar( "bots_team_mode", 0 );
+	setdvar( "bots_team_force", true );
+	setdvar( "bots_team_mode", 0 );
 }
 
 /*
@@ -414,85 +414,85 @@ bot_set_difficulty( difficulty )
 {
 	if ( difficulty == "fu" )
 	{
-		SetDvar( "sv_botMinDeathTime",		"250" );
-		SetDvar( "sv_botMaxDeathTime",		"500" );
-		SetDvar( "sv_botMinFireTime",		"100" );
-		SetDvar( "sv_botMaxFireTime",		"300" );
-		SetDvar( "sv_botYawSpeed",			"14" );
-		SetDvar( "sv_botYawSpeedAds",		"14" );
-		SetDvar( "sv_botPitchUp",			"-5" );
-		SetDvar( "sv_botPitchDown",			"10" );
-		SetDvar( "sv_botFov",				"160" );
-		SetDvar( "sv_botMinAdsTime",		"3000" );
-		SetDvar( "sv_botMaxAdsTime",		"5000" );
-		SetDvar( "sv_botMinCrouchTime",		"100" );
-		SetDvar( "sv_botMaxCrouchTime",		"400" );
-		SetDvar( "sv_botTargetLeadBias",	"2" );
-		SetDvar( "sv_botMinReactionTime",	"30" );
-		SetDvar( "sv_botMaxReactionTime",	"100" );
-		SetDvar( "sv_botStrafeChance",		"1" );
-		SetDvar( "sv_botMinStrafeTime",		"3000" );
-		SetDvar( "sv_botMaxStrafeTime",		"6000" );
-		SetDvar( "scr_help_dist",			"512" );
-		SetDvar( "sv_botAllowGrenades",		"1"	);
-		SetDvar( "sv_botMinGrenadeTime",	"1500" );
-		SetDvar( "sv_botMaxGrenadeTime",	"4000" );
-		SetDvar( "sv_botSprintDistance",	"512"	);
-		SetDvar( "sv_botMeleeDist",			"80" );
+		setdvar( "sv_botMinDeathTime",		"250" );
+		setdvar( "sv_botMaxDeathTime",		"500" );
+		setdvar( "sv_botMinFireTime",		"100" );
+		setdvar( "sv_botMaxFireTime",		"300" );
+		setdvar( "sv_botYawSpeed",			"14" );
+		setdvar( "sv_botYawSpeedAds",		"14" );
+		setdvar( "sv_botPitchUp",			"-5" );
+		setdvar( "sv_botPitchDown",			"10" );
+		setdvar( "sv_botFov",				"160" );
+		setdvar( "sv_botMinAdsTime",		"3000" );
+		setdvar( "sv_botMaxAdsTime",		"5000" );
+		setdvar( "sv_botMinCrouchTime",		"100" );
+		setdvar( "sv_botMaxCrouchTime",		"400" );
+		setdvar( "sv_botTargetLeadBias",	"2" );
+		setdvar( "sv_botMinReactionTime",	"30" );
+		setdvar( "sv_botMaxReactionTime",	"100" );
+		setdvar( "sv_botStrafeChance",		"1" );
+		setdvar( "sv_botMinStrafeTime",		"3000" );
+		setdvar( "sv_botMaxStrafeTime",		"6000" );
+		setdvar( "scr_help_dist",			"512" );
+		setdvar( "sv_botAllowGrenades",		"1"	);
+		setdvar( "sv_botMinGrenadeTime",	"1500" );
+		setdvar( "sv_botMaxGrenadeTime",	"4000" );
+		setdvar( "sv_botSprintDistance",	"512"	);
+		setdvar( "sv_botMeleeDist",			"80" );
 	}
 	else if ( difficulty == "hard" )
 	{
-		SetDvar( "sv_botMinDeathTime",		"250" );
-		SetDvar( "sv_botMaxDeathTime",		"500" );
-		SetDvar( "sv_botMinFireTime",		"400" );
-		SetDvar( "sv_botMaxFireTime",		"600" );
-		SetDvar( "sv_botYawSpeed",			"8" );
-		SetDvar( "sv_botYawSpeedAds",		"10" );
-		SetDvar( "sv_botPitchUp",			"-5" );
-		SetDvar( "sv_botPitchDown",			"10" );
-		SetDvar( "sv_botFov",				"100" );
-		SetDvar( "sv_botMinAdsTime",		"3000" );
-		SetDvar( "sv_botMaxAdsTime",		"5000" );
-		SetDvar( "sv_botMinCrouchTime",		"100" );
-		SetDvar( "sv_botMaxCrouchTime",		"400" );
-		SetDvar( "sv_botTargetLeadBias",	"2" );
-		SetDvar( "sv_botMinReactionTime",	"400" );
-		SetDvar( "sv_botMaxReactionTime",	"700" );
-		SetDvar( "sv_botStrafeChance",		"0.9" );
-		SetDvar( "sv_botMinStrafeTime",		"3000" );
-		SetDvar( "sv_botMaxStrafeTime",		"6000" );
-		SetDvar( "scr_help_dist",			"384" );
-		SetDvar( "sv_botAllowGrenades",		"1"	);
-		SetDvar( "sv_botMinGrenadeTime",	"1500" );
-		SetDvar( "sv_botMaxGrenadeTime",	"4000" );
-		SetDvar( "sv_botSprintDistance",	"512"	);
-		SetDvar( "sv_botMeleeDist",			"80" );
+		setdvar( "sv_botMinDeathTime",		"250" );
+		setdvar( "sv_botMaxDeathTime",		"500" );
+		setdvar( "sv_botMinFireTime",		"400" );
+		setdvar( "sv_botMaxFireTime",		"600" );
+		setdvar( "sv_botYawSpeed",			"8" );
+		setdvar( "sv_botYawSpeedAds",		"10" );
+		setdvar( "sv_botPitchUp",			"-5" );
+		setdvar( "sv_botPitchDown",			"10" );
+		setdvar( "sv_botFov",				"100" );
+		setdvar( "sv_botMinAdsTime",		"3000" );
+		setdvar( "sv_botMaxAdsTime",		"5000" );
+		setdvar( "sv_botMinCrouchTime",		"100" );
+		setdvar( "sv_botMaxCrouchTime",		"400" );
+		setdvar( "sv_botTargetLeadBias",	"2" );
+		setdvar( "sv_botMinReactionTime",	"400" );
+		setdvar( "sv_botMaxReactionTime",	"700" );
+		setdvar( "sv_botStrafeChance",		"0.9" );
+		setdvar( "sv_botMinStrafeTime",		"3000" );
+		setdvar( "sv_botMaxStrafeTime",		"6000" );
+		setdvar( "scr_help_dist",			"384" );
+		setdvar( "sv_botAllowGrenades",		"1"	);
+		setdvar( "sv_botMinGrenadeTime",	"1500" );
+		setdvar( "sv_botMaxGrenadeTime",	"4000" );
+		setdvar( "sv_botSprintDistance",	"512"	);
+		setdvar( "sv_botMeleeDist",			"80" );
 	}
 	else if ( difficulty == "easy" )
 	{
-		SetDvar( "sv_botMinDeathTime",		"1000" );
-		SetDvar( "sv_botMaxDeathTime",		"2000" );
-		SetDvar( "sv_botMinFireTime",		"900" );
-		SetDvar( "sv_botMaxFireTime",		"1000" );
-		SetDvar( "sv_botYawSpeed",			"2" );
-		SetDvar( "sv_botYawSpeedAds",		"2.5" );
-		SetDvar( "sv_botPitchUp",			"-20" );
-		SetDvar( "sv_botPitchDown",			"40" );
-		SetDvar( "sv_botFov",				"50" );
-		SetDvar( "sv_botMinAdsTime",		"3000" );
-		SetDvar( "sv_botMaxAdsTime",		"5000" );
-		SetDvar( "sv_botMinCrouchTime",		"4000" );
-		SetDvar( "sv_botMaxCrouchTime",		"6000" );
-		SetDvar( "sv_botTargetLeadBias",	"8" );
-		SetDvar( "sv_botMinReactionTime",	"1200" );
-		SetDvar( "sv_botMaxReactionTime",	"1600" );
-		SetDvar( "sv_botStrafeChance",		"0.1" );
-		SetDvar( "sv_botMinStrafeTime",		"3000" );
-		SetDvar( "sv_botMaxStrafeTime",		"6000" );
-		SetDvar( "scr_help_dist",			"256" );
-		SetDvar( "sv_botAllowGrenades",		"0"	);
-		SetDvar( "sv_botSprintDistance",	"1024"	);
-		SetDvar( "sv_botMeleeDist",			"40" );
+		setdvar( "sv_botMinDeathTime",		"1000" );
+		setdvar( "sv_botMaxDeathTime",		"2000" );
+		setdvar( "sv_botMinFireTime",		"900" );
+		setdvar( "sv_botMaxFireTime",		"1000" );
+		setdvar( "sv_botYawSpeed",			"2" );
+		setdvar( "sv_botYawSpeedAds",		"2.5" );
+		setdvar( "sv_botPitchUp",			"-20" );
+		setdvar( "sv_botPitchDown",			"40" );
+		setdvar( "sv_botFov",				"50" );
+		setdvar( "sv_botMinAdsTime",		"3000" );
+		setdvar( "sv_botMaxAdsTime",		"5000" );
+		setdvar( "sv_botMinCrouchTime",		"4000" );
+		setdvar( "sv_botMaxCrouchTime",		"6000" );
+		setdvar( "sv_botTargetLeadBias",	"8" );
+		setdvar( "sv_botMinReactionTime",	"1200" );
+		setdvar( "sv_botMaxReactionTime",	"1600" );
+		setdvar( "sv_botStrafeChance",		"0.1" );
+		setdvar( "sv_botMinStrafeTime",		"3000" );
+		setdvar( "sv_botMaxStrafeTime",		"6000" );
+		setdvar( "scr_help_dist",			"256" );
+		setdvar( "sv_botAllowGrenades",		"0"	);
+		setdvar( "sv_botSprintDistance",	"1024"	);
+		setdvar( "sv_botMeleeDist",			"40" );
 	}
 	else // 'normal' difficulty
 	{
@@ -501,53 +501,53 @@ bot_set_difficulty( difficulty )
 			return;
 		}
 
-		SetDvar( "sv_botMinDeathTime",		"500" );
-		SetDvar( "sv_botMaxDeathTime",		"1000" );
-		SetDvar( "sv_botMinFireTime",		"600" );
-		SetDvar( "sv_botMaxFireTime",		"800" );
-		SetDvar( "sv_botYawSpeed",			"4" );
-		SetDvar( "sv_botYawSpeedAds",		"5" );
-		SetDvar( "sv_botPitchUp",			"-10" );
-		SetDvar( "sv_botPitchDown",			"20" );
-		SetDvar( "sv_botFov",				"70" );
-		SetDvar( "sv_botMinAdsTime",		"3000" );
-		SetDvar( "sv_botMaxAdsTime",		"5000" );
-		SetDvar( "sv_botMinCrouchTime",		"2000" );
-		SetDvar( "sv_botMaxCrouchTime",		"4000" );
-		SetDvar( "sv_botTargetLeadBias",	"4" );
-		SetDvar( "sv_botMinReactionTime",	"800" );
-		SetDvar( "sv_botMaxReactionTime",	"1200" );
-		SetDvar( "sv_botStrafeChance",		"0.6" );
-		SetDvar( "sv_botMinStrafeTime",		"3000" );
-		SetDvar( "sv_botMaxStrafeTime",		"6000" );
-		SetDvar( "scr_help_dist",			"256" );
-		SetDvar( "sv_botAllowGrenades",		"1"	);
-		SetDvar( "sv_botMinGrenadeTime",	"1500" );
-		SetDvar( "sv_botMaxGrenadeTime",	"4000" );
-		SetDvar( "sv_botSprintDistance",	"512"	);
-		SetDvar( "sv_botMeleeDist",			"80" );
+		setdvar( "sv_botMinDeathTime",		"500" );
+		setdvar( "sv_botMaxDeathTime",		"1000" );
+		setdvar( "sv_botMinFireTime",		"600" );
+		setdvar( "sv_botMaxFireTime",		"800" );
+		setdvar( "sv_botYawSpeed",			"4" );
+		setdvar( "sv_botYawSpeedAds",		"5" );
+		setdvar( "sv_botPitchUp",			"-10" );
+		setdvar( "sv_botPitchDown",			"20" );
+		setdvar( "sv_botFov",				"70" );
+		setdvar( "sv_botMinAdsTime",		"3000" );
+		setdvar( "sv_botMaxAdsTime",		"5000" );
+		setdvar( "sv_botMinCrouchTime",		"2000" );
+		setdvar( "sv_botMaxCrouchTime",		"4000" );
+		setdvar( "sv_botTargetLeadBias",	"4" );
+		setdvar( "sv_botMinReactionTime",	"800" );
+		setdvar( "sv_botMaxReactionTime",	"1200" );
+		setdvar( "sv_botStrafeChance",		"0.6" );
+		setdvar( "sv_botMinStrafeTime",		"3000" );
+		setdvar( "sv_botMaxStrafeTime",		"6000" );
+		setdvar( "scr_help_dist",			"256" );
+		setdvar( "sv_botAllowGrenades",		"1"	);
+		setdvar( "sv_botMinGrenadeTime",	"1500" );
+		setdvar( "sv_botMaxGrenadeTime",	"4000" );
+		setdvar( "sv_botSprintDistance",	"512"	);
+		setdvar( "sv_botMeleeDist",			"80" );
 		difficulty = "normal";
 	}
 
-	if ( level.gameType == "oic" && difficulty == "fu" )
+	if ( level.gametype == "oic" && difficulty == "fu" )
 	{
-		SetDvar( "sv_botMinReactionTime",		"400" );
-		SetDvar( "sv_botMaxReactionTime",		"500" );
-		SetDvar( "sv_botMinAdsTime",		"1000" );
-		SetDvar( "sv_botMaxAdsTime",		"2000" );
+		setdvar( "sv_botMinReactionTime",		"400" );
+		setdvar( "sv_botMaxReactionTime",		"500" );
+		setdvar( "sv_botMinAdsTime",		"1000" );
+		setdvar( "sv_botMaxAdsTime",		"2000" );
 	}
 
-	if ( level.gameType == "oic" && ( difficulty == "hard" || difficulty == "fu" ) )
+	if ( level.gametype == "oic" && ( difficulty == "hard" || difficulty == "fu" ) )
 	{
-		SetDvar( "sv_botSprintDistance",	"256" );
+		setdvar( "sv_botSprintDistance",	"256" );
 	}
 
-	if ( !getDvarInt( "bots_play_nade" ) )
+	if ( !getdvarint( "bots_play_nade" ) )
 	{
-		SetDvar( "sv_botAllowGrenades",		"0"	);
+		setdvar( "sv_botAllowGrenades",		"0"	);
 	}
 
-	if ( !getDvarInt( "bots_play_aim" ) )
+	if ( !getdvarint( "bots_play_aim" ) )
 	{
 		setdvar( "sv_botYawSpeed", "0" );
 		setdvar( "sv_botYawSpeedAds", "0" );
@@ -555,9 +555,9 @@ bot_set_difficulty( difficulty )
 		setdvar( "sv_botPitchDown", "0" );
 	}
 
-	SetDvar( "bot_difficulty", difficulty );
-	SetDvar( "scr_bot_difficulty", difficulty );
-	SetDvar( "splitscreen_botDifficulty", difficulty );
+	setdvar( "bot_difficulty", difficulty );
+	setdvar( "scr_bot_difficulty", difficulty );
+	setdvar( "splitscreen_botDifficulty", difficulty );
 }
 
 /*
@@ -565,8 +565,8 @@ bot_set_difficulty( difficulty )
 */
 teamBots_loop()
 {
-	teamAmount = getDvarInt( "bots_team_amount" );
-	toTeam = getDvar( "bots_team" );
+	teamAmount = getdvarint( "bots_team_amount" );
+	toTeam = getdvar( "bots_team" );
 
 	alliesbots = 0;
 	alliesplayers = 0;
@@ -579,7 +579,7 @@ teamBots_loop()
 	{
 		player = level.players[ i ];
 
-		if ( !isDefined( player.pers[ "team" ] ) )
+		if ( !isdefined( player.pers[ "team" ] ) )
 		{
 			continue;
 		}
@@ -611,7 +611,7 @@ teamBots_loop()
 	allies = alliesbots;
 	axis = axisbots;
 
-	if ( !getDvarInt( "bots_team_mode" ) )
+	if ( !getdvarint( "bots_team_mode" ) )
 	{
 		allies += alliesplayers;
 		axis += axisplayers;
@@ -619,7 +619,7 @@ teamBots_loop()
 
 	if ( toTeam != "custom" )
 	{
-		if ( getDvarInt( "bots_team_force" ) )
+		if ( getdvarint( "bots_team_force" ) )
 		{
 			if ( toTeam == "autoassign" )
 			{
@@ -642,7 +642,7 @@ teamBots_loop()
 				{
 					player = level.players[ i ];
 
-					if ( !isDefined( player.pers[ "team" ] ) )
+					if ( !isdefined( player.pers[ "team" ] ) )
 					{
 						continue;
 					}
@@ -683,7 +683,7 @@ teamBots_loop()
 		{
 			player = level.players[ i ];
 
-			if ( !isDefined( player.pers[ "team" ] ) )
+			if ( !isdefined( player.pers[ "team" ] ) )
 			{
 				continue;
 			}
@@ -735,11 +735,11 @@ teamBots()
 */
 addBots_loop()
 {
-	botsToAdd = GetDvarInt( "bots_manage_add" );
+	botsToAdd = getdvarint( "bots_manage_add" );
 
 	if ( botsToAdd > 0 )
 	{
-		SetDvar( "bots_manage_add", 0 );
+		setdvar( "bots_manage_add", 0 );
 
 		if ( botsToAdd > 64 )
 		{
@@ -753,14 +753,14 @@ addBots_loop()
 		}
 	}
 
-	fillMode = getDVarInt( "bots_manage_fill_mode" );
+	fillMode = getdvarint( "bots_manage_fill_mode" );
 
 	if ( fillMode == 2 || fillMode == 3 )
 	{
-		setDvar( "bots_manage_fill", getGoodMapAmount() );
+		setdvar( "bots_manage_fill", getGoodMapAmount() );
 	}
 
-	fillAmount = getDvarInt( "bots_manage_fill" );
+	fillAmount = getdvarint( "bots_manage_fill" );
 
 	players = 0;
 	bots = 0;
@@ -781,7 +781,7 @@ addBots_loop()
 		{
 			bots++;
 		}
-		else if ( !isDefined( player.pers[ "team" ] ) || ( player.pers[ "team" ] != "axis" && player.pers[ "team" ] != "allies" ) )
+		else if ( !isdefined( player.pers[ "team" ] ) || ( player.pers[ "team" ] != "axis" && player.pers[ "team" ] != "allies" ) )
 		{
 			spec++;
 		}
@@ -807,7 +807,7 @@ addBots_loop()
 				continue;
 			}
 
-			if ( !isDefined( player.pers[ "team" ] ) )
+			if ( !isdefined( player.pers[ "team" ] ) )
 			{
 				continue;
 			}
@@ -843,11 +843,11 @@ addBots_loop()
 		bots = result;
 	}
 
-	if ( !randomInt( 999 ) )
+	if ( !randomint( 999 ) )
 	{
-		setDvar( "testclients_doreload", true );
+		setdvar( "testclients_doreload", true );
 		wait 0.1;
-		setDvar( "testclients_doreload", false );
+		setdvar( "testclients_doreload", false );
 		doExtraCheck();
 	}
 
@@ -858,22 +858,22 @@ addBots_loop()
 		amount += players;
 	}
 
-	if ( getDVarInt( "bots_manage_fill_spec" ) )
+	if ( getdvarint( "bots_manage_fill_spec" ) )
 	{
 		amount += spec;
 	}
 
 	if ( amount < fillAmount )
 	{
-		setDvar( "bots_manage_add", 1 );
+		setdvar( "bots_manage_add", 1 );
 	}
-	else if ( amount > fillAmount && getDvarInt( "bots_manage_fill_kick" ) )
+	else if ( amount > fillAmount && getdvarint( "bots_manage_fill_kick" ) )
 	{
 		tempBot = getBotToKick();
 
-		if ( isDefined( tempBot ) )
+		if ( isdefined( tempBot ) )
 		{
-			kick( tempBot getEntityNumber(), "EXE_PLAYERKICKED" );
+			kick( tempBot getentitynumber(), "EXE_PLAYERKICKED" );
 		}
 	}
 }
@@ -931,12 +931,12 @@ bot_damage_callback( eAttacker, iDamage, sMeansOfDeath, sWeapon, eInflictor, sHi
 */
 bot_is_idle()
 {
-	if ( !IsDefined( self ) )
+	if ( !isdefined( self ) )
 	{
 		return false;
 	}
 
-	if ( !IsAlive( self ) )
+	if ( !isalive( self ) )
 	{
 		return false;
 	}
@@ -951,22 +951,22 @@ bot_is_idle()
 		return false;
 	}
 
-	if ( self HasScriptGoal() )
+	if ( self hasscriptgoal() )
 	{
 		return false;
 	}
 
-	if ( IsDefined( self GetThreat() ) )
+	if ( isdefined( self getthreat() ) )
 	{
 		return false;
 	}
 
-	if ( self IsRemoteControlling() || self.bot_lock_goal )
+	if ( self isremotecontrolling() || self.bot_lock_goal )
 	{
 		return false;
 	}
 
-	if ( self UseButtonPressed() )
+	if ( self usebuttonpressed() )
 	{
 		return false;
 	}
@@ -997,7 +997,7 @@ watch_grenade()
 	{
 		self waittill( "grenade_fire", g, name );
 
-		if ( !isDefined( g ) )
+		if ( !isdefined( g ) )
 		{
 			continue;
 		}
@@ -1041,7 +1041,7 @@ watch_decoy( g )
 }
 
 /*
-	Attach a trigger to the scrambler
+	attach a trigger to the scrambler
 */
 watch_scrambler()
 {
@@ -1060,7 +1060,7 @@ scramble_nearby( trig )
 	self endon( "death" );
 	self endon( "hacked" );
 
-	while ( !isDefined( self.owner ) || !isDefined( self.owner.team ) )
+	while ( !isdefined( self.owner ) || !isdefined( self.owner.team ) )
 	{
 		wait 0.05;
 	}
@@ -1071,7 +1071,7 @@ scramble_nearby( trig )
 	{
 		trig waittill( "trigger", player );
 
-		if ( !isDefined( player ) || !isDefined( player.team ) )
+		if ( !isdefined( player ) || !isdefined( player.team ) )
 		{
 			continue;
 		}
@@ -1081,12 +1081,12 @@ scramble_nearby( trig )
 			continue;
 		}
 
-		if ( isDefined( self.owner ) && player == self.owner )
+		if ( isdefined( self.owner ) && player == self.owner )
 		{
 			continue;
 		}
 
-		if ( level.teamBased && self.team == player.team )
+		if ( level.teambased && self.team == player.team )
 		{
 			continue;
 		}
@@ -1106,7 +1106,7 @@ scramble_player()
 	self.bot_scrambled = true;
 	wait 0.1;
 
-	if ( isDefined( self ) )
+	if ( isdefined( self ) )
 	{
 		self.bot_scrambled = false;
 	}
@@ -1146,13 +1146,13 @@ doFiringThread()
 */
 bot_watch_planes_loop()
 {
-	ents = GetEntArray( "script_model", "classname" );
+	ents = getentarray( "script_model", "classname" );
 
 	for ( i = 0; i < ents.size; i++ )
 	{
 		ent = ents[ i ];
 
-		if ( isDefined( ent.bot_plane ) )
+		if ( isdefined( ent.bot_plane ) )
 		{
 			continue;
 		}
@@ -1221,13 +1221,13 @@ fixGamemodes()
 {
 	for ( i = 0; i < 19; i++ )
 	{
-		if ( isDefined( level.bombZones ) && level.gametype == "sd" )
+		if ( isdefined( level.bombzones ) && level.gametype == "sd" )
 		{
-			level.isKillBoosting = ::bot_killBoost;
+			level.iskillboosting = ::bot_killBoost;
 
-			for ( i = 0; i < level.bombZones.size; i++ )
+			for ( i = 0; i < level.bombzones.size; i++ )
 			{
-				level.bombZones[ i ].onUse = ::bot_onUsePlantObjectFix;
+				level.bombzones[ i ].onuse = ::bot_onUsePlantObjectFix;
 			}
 
 			break;
