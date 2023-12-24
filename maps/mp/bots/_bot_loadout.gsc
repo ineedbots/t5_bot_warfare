@@ -76,7 +76,7 @@ bot_give_loadout()
 	self.cac_hat_type = "none";
 	self maps\mp\gametypes\_armor::set_player_model();
 
-	self maps\mp\gametypes\_class::initStaticWeaponsTime();
+	self maps\mp\gametypes\_class::initstaticweaponstime();
 
 	if ( self.pers[ "bot" ][ "class_perk2" ] != "" && GetDvarInt( #"scr_game_perks" ) )
 	{
@@ -153,7 +153,7 @@ bot_give_loadout()
 	{
 		self GiveWeapon( self.pers[ "bot" ][ "class_equipment" ] );
 
-		self maps\mp\gametypes\_class::setWeaponAmmoOverall( self.pers[ "bot" ][ "class_equipment" ], 1 );
+		self maps\mp\gametypes\_class::setweaponammooverall( self.pers[ "bot" ][ "class_equipment" ], 1 );
 
 		self SetActionSlot( 1, "weapon", self.pers[ "bot" ][ "class_equipment" ] );
 	}
@@ -221,7 +221,7 @@ bot_get_prestige()
 				continue;
 			}
 
-			p = player maps\mp\gametypes\_persistence::statGet( "plevel" );
+			p = player maps\mp\gametypes\_persistence::statget( "plevel" );
 			break;
 		}
 	}
@@ -247,7 +247,7 @@ bot_rank()
 	wait 0.05;
 
 	self.pers[ "rankxp" ] = self.pers[ "bot" ][ "rankxp" ];
-	rankId = self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] );
+	rankId = self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] );
 	prestige = self.pers[ "bot" ][ "prestige" ];
 
 	self.pers[ "rank" ] = rankId;
@@ -287,7 +287,7 @@ bot_set_class()
 
 	self.pers[ "bot" ][ "cod_points" ] = self.pers[ "bot" ][ "cod_points_org" ]; // refund prev payments for class
 
-	rank = self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] );
+	rank = self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] );
 
 	if ( !level.onlineGame )
 	{
@@ -1345,7 +1345,7 @@ bot_get_rank()
 		rank = Round( random_normal_distribution( rank_dvar, 5, 0, level.maxRank ) );
 	}
 
-	self.pers[ "bot" ][ "rankxp" ] = maps\mp\gametypes\_rank::getRankInfoMinXP( rank );
+	self.pers[ "bot" ][ "rankxp" ] = maps\mp\gametypes\_rank::getrankinfominxp( rank );
 }
 
 /*
@@ -1359,7 +1359,7 @@ bot_setKillstreaks()
 	allowed_killstreaks[ 1 ] = "killstreak_supply_drop";
 	allowed_killstreaks[ 2 ] = "killstreak_helicopter_comlink";
 
-	if ( self maps\mp\gametypes\_rank::getRankForXp( self.pers[ "bot" ][ "rankxp" ] ) >= 9 || !level.onlineGame )
+	if ( self maps\mp\gametypes\_rank::getrankforxp( self.pers[ "bot" ][ "rankxp" ] ) >= 9 || !level.onlineGame )
 	{
 		allowed_killstreaks[ 3 ] = "killstreak_auto_turret_drop";
 		allowed_killstreaks[ 4 ] = "killstreak_tow_turret_drop";
@@ -1392,7 +1392,7 @@ bot_setKillstreaks()
 
 		allowed_killstreaks = array_remove( allowed_killstreaks, killstreak );
 
-		ks_level = maps\mp\gametypes\_hardpoints::GetKillstreakLevel( i, killstreak );
+		ks_level = maps\mp\gametypes\_hardpoints::getkillstreaklevel( i, killstreak );
 
 		if ( bot_killstreak_level_is_used( ks_level, used_levels ) )
 		{

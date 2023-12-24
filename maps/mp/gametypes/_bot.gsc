@@ -1076,7 +1076,7 @@ scramble_nearby( trig )
 			continue;
 		}
 
-		if ( self maps\mp\gametypes\_weaponobjects::isStunned() )
+		if ( self maps\mp\gametypes\_weaponobjects::isstunned() )
 		{
 			continue;
 		}

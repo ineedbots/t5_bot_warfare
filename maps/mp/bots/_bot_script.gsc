@@ -113,14 +113,14 @@ classWatch()
 
 		wait 0.5;
 
-		if ( !maps\mp\gametypes\_globallogic_utils::isValidClass( self.class ) || !isDefined( self.bot_change_class ) )
+		if ( !maps\mp\gametypes\_globallogic_utils::isvalidclass( self.class ) || !isDefined( self.bot_change_class ) )
 		{
 			self notify( "menuresponse", game[ "menu_changeclass" ], self chooseRandomClass() );
 		}
 
 		self.bot_change_class = true;
 
-		while ( isdefined( self.pers[ "team" ] ) && maps\mp\gametypes\_globallogic_utils::isValidClass( self.class ) && isDefined( self.bot_change_class ) )
+		while ( isdefined( self.pers[ "team" ] ) && maps\mp\gametypes\_globallogic_utils::isvalidclass( self.class ) && isDefined( self.bot_change_class ) )
 		{
 			wait .05;
 		}
@@ -1255,23 +1255,23 @@ bot_killstreak_think_loop()
 		return;
 	}
 
-	weapon = self maps\mp\gametypes\_hardpoints::getTopKillstreak();
+	weapon = self maps\mp\gametypes\_hardpoints::gettopkillstreak();
 
 	if ( !IsDefined( weapon ) || weapon == "none" )
 	{
 		return;
 	}
 
-	killstreak = maps\mp\gametypes\_hardpoints::getKillStreakMenuName( weapon );
+	killstreak = maps\mp\gametypes\_hardpoints::getkillstreakmenuname( weapon );
 
 	if ( !IsDefined( killstreak ) )
 	{
 		return;
 	}
 
-	id = self maps\mp\gametypes\_hardpoints::getTopKillstreakUniqueId();
+	id = self maps\mp\gametypes\_hardpoints::gettopkillstreakuniqueid();
 
-	if ( !self maps\mp\_killstreakrules::isKillstreakAllowed( weapon, myteam ) )
+	if ( !self maps\mp\_killstreakrules::iskillstreakallowed( weapon, myteam ) )
 	{
 		wait( 5 );
 		return;
@@ -1724,7 +1724,7 @@ bot_turret_think_loop()
 		facing = false;
 	}
 
-	if ( turret maps\mp\gametypes\_weaponobjects::isStunned() )
+	if ( turret maps\mp\gametypes\_weaponobjects::isstunned() )
 	{
 		facing = false;
 	}
@@ -1993,7 +1993,7 @@ bot_equipment_kill_think_loop()
 	{
 		facing = false;
 
-		if ( isDefined( target.name ) && target.name == "claymore_mp" && !target maps\mp\gametypes\_weaponobjects::isStunned() )
+		if ( isDefined( target.name ) && target.name == "claymore_mp" && !target maps\mp\gametypes\_weaponobjects::isstunned() )
 		{
 			if ( VectorDot( VectorNormalize( AnglesToForward( target.angles ) ), VectorNormalize( self.origin - target.origin ) ) >= 0.342 ) // cos 70 degrees
 			{
@@ -3334,7 +3334,7 @@ bot_weapon_think_loop( data )
 			continue;
 		}
 
-		if ( !maps\mp\gametypes\_weapons::isPrimaryWeapon( weapon ) && !maps\mp\gametypes\_weapons::isSideArm( weapon ) && !isWeaponAltmode( weapon ) )
+		if ( !maps\mp\gametypes\_weapons::isprimaryweapon( weapon ) && !maps\mp\gametypes\_weapons::issidearm( weapon ) && !isWeaponAltmode( weapon ) )
 		{
 			continue;
 		}
@@ -3544,7 +3544,7 @@ bot_uav_think_loop( data )
 
 		if ( hasCam )
 		{
-			if ( !self.cameraSpike maps\mp\gametypes\_weaponobjects::isStunned() && !self HasScriptGoal() && !self.bot_lock_goal && !player hasPerk( "specialty_nottargetedbyai" ) )
+			if ( !self.cameraSpike maps\mp\gametypes\_weaponobjects::isstunned() && !self HasScriptGoal() && !self.bot_lock_goal && !player hasPerk( "specialty_nottargetedbyai" ) )
 			{
 				if ( VectorDot( VectorNormalize( AnglesToForward( self.cameraSpike.cameraHead.angles ) ), VectorNormalize( player.origin - self.cameraSpike.origin ) ) >= 0.342 && SightTracePassed( player.origin + ( 0, 0, 5 ), self.cameraSpike.origin + ( 0, 0, 5 ), false, self.cameraSpike ) ) // cos 70 degrees
 				{
@@ -3562,7 +3562,7 @@ bot_uav_think_loop( data )
 				}
 			}
 		}
-		else if ( hasSR || ( !isSubStr( player getCurrentWeapon(), "_silencer_" ) && player.bot_firing ) || ( hasUAV && !player hasPerk( "specialty_gpsjammer" ) ) || ( isDefined( self.acousticSensor ) && !self.acousticSensor maps\mp\gametypes\_weaponobjects::isStunned() && !player hasPerk( "specialty_nomotionsensor" ) && distance2d( self.acousticSensor.origin, player.origin ) < 666 ) )
+		else if ( hasSR || ( !isSubStr( player getCurrentWeapon(), "_silencer_" ) && player.bot_firing ) || ( hasUAV && !player hasPerk( "specialty_gpsjammer" ) ) || ( isDefined( self.acousticSensor ) && !self.acousticSensor maps\mp\gametypes\_weaponobjects::isstunned() && !player hasPerk( "specialty_nomotionsensor" ) && distance2d( self.acousticSensor.origin, player.origin ) < 666 ) )
 		{
 			self BotNotifyBotEvent( "uav_target", "start", player );
 
@@ -3873,14 +3873,14 @@ bot_dom_spawn_kill_think_loop()
 {
 	myTeam = self.pers[ "team" ];
 	otherTeam = getOtherTeam( myTeam );
-	myFlagCount = maps\mp\gametypes\dom::getTeamFlagCount( myTeam );
+	myFlagCount = maps\mp\gametypes\dom::getteamflagcount( myTeam );
 
 	if ( myFlagCount == level.flags.size )
 	{
 		return;
 	}
 
-	otherFlagCount = maps\mp\gametypes\dom::getTeamFlagCount( otherTeam );
+	otherFlagCount = maps\mp\gametypes\dom::getteamflagcount( otherTeam );
 
 	if ( myFlagCount <= otherFlagCount || otherFlagCount != 1 )
 	{
@@ -3891,7 +3891,7 @@ bot_dom_spawn_kill_think_loop()
 
 	for ( i = 0; i < level.flags.size; i++ )
 	{
-		if ( level.flags[ i ] maps\mp\gametypes\dom::getFlagTeam() == myTeam )
+		if ( level.flags[ i ] maps\mp\gametypes\dom::getflagteam() == myTeam )
 		{
 			continue;
 		}
@@ -3974,7 +3974,7 @@ bot_dom_watch_flags( count, myTeam )
 	{
 		wait 0.5;
 
-		if ( maps\mp\gametypes\dom::getTeamFlagCount( myTeam ) != count )
+		if ( maps\mp\gametypes\dom::getteamflagcount( myTeam ) != count )
 		{
 			break;
 		}
@@ -3993,7 +3993,7 @@ bot_dom_def_think_loop()
 
 	for ( i = 0; i < level.flags.size; i++ )
 	{
-		if ( level.flags[ i ] maps\mp\gametypes\dom::getFlagTeam() != myTeam )
+		if ( level.flags[ i ] maps\mp\gametypes\dom::getflagteam() != myTeam )
 		{
 			continue;
 		}
@@ -4085,7 +4085,7 @@ bot_dom_watch_for_flashing( flag, myTeam )
 			break;
 		}
 
-		if ( flag maps\mp\gametypes\dom::getFlagTeam() != myTeam || !flag.useObj.objPoints[ myTeam ].isFlashing )
+		if ( flag maps\mp\gametypes\dom::getflagteam() != myTeam || !flag.useObj.objPoints[ myTeam ].isFlashing )
 		{
 			break;
 		}
@@ -4102,14 +4102,14 @@ bot_dom_cap_think_loop()
 	myTeam = self.pers[ "team" ];
 	otherTeam = getOtherTeam( myTeam );
 
-	myFlagCount = maps\mp\gametypes\dom::getTeamFlagCount( myTeam );
+	myFlagCount = maps\mp\gametypes\dom::getteamflagcount( myTeam );
 
 	if ( myFlagCount == level.flags.size )
 	{
 		return;
 	}
 
-	otherFlagCount = maps\mp\gametypes\dom::getTeamFlagCount( otherTeam );
+	otherFlagCount = maps\mp\gametypes\dom::getteamflagcount( otherTeam );
 
 	if ( game[ "teamScores" ][ myteam ] >= game[ "teamScores" ][ otherTeam ] )
 	{
@@ -4141,7 +4141,7 @@ bot_dom_cap_think_loop()
 
 	for ( i = 0; i < level.flags.size; i++ )
 	{
-		if ( level.flags[ i ] maps\mp\gametypes\dom::getFlagTeam() == myTeam )
+		if ( level.flags[ i ] maps\mp\gametypes\dom::getflagteam() == myTeam )
 		{
 			continue;
 		}
@@ -4193,7 +4193,7 @@ bot_dom_cap_think_loop()
 
 	self SetBotGoal( self.origin, 64 );
 
-	while ( flag maps\mp\gametypes\dom::getFlagTeam() != myTeam && self isTouching( flag ) )
+	while ( flag maps\mp\gametypes\dom::getflagteam() != myTeam && self isTouching( flag ) )
 	{
 		cur = flag.useObj.curProgress;
 		wait 0.5;
@@ -4264,7 +4264,7 @@ bot_dom_go_cap_flag( flag, myteam )
 			break;
 		}
 
-		if ( flag maps\mp\gametypes\dom::getFlagTeam() == myTeam )
+		if ( flag maps\mp\gametypes\dom::getflagteam() == myTeam )
 		{
 			break;
 		}
@@ -4275,7 +4275,7 @@ bot_dom_go_cap_flag( flag, myteam )
 		}
 	}
 
-	if ( flag maps\mp\gametypes\dom::getFlagTeam() == myTeam )
+	if ( flag maps\mp\gametypes\dom::getflagteam() == myTeam )
 	{
 		self notify( "bad_path" );
 	}
@@ -4535,7 +4535,7 @@ bot_sab_loop()
 	bomb = level.sabBomb;
 	bombteam = bomb.ownerTeam;
 	carrier = bomb.carrier;
-	timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining() / 1000;
+	timeleft = maps\mp\gametypes\_globallogic_utils::gettimeremaining() / 1000;
 
 	// the bomb is ours, we are on the offence
 	if ( bombteam == myTeam )
@@ -4613,7 +4613,7 @@ bot_sab_loop()
 		}
 
 		// we are the carrier of the bomb, lets check if we need to plant
-		timepassed = maps\mp\gametypes\_globallogic_utils::getTimePassed() / 1000;
+		timepassed = maps\mp\gametypes\_globallogic_utils::gettimepassed() / 1000;
 
 		if ( timepassed < 120 && timeleft >= 90 && randomInt( 100 ) < 98 )
 		{
@@ -4878,7 +4878,7 @@ bot_sd_defenders_loop( data )
 	// bomb not planted, lets protect our sites
 	if ( !level.bombPlanted )
 	{
-		timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining() / 1000;
+		timeleft = maps\mp\gametypes\_globallogic_utils::gettimeremaining() / 1000;
 
 		if ( timeleft >= 90 )
 		{
@@ -5180,8 +5180,8 @@ bot_sd_attackers_loop( data )
 		return;
 	}
 
-	timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining() / 1000;
-	timepassed = maps\mp\gametypes\_globallogic_utils::getTimePassed() / 1000;
+	timeleft = maps\mp\gametypes\_globallogic_utils::gettimeremaining() / 1000;
+	timepassed = maps\mp\gametypes\_globallogic_utils::gettimepassed() / 1000;
 
 	// dont have a bomb
 	if ( !self IsBombCarrier() && !level.multiBomb )
@@ -5389,7 +5389,7 @@ bot_cap_loop()
 	theirflag = level.teamFlags[ otherTeam ];
 	theirzone = level.teamFlagZones[ otherTeam ];
 
-	if ( myflag maps\mp\gametypes\_gameobjects::isObjectAwayFromHome() )
+	if ( myflag maps\mp\gametypes\_gameobjects::isobjectawayfromhome() )
 	{
 		carrier = myflag.carrier;
 
@@ -5416,7 +5416,7 @@ bot_cap_loop()
 		}
 		else
 		{
-			if ( !theirflag maps\mp\gametypes\_gameobjects::isObjectAwayFromHome() && randomint( 100 ) < 50 )
+			if ( !theirflag maps\mp\gametypes\_gameobjects::isobjectawayfromhome() && randomint( 100 ) < 50 )
 			{
 				// take their flag
 				self BotNotifyBotEvent( "cap", "start", "their_flag", theirflag );
@@ -5760,7 +5760,7 @@ bot_dem_attackers_loop()
 		}
 	}
 
-	timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining() / 1000;
+	timeleft = maps\mp\gametypes\_globallogic_utils::gettimeremaining() / 1000;
 
 	shouldLet = ( game[ "teamScores" ][ myteam ] > game[ "teamScores" ][ otherTeam ] && timeleft < 90 && bombed == 1 );
 
@@ -5774,14 +5774,14 @@ bot_dem_attackers_loop()
 			return;
 		}
 
-		spawnPoints = maps\mp\gametypes\_spawnlogic::getSpawnpointArray( "mp_dem_spawn_defender_start" );
+		spawnPoints = maps\mp\gametypes\_spawnlogic::getspawnpointarray( "mp_dem_spawn_defender_start" );
 
 		if ( !spawnPoints.size )
 		{
 			return;
 		}
 
-		spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_Random( spawnPoints );
+		spawnpoint = maps\mp\gametypes\_spawnlogic::getspawnpoint_random( spawnPoints );
 
 		if ( DistanceSquared( spawnpoint.origin, self.origin ) <= 2048 * 2048 )
 		{
@@ -5805,14 +5805,14 @@ bot_dem_attackers_loop()
 	// or if want to go into overtime near end of the extended game
 	if ( ( ( bombs.size + bombed == 2 && timeleft >= 90 ) || ( shouldLet && bombs.size ) ) && randomInt( 100 ) < 95 )
 	{
-		spawnPoints = maps\mp\gametypes\_spawnlogic::getSpawnpointArray( "mp_dem_spawn_attacker_start" );
+		spawnPoints = maps\mp\gametypes\_spawnlogic::getspawnpointarray( "mp_dem_spawn_attacker_start" );
 
 		if ( !spawnPoints.size )
 		{
 			return;
 		}
 
-		spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_Random( spawnPoints );
+		spawnpoint = maps\mp\gametypes\_spawnlogic::getspawnpoint_random( spawnPoints );
 
 		if ( DistanceSquared( spawnpoint.origin, self.origin ) <= 1024 * 1024 )
 		{
@@ -6046,7 +6046,7 @@ bot_dem_defenders_loop()
 		}
 	}
 
-	timeleft = maps\mp\gametypes\_globallogic_utils::getTimeRemaining() / 1000;
+	timeleft = maps\mp\gametypes\_globallogic_utils::gettimeremaining() / 1000;
 
 	shouldLet = ( timeleft < 60 && ( ( bombed == 0 && bombs.size != 2 ) || ( game[ "teamScores" ][ myteam ] > game[ "teamScores" ][ otherTeam ] && bombed == 1 ) ) && randomInt( 100 ) < 98 );
 
@@ -6060,14 +6060,14 @@ bot_dem_defenders_loop()
 			return;
 		}
 
-		spawnPoints = maps\mp\gametypes\_spawnlogic::getSpawnpointArray( "mp_dem_spawn_attacker_start" );
+		spawnPoints = maps\mp\gametypes\_spawnlogic::getspawnpointarray( "mp_dem_spawn_attacker_start" );
 
 		if ( !spawnPoints.size )
 		{
 			return;
 		}
 
-		spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_Random( spawnPoints );
+		spawnpoint = maps\mp\gametypes\_spawnlogic::getspawnpoint_random( spawnPoints );
 
 		if ( DistanceSquared( spawnpoint.origin, self.origin ) <= 2048 * 2048 )
 		{
@@ -6091,14 +6091,14 @@ bot_dem_defenders_loop()
 	// or if want to go into overtime after extended game
 	if ( shouldLet )
 	{
-		spawnPoints = maps\mp\gametypes\_spawnlogic::getSpawnpointArray( "mp_dem_spawn_defender_start" );
+		spawnPoints = maps\mp\gametypes\_spawnlogic::getspawnpointarray( "mp_dem_spawn_defender_start" );
 
 		if ( !spawnPoints.size )
 		{
 			return;
 		}
 
-		spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_Random( spawnPoints );
+		spawnpoint = maps\mp\gametypes\_spawnlogic::getspawnpoint_random( spawnPoints );
 
 		if ( DistanceSquared( spawnpoint.origin, self.origin ) <= 1024 * 1024 )
 		{
