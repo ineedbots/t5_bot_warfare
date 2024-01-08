@@ -16,4 +16,4 @@ jobs:
 
       - name: Compile test script
         run: |
-          gsc-tool.exe parse iw5 pc .
+          gsc-tool.exe parse t6 pc .
