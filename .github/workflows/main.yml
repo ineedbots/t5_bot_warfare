@@ -13,7 +13,9 @@ jobs:
 
       - name: Setup gsc-tool
         uses: xensik/setup-gsc-tool@v1
+        with:
+          version: '1.4.0'
 
       - name: Compile test script
         run: |
-          gsc-tool.exe comp t6 pc .
+          gsc-tool.exe -m comp -g t6 -s pc .
