@@ -92,6 +92,7 @@ This mod extends the functionality and features of Combat Training in Black Ops 
   - Bots can now jumpshot and dropshot
   - Fix some script runtime errors
   - Improved bots using altmode weapons
+  - Improved bots taking spyplanes down
   - Reduced variable usage
   - Major cleanup
 
