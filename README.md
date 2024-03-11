@@ -41,6 +41,9 @@ This mod extends the functionality and features of Combat Training in Black Ops 
   - Bots have a slight delay after spawning, scales inversely with difficulty.
   - Bots can reroll carepackages.
   - Bots can use the valkyrie rocket carepackage streak.
+  - Bots can melee lunge.
+  - Bots can jumpshot and dropshot.
+  - Bots can use altmode weapons (gl, ft, mk)
 
 ## Installation
 0. Download the [latest release](https://github.com/ineedbots/t5_bot_warfare/releases) of Bot Warfare.
@@ -84,6 +87,14 @@ This mod extends the functionality and features of Combat Training in Black Ops 
 | bots_play_aim                    | If the bots can aim.                                                                           | 1          |
 
 ## Changelog
+- v1.2.0
+  - Bots can now melee lunge
+  - Bots can now jumpshot and dropshot
+  - Fix some script runtime errors
+  - Improved bots using altmode weapons
+  - Reduced variable usage
+  - Major cleanup
+
 - v1.1.1
   - Fixed some script runtime errors
   - Improved domination

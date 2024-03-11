@@ -760,6 +760,7 @@ botStopMove( what )
 */
 BotSetStance( what )
 {
+	// todo! make these all proper!
 }
 
 /*
