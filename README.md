@@ -133,7 +133,7 @@ This mod extends the functionality and features of Combat Training in Black Ops 
 
 ## Credits
 - INeedGames - http://www.moddb.com/mods/bot-warfare
-- apdonato - http://rsebots.blogspot.ca/
+- apdonato - https://web.archive.org/web/20240516065610/http://rsebots.blogspot.com/
 
 Feel free to use code, host on other sites, host on servers, mod it and merge mods with it, just give credit where credit is due!
   -INeedGames/INeedBot(s) @ ineedbots@outlook.com
