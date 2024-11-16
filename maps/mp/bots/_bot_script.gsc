@@ -405,6 +405,8 @@ bot_spawn()
 	{
 		self thread bot_use_equipment_think();
 		self thread bot_watch_think_mw2();
+		// self thread bot_use_tube_think();
+		// self thread bot_use_grenade_think();
 	}
 	
 	if ( getdvarint( "bots_play_target_other" ) )
@@ -425,7 +427,7 @@ bot_spawn()
 	
 	self thread bot_uav_think();
 	self thread bot_weapon_think();
-	// todo: reload cancel
+	// self thread doReloadCancel();
 	self thread bot_listen_to_steps();
 	self thread bot_revenge_think();
 	self thread follow_target();
