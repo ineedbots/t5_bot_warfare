@@ -51,6 +51,16 @@ BotBuiltinPrintConsole( s )
 
 /*
 */
+BotBuiltinClearOverride( a )
+{
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearoverride" ] ) )
+	{
+		self [[ level.bot_builtins[ "botclearoverride" ] ]]( a );
+	}
+}
+
+/*
+*/
 BotBuiltinMovementOverride( a, b )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmovementoverride" ] ) )
@@ -61,71 +71,21 @@ BotBuiltinMovementOverride( a, b )
 
 /*
 */
-BotBuiltinClearMovementOverride()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearmovementoverride" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearmovementoverride" ] ]]();
-	}
-}
-
-/*
-*/
-BotBuiltinClearButtonOverride( a )
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearbuttonoverride" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearbuttonoverride" ] ]]( a );
-	}
-}
-
-/*
-*/
-BotBuiltinButtonOverride( a, b )
+BotBuiltinButtonOverride( a )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botbuttonoverride" ] ) )
 	{
-		self [[ level.bot_builtins[ "botbuttonoverride" ] ]]( a, b );
+		self [[ level.bot_builtins[ "botbuttonoverride" ] ]]( a );
 	}
 }
 
 /*
 */
-BotBuiltinClearOverrides( a )
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearoverrides" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearoverrides" ] ]]( a );
-	}
-}
-
-/*
-*/
-BotBuiltinMantleOverride()
+BotBuiltinMantleOverride( a )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmantleoverride" ] ) )
 	{
-		self [[ level.bot_builtins[ "botmantleoverride" ] ]]();
-	}
-}
-
-/*
-*/
-BotBuiltinClearMantleOverride()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearmantleoverride" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearmantleoverride" ] ]]();
-	}
-}
-
-/*
-*/
-BotBuiltinClearWeaponOverride()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearweaponoverride" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearweaponoverride" ] ]]();
+		self [[ level.bot_builtins[ "botmantleoverride" ] ]]( a );
 	}
 }
 
@@ -141,31 +101,11 @@ BotBuiltinWeaponOverride( a )
 
 /*
 */
-BotBuiltinClearButtonOverrides()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearbuttonoverrides" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearbuttonoverrides" ] ]]();
-	}
-}
-
-/*
-*/
-BotBuiltinAimOverride()
+BotBuiltinAimOverride( a )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botaimoverride" ] ) )
 	{
-		self [[ level.bot_builtins[ "botaimoverride" ] ]]();
-	}
-}
-
-/*
-*/
-BotBuiltinClearAimOverride()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearaimoverride" ] ) )
-	{
-		self [[ level.bot_builtins[ "botclearaimoverride" ] ]]();
+		self [[ level.bot_builtins[ "botaimoverride" ] ]]( a );
 	}
 }
 
@@ -174,19 +114,9 @@ BotBuiltinClearAimOverride()
 */
 BotBuiltinBotMeleeParams( yaw, dist )
 {
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmeleeparams" ] ) )
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botmeleeparamsoverride" ] ) )
 	{
-		self [[ level.bot_builtins[ "botmeleeparams" ] ]]( yaw, dist );
-	}
-}
-
-/*
-*/
-BotBuiltinClearMeleeParams()
-{
-	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "clearbotmeleeparams" ] ) )
-	{
-		self [[ level.bot_builtins[ "clearbotmeleeparams" ] ]]();
+		self [[ level.bot_builtins[ "botmeleeparamsoverride" ] ]]( yaw, dist );
 	}
 }
 

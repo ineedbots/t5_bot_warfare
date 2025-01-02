@@ -166,7 +166,7 @@ bot_on_spawn()
 	for ( ;; )
 	{
 		self waittill( "spawned_player" );
-		self BotBuiltinClearOverrides( true );
+		self BotBuiltinClearOverride( false );
 		self BotBuiltinWeaponOverride( self getcurrentweapon() );
 		self.bot_is_doing_some_other_override = false;
 		
@@ -2449,7 +2449,7 @@ do_bot_plane_combat( plane, weap )
 	self endon( "missile_fire" );
 	
 	time = 7;
-	self BotBuiltinAimOverride();
+	self BotBuiltinAimOverride( true );
 	
 	while ( time > 0 && isdefined( plane ) && isalive( plane ) && self getcurrentweapon() == weap && !self inLastStand() && !isdefined( self getthreat() ) )
 	{
@@ -2458,7 +2458,7 @@ do_bot_plane_combat( plane, weap )
 		if ( bullettracepassed( myeye, plane.origin, false, plane ) )
 		{
 			self thread bot_lookat( plane.origin, 0.3 );
-			self BotBuiltinButtonOverride( "ads", "enable" );
+			self BotBuiltinButtonOverride( "+ads" );
 			
 			if ( isdefined( self.stingerlockfinalized ) && self.stingerlockfinalized )
 			{
@@ -2467,7 +2467,7 @@ do_bot_plane_combat( plane, weap )
 		}
 		else
 		{
-			self BotBuiltinButtonOverride( "ads", "disable" );
+			self BotBuiltinButtonOverride( "-ads" );
 		}
 		
 		time -= 0.05;
@@ -2499,8 +2499,8 @@ bot_plane_attack( plane )
 			self do_bot_plane_combat( plane, weap );
 			
 			self notify( "bots_aim_overlap" );
-			self BotBuiltinClearAimOverride();
-			self BotBuiltinClearButtonOverride( "ads" );
+			self BotBuiltinAimOverride( false );
+			self BotBuiltinButtonOverride( "~ads" );
 		}
 		
 		self.bot_is_doing_some_other_override = false;
@@ -6405,8 +6405,8 @@ watch_for_melee_override()
 					angles = vectortoangles( threat.origin - self.origin );
 					
 					self BotBuiltinBotMeleeParams( angles[ 1 ], dist );
-					self BotBuiltinButtonOverride( "melee", "enable" );
-					self BotBuiltinAimOverride();
+					self BotBuiltinButtonOverride( "+melee" );
+					self BotBuiltinAimOverride( true );
 					
 					time_left = 1;
 					once = false;
@@ -6420,17 +6420,17 @@ watch_for_melee_override()
 						if ( !once )
 						{
 							once = true;
-							self BotBuiltinClearButtonOverride( "melee" );
+							self BotBuiltinButtonOverride( "~melee" );
 						}
 					}
 					
 					if ( !once )
 					{
-						self BotBuiltinClearButtonOverride( "melee" );
+						self BotBuiltinButtonOverride( "~melee" );
 					}
 					
-					self BotBuiltinClearMeleeParams();
-					self BotBuiltinClearAimOverride();
+					self BotBuiltinBotMeleeParams( false );
+					self BotBuiltinAimOverride( false );
 					
 					wait 1;
 					break;
@@ -6498,7 +6498,7 @@ watch_for_override_stuff()
 		if ( need_to_clear_mantle_override && ( time - last_jump_time ) > 3000 )
 		{
 			need_to_clear_mantle_override = false;
-			self BotBuiltinClearMantleOverride();
+			self BotBuiltinMantleOverride( false );
 		}
 		
 		weapon_is_good = true;
@@ -6520,28 +6520,28 @@ watch_for_override_stuff()
 					{
 						last_jump_time = time;
 						need_to_clear_mantle_override = true;
-						self BotBuiltinMantleOverride();
+						self BotBuiltinMantleOverride( true );
 						
 						// drop shot
 						self BotBuiltinMovementOverride( 0, 0 );
-						self BotBuiltinButtonOverride( "prone", "enable" );
+						self BotBuiltinButtonOverride( "+prone" );
 						
 						wait 1.5;
 						
-						self BotBuiltinClearMovementOverride();
-						self BotBuiltinClearButtonOverride( "prone" );
+						self BotBuiltinMovementOverride( false );
+						self BotBuiltinButtonOverride( "~prone" );
 					}
 				}
 				else
 				{
 					last_jump_time = time;
 					need_to_clear_mantle_override = true;
-					self BotBuiltinMantleOverride();
+					self BotBuiltinMantleOverride( true );
 					
 					// jump shot
-					self BotBuiltinButtonOverride( "gostand", "enable" );
+					self BotBuiltinButtonOverride( "+gostand" );
 					wait 0.1;
-					self BotBuiltinClearButtonOverride( "gostand" );
+					self BotBuiltinButtonOverride( "~gostand" );
 				}
 			}
 			

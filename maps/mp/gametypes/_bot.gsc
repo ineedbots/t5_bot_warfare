@@ -293,6 +293,18 @@ connected()
 	{
 		return;
 	}
+
+	if ( !isdefined( self.pers[ "isBot" ] ) )
+	{
+		// fast restart...
+		self.pers[ "isBot" ] = true;
+	}
+	
+	if ( !isdefined( self.pers[ "isBotWarfare" ] ) )
+	{
+		self.pers[ "isBotWarfare" ] = true;
+		self thread maps\mp\bots\_bot_script::added();
+	}
 	
 	self thread maps\mp\bots\_bot_script::connected();
 	
