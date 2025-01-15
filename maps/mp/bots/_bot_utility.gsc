@@ -51,6 +51,26 @@ BotBuiltinPrintConsole( s )
 
 /*
 */
+BotBuiltinReplaceFunc( s, b )
+{
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "replacefunc" ] ) )
+	{
+		return [[ level.bot_builtins[ "replacefunc" ] ]]( s, b );
+	}
+}
+
+/*
+*/
+BotBuiltinGetFunction( s, b )
+{
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "getfunction" ] ) )
+	{
+		return [[ level.bot_builtins[ "getfunction" ] ]]( s, b );
+	}
+}
+
+/*
+*/
 BotBuiltinClearOverride( a )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "botclearoverride" ] ) )

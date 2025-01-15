@@ -1,4 +1,4 @@
-init()
+main()
 {
 	level.bot_builtins[ "printconsole" ] = ::do_printconsole;
 	level.bot_builtins[ "botmovementoverride" ] = ::do_botmovementoverride;
@@ -8,6 +8,19 @@ init()
 	level.bot_builtins[ "botweaponoverride" ] = ::do_botweaponoverride;
 	level.bot_builtins[ "botaimoverride" ] = ::do_botaimoverride;
 	level.bot_builtins[ "botmeleeparamsoverride" ] = ::do_botmeleeparamsoverride;
+	level.bot_builtins[ "replacefunc" ] = ::do_replacefunc;
+	level.bot_builtins[ "getfunction" ] = ::do_getfunction;
+	maps\mp\gametypes\_bot::main();
+}
+
+do_replacefunc( a, b )
+{
+	return replacefunc( a, b );
+}
+
+do_getfunction( a, b )
+{
+	return getfunction( a, b );
 }
 
 do_printconsole( s )

@@ -11,19 +11,39 @@
 #include maps\mp\bots\_bot_utility;
 
 /*
-	Entry point to the bots
 */
-init()
+main()
 {
 	level.bw_version = "1.2.0";
-	
-	level.bot_offline = false;
-	
+
 	if ( getdvar( "bots_main" ) == "" )
 	{
 		setdvar( "bots_main", true );
 	}
 	
+	if ( !getdvarint( "bots_main" ) )
+	{
+		return;
+	}
+
+	if ( !wait_for_builtins() )
+	{
+		println( "FATAL: NO BUILT-INS FOR BOTS" );
+	}
+}
+
+/*
+	Entry point to the bots
+*/
+init()
+{
+	level.bw_version = "1.2.0";
+
+	if ( getdvar( "bots_main" ) == "" )
+	{
+		setdvar( "bots_main", true );
+	}
+
 	if ( !getdvarint( "bots_main" ) )
 	{
 		return;
