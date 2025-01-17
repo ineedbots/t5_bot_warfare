@@ -210,6 +210,7 @@ init()
 	}
 	
 	level.bot_inittime = gettime();
+	level.demorecord_minplayers = max( 0, getdvarint( #"scr_demorecord_minplayers" ) );
 	
 	thread fixGamemodes();
 	thread onPlayerConnect();
