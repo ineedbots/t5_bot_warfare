@@ -216,7 +216,7 @@ bot_get_prestige()
 				continue;
 			}
 			
-			if ( player is_bot() )
+			if ( player is_bot() || player isdemoclient() )
 			{
 				continue;
 			}
@@ -1246,7 +1246,7 @@ bot_get_cod_points()
 		
 		for ( i = 0; i < players.size; i++ )
 		{
-			if ( players[ i ] is_bot() )
+			if ( players[ i ] is_bot() || players[ i ] isdemoclient() )
 			{
 				continue;
 			}
