@@ -30,6 +30,48 @@ main()
 	{
 		println( "FATAL: NO BUILT-INS FOR BOTS" );
 	}
+
+	// fix var leak
+	BotBuiltinReplaceFunc( BotBuiltinGetFunction( "maps/mp/gametypes/_hud_util", "destroyelem" ), ::destroyElemFixed );
+}
+
+/*
+	Fix leak with menus
+*/
+removeChildFixed( element )
+{
+	temp = [];
+	
+	for ( i = 0; i < self.children.size ; i++ )
+	{
+		if ( isdefined( self.children[ i ] ) && self.children[ i ] != element )
+		{
+			self.children[ i ].index = temp.size;
+			temp[ temp.size ] = self.children[ i ];
+		}
+	}
+	
+	self.children = temp;
+}
+
+/*
+	Fix leak with menus
+*/
+destroyElemFixed()
+{
+	if ( !isdefined( self ) )
+	{
+		return;
+	}
+	
+	if ( isdefined( self.parent ) )
+	{
+		self.parent removeChildFixed( self );
+	}
+	
+	func = BotBuiltinGetFunction( "maps/mp/gametypes/_hud_util", "destroyelem" );
+	disableDetourOnce( func );
+	self [[ func ]]();
 }
 
 /*
