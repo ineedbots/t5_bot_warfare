@@ -51,6 +51,16 @@ BotBuiltinPrintConsole( s )
 
 /*
 */
+BotBuiltinDisableDetourOnce( s )
+{
+	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "disabledetouronce" ] ) )
+	{
+		[[ level.bot_builtins[ "disabledetouronce" ] ]]( s );
+	}
+}
+
+/*
+*/
 BotBuiltinReplaceFunc( s, b )
 {
 	if ( isdefined( level.bot_builtins ) && isdefined( level.bot_builtins[ "replacefunc" ] ) )

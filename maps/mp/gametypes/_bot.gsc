@@ -70,7 +70,7 @@ destroyElemFixed()
 	}
 	
 	func = BotBuiltinGetFunction( "maps/mp/gametypes/_hud_util", "destroyelem" );
-	disableDetourOnce( func );
+	BotBuiltinDisableDetourOnce( func );
 	self [[ func ]]();
 }
 

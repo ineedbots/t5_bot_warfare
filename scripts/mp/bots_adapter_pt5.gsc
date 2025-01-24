@@ -10,6 +10,7 @@ main()
 	level.bot_builtins[ "botmeleeparamsoverride" ] = ::do_botmeleeparamsoverride;
 	level.bot_builtins[ "replacefunc" ] = ::do_replacefunc;
 	level.bot_builtins[ "getfunction" ] = ::do_getfunction;
+	level.bot_builtins[ "disabledetouronce" ] = ::do_disabledetouronce;
 	maps\mp\gametypes\_bot::main();
 }
 
@@ -26,6 +27,11 @@ do_getfunction( a, b )
 do_printconsole( s )
 {
 	printf( s );
+}
+
+do_disabledetouronce( s )
+{
+	disabledetouronce( s );
 }
 
 do_botmovementoverride( a, b )
